@@ -1,0 +1,208 @@
+[
+  { "symbol": "TCS", "market": "NSE", "sector": "Software", "companyName": "Tata Consultancy Services" },
+  { "symbol": "INFY", "market": "NSE", "sector": "Software", "companyName": "Infosys" },
+  { "symbol": "HDFCBANK", "market": "NSE", "sector": "Banking", "companyName": "HDFC Bank" },
+  { "symbol": "ICICIBANK", "market": "NSE", "sector": "Banking", "companyName": "ICICI Bank" },
+  { "symbol": "KOTAKBANK", "market": "NSE", "sector": "Banking", "companyName": "Kotak Mahindra Bank" },
+  { "symbol": "RELIANCE", "market": "NSE", "sector": "Conglomerate", "companyName": "Reliance Industries" },
+  { "symbol": "9984", "market": "TSE", "sector": "Communication", "companyName": "SoftBank Group" },
+  { "symbol": "6501", "market": "TSE", "sector": "Industrials", "companyName": "Hitachi" },
+  { "symbol": "6758", "market": "TSE", "sector": "Consumer Tech", "companyName": "Sony Group" },
+  { "symbol": "7203", "market": "TSE", "sector": "Autos", "companyName": "Toyota Motor" },
+  { "symbol": "2308", "market": "TWSE", "sector": "Semiconductors", "companyName": "Delta Electronics" },
+  { "symbol": "2317", "market": "TWSE", "sector": "Electronics", "companyName": "Hon Hai Precision" },
+  { "symbol": "2330", "market": "TWSE", "sector": "Semiconductors", "companyName": "Taiwan Semiconductor" },
+  { "symbol": "0700", "market": "HKEX", "sector": "Communication", "companyName": "Tencent" },
+  { "symbol": "1211", "market": "HKEX", "sector": "Autos", "companyName": "BYD" },
+  { "symbol": "9988", "market": "HKEX", "sector": "Consumer Tech", "companyName": "Alibaba Group" },
+  { "symbol": "0005", "market": "HKEX", "sector": "Banking", "companyName": "HSBC Holdings" },
+  { "symbol": "035420", "market": "KRX", "sector": "Internet", "companyName": "NAVER" },
+  { "symbol": "066570", "market": "KRX", "sector": "Electronics", "companyName": "LG Electronics" },
+  { "symbol": "005930", "market": "KRX", "sector": "Electronics", "companyName": "Samsung Electronics" },
+  { "symbol": "DBS", "market": "SGX", "sector": "Banking", "companyName": "DBS Group" },
+  { "symbol": "OCBC", "market": "SGX", "sector": "Banking", "companyName": "OCBC" },
+  { "symbol": "U11", "market": "SGX", "sector": "Banking", "companyName": "UOB" },
+  { "symbol": "PTT", "market": "SET", "sector": "Energy", "companyName": "PTT" },
+  { "symbol": "TEL", "market": "PSE", "sector": "Telecom", "companyName": "PLDT" },
+  { "symbol": "FPT", "market": "HOSE", "sector": "Software", "companyName": "FPT Corporation" },
+  { "symbol": "VIC", "market": "HOSE", "sector": "Property", "companyName": "Vingroup" },
+  { "symbol": "FPH", "market": "NZX", "sector": "Healthcare", "companyName": "Fisher & Paykel Healthcare" },
+  { "symbol": "WIPRO", "market": "NSE", "sector": "Software", "companyName": "Wipro" },
+  { "symbol": "SBIN", "market": "NSE", "sector": "Banking", "companyName": "State Bank of India" },
+  { "symbol": "LT", "market": "NSE", "sector": "Industrials", "companyName": "Larsen & Toubro" },
+  { "symbol": "HINDUNILVR", "market": "NSE", "sector": "Consumer Staples", "companyName": "Hindustan Unilever" },
+  { "symbol": "BHARTIARTL", "market": "NSE", "sector": "Telecom", "companyName": "Bharti Airtel" },
+  { "symbol": "8035", "market": "TSE", "sector": "Semiconductors", "companyName": "Tokyo Electron" },
+  { "symbol": "9432", "market": "TSE", "sector": "Telecom", "companyName": "NTT" },
+  { "symbol": "9433", "market": "TSE", "sector": "Telecom", "companyName": "KDDI" },
+  { "symbol": "8058", "market": "TSE", "sector": "Trading", "companyName": "Mitsubishi Corporation" },
+  { "symbol": "7267", "market": "TSE", "sector": "Autos", "companyName": "Honda Motor" },
+  { "symbol": "9983", "market": "TSE", "sector": "Consumer", "companyName": "Fast Retailing" },
+  { "symbol": "2388", "market": "HKEX", "sector": "Banking", "companyName": "BOC Hong Kong" },
+  { "symbol": "0388", "market": "HKEX", "sector": "Financials", "companyName": "Hong Kong Exchanges and Clearing" },
+  { "symbol": "0941", "market": "HKEX", "sector": "Telecom", "companyName": "China Mobile" },
+  { "symbol": "1299", "market": "HKEX", "sector": "Insurance", "companyName": "AIA Group" },
+  { "symbol": "0883", "market": "HKEX", "sector": "Energy", "companyName": "CNOOC" },
+  { "symbol": "0001", "market": "HKEX", "sector": "Utilities", "companyName": "CK Hutchison" },
+  { "symbol": "000660", "market": "KRX", "sector": "Semiconductors", "companyName": "SK Hynix" },
+  { "symbol": "035720", "market": "KRX", "sector": "Internet", "companyName": "Kakao" },
+  { "symbol": "005380", "market": "KRX", "sector": "Autos", "companyName": "Hyundai Motor" },
+  { "symbol": "028260", "market": "KRX", "sector": "Industrials", "companyName": "Samsung C&T" },
+  { "symbol": "U96", "market": "SGX", "sector": "Transport", "companyName": "Sembcorp Industries" },
+  { "symbol": "C6L", "market": "SGX", "sector": "Transport", "companyName": "Singapore Airlines" },
+  { "symbol": "Z74", "market": "SGX", "sector": "Telecom", "companyName": "Singtel" },
+  { "symbol": "BBL", "market": "SET", "sector": "Banking", "companyName": "Bangkok Bank" },
+  { "symbol": "CPALL", "market": "SET", "sector": "Consumer Staples", "companyName": "CP All" },
+  { "symbol": "JFC", "market": "PSE", "sector": "Consumer", "companyName": "Jollibee Foods" },
+  { "symbol": "ALI", "market": "PSE", "sector": "Property", "companyName": "Ayala Land" },
+  { "symbol": "VCB", "market": "HOSE", "sector": "Banking", "companyName": "Vietcombank" },
+  { "symbol": "AXISBANK", "market": "NSE", "sector": "Banking", "companyName": "Axis Bank" },
+  { "symbol": "BAJFINANCE", "market": "NSE", "sector": "Financials", "companyName": "Bajaj Finance" },
+  { "symbol": "MARUTI", "market": "NSE", "sector": "Autos", "companyName": "Maruti Suzuki" },
+  { "symbol": "SUNPHARMA", "market": "NSE", "sector": "Healthcare", "companyName": "Sun Pharmaceutical" },
+  { "symbol": "ULTRACEMCO", "market": "NSE", "sector": "Materials", "companyName": "UltraTech Cement" },
+  { "symbol": "6098", "market": "TSE", "sector": "Internet", "companyName": "Recruit Holdings" },
+  { "symbol": "4568", "market": "TSE", "sector": "Healthcare", "companyName": "Daiichi Sankyo" },
+  { "symbol": "8316", "market": "TSE", "sector": "Banking", "companyName": "Sumitomo Mitsui Financial Group" },
+  { "symbol": "2914", "market": "TSE", "sector": "Consumer Staples", "companyName": "Japan Tobacco" },
+  { "symbol": "8001", "market": "TSE", "sector": "Trading", "companyName": "Itochu" },
+  { "symbol": "2454", "market": "TWSE", "sector": "Internet", "companyName": "MediaTek" },
+  { "symbol": "2881", "market": "TWSE", "sector": "Financials", "companyName": "Fubon Financial" },
+  { "symbol": "2882", "market": "TWSE", "sector": "Financials", "companyName": "Cathay Financial" },
+  { "symbol": "1101", "market": "TWSE", "sector": "Materials", "companyName": "Taiwan Cement" },
+  { "symbol": "0002", "market": "HKEX", "sector": "Utilities", "companyName": "CLP Holdings" },
+  { "symbol": "0016", "market": "HKEX", "sector": "Property", "companyName": "Sun Hung Kai Properties" },
+  { "symbol": "1109", "market": "HKEX", "sector": "Property", "companyName": "China Resources Land" },
+  { "symbol": "0175", "market": "HKEX", "sector": "Autos", "companyName": "Geely Automobile" },
+  { "symbol": "0011", "market": "HKEX", "sector": "Utilities", "companyName": "Hang Seng Bank" },
+  { "symbol": "012450", "market": "KRX", "sector": "Chemicals", "companyName": "Hanwha Aerospace" },
+  { "symbol": "068270", "market": "KRX", "sector": "Healthcare", "companyName": "Celltrion" },
+  { "symbol": "105560", "market": "KRX", "sector": "Banking", "companyName": "KB Financial Group" },
+  { "symbol": "207940", "market": "KRX", "sector": "Healthcare", "companyName": "Samsung Biologics" },
+  { "symbol": "BN4", "market": "SGX", "sector": "Banking", "companyName": "Keppel" },
+  { "symbol": "S58", "market": "SGX", "sector": "Transport", "companyName": "SATS" },
+  { "symbol": "M44U", "market": "SGX", "sector": "REIT", "companyName": "Mapletree Logistics Trust" },
+  { "symbol": "A17U", "market": "SGX", "sector": "REIT", "companyName": "CapitaLand Ascendas REIT" },
+  { "symbol": "ADVANC", "market": "SET", "sector": "Telecom", "companyName": "Advanced Info Service" },
+  { "symbol": "AOT", "market": "SET", "sector": "Transport", "companyName": "Airports of Thailand" },
+  { "symbol": "BDMS", "market": "SET", "sector": "Healthcare", "companyName": "Bangkok Dusit Medical Services" },
+  { "symbol": "SM", "market": "PSE", "sector": "Consumer", "companyName": "SM Investments" },
+  { "symbol": "BDO", "market": "PSE", "sector": "Banking", "companyName": "BDO Unibank" },
+  { "symbol": "ACEN", "market": "PSE", "sector": "Utilities", "companyName": "ACEN" },
+  { "symbol": "HPG", "market": "HOSE", "sector": "Materials", "companyName": "Hoa Phat Group" },
+  { "symbol": "VHM", "market": "HOSE", "sector": "Property", "companyName": "Vinhomes" },
+  { "symbol": "MWG", "market": "HOSE", "sector": "Retail", "companyName": "Mobile World Investment" },
+  { "symbol": "AIA", "market": "NZX", "sector": "Transport", "companyName": "Auckland International Airport" },
+  { "symbol": "3690", "market": "HKEX", "sector": "Consumer Tech", "companyName": "Meituan" },
+  { "symbol": "1810", "market": "HKEX", "sector": "Consumer Tech", "companyName": "Xiaomi" },
+  { "symbol": "2318", "market": "HKEX", "sector": "Insurance", "companyName": "Ping An Insurance" },
+  { "symbol": "3988", "market": "HKEX", "sector": "Banking", "companyName": "Bank of China" },
+  { "symbol": "1398", "market": "HKEX", "sector": "Banking", "companyName": "ICBC" },
+  { "symbol": "TECHM", "market": "NSE", "sector": "Software", "companyName": "Tech Mahindra" },
+  { "symbol": "TATASTEEL", "market": "NSE", "sector": "Materials", "companyName": "Tata Steel" },
+  { "symbol": "POWERGRID", "market": "NSE", "sector": "Utilities", "companyName": "Power Grid Corporation of India" },
+  { "symbol": "NTPC", "market": "NSE", "sector": "Utilities", "companyName": "NTPC" },
+  { "symbol": "HCLTECH", "market": "NSE", "sector": "Software", "companyName": "HCL Technologies" },
+  { "symbol": "5108", "market": "TSE", "sector": "Autos", "companyName": "Bridgestone" },
+  { "symbol": "9020", "market": "TSE", "sector": "Transport", "companyName": "East Japan Railway" },
+  { "symbol": "9434", "market": "TSE", "sector": "Telecom", "companyName": "SoftBank Corp" },
+  { "symbol": "1605", "market": "TSE", "sector": "Energy", "companyName": "Inpex" },
+  { "symbol": "6861", "market": "TSE", "sector": "Electronics", "companyName": "Keyence" },
+  { "symbol": "3711", "market": "TWSE", "sector": "Electronics", "companyName": "ASE Technology" },
+  { "symbol": "006400", "market": "KRX", "sector": "Electronics", "companyName": "Samsung SDI" },
+  { "symbol": "373220", "market": "KRX", "sector": "Autos", "companyName": "LG Energy Solution" },
+  { "symbol": "MCD", "market": "SGX", "sector": "Industrials", "companyName": "Singapore Technologies Engineering" },
+  { "symbol": "CIPLA", "market": "NSE", "sector": "Healthcare", "companyName": "Cipla" },
+  { "symbol": "DRREDDY", "market": "NSE", "sector": "Healthcare", "companyName": "Dr Reddy's Laboratories" },
+  { "symbol": "ASIANPAINT", "market": "NSE", "sector": "Chemicals", "companyName": "Asian Paints" },
+  { "symbol": "TITAN", "market": "NSE", "sector": "Consumer", "companyName": "Titan Company" },
+  { "symbol": "4901", "market": "TSE", "sector": "Healthcare", "companyName": "Fujifilm Holdings" },
+  { "symbol": "4502", "market": "TSE", "sector": "Healthcare", "companyName": "Takeda Pharmaceutical" },
+  { "symbol": "8002", "market": "TSE", "sector": "Trading", "companyName": "Marubeni" },
+  { "symbol": "2412", "market": "TWSE", "sector": "Electronics", "companyName": "Chunghwa Telecom" },
+  { "symbol": "2886", "market": "TWSE", "sector": "Financials", "companyName": "Mega Financial Holding" },
+  { "symbol": "096770", "market": "KRX", "sector": "Industrials", "companyName": "SK Innovation" },
+  { "symbol": "051910", "market": "KRX", "sector": "Chemicals", "companyName": "LG Chem" },
+  { "symbol": "C38U", "market": "SGX", "sector": "REIT", "companyName": "CapitaLand Integrated Commercial Trust" },
+  { "symbol": "U14", "market": "SGX", "sector": "Banking", "companyName": "UOL Group" },
+  { "symbol": "DELTA", "market": "SET", "sector": "Electronics", "companyName": "Delta Electronics Thailand" },
+  { "symbol": "GLO", "market": "PSE", "sector": "Telecom", "companyName": "Globe Telecom" },
+  { "symbol": "SSI", "market": "HOSE", "sector": "Financials", "companyName": "SSI Securities" },
+  { "symbol": "MFT", "market": "NZX", "sector": "Logistics", "companyName": "Mainfreight" },
+  { "symbol": "IOC", "market": "NSE", "sector": "Energy", "companyName": "Indian Oil Corporation" },
+  { "symbol": "VBL", "market": "NSE", "sector": "Consumer", "companyName": "Varun Beverages" },
+  { "symbol": "7733", "market": "TSE", "sector": "Electronics", "companyName": "Olympus" },
+  { "symbol": "8801", "market": "TSE", "sector": "Property", "companyName": "Mitsui Fudosan" },
+  { "symbol": "2891", "market": "TSE", "sector": "Food", "companyName": "Nissin Foods Holdings" },
+  { "symbol": "2884", "market": "TWSE", "sector": "Financials", "companyName": "E.Sun Financial Holding" },
+  { "symbol": "3008", "market": "TWSE", "sector": "Electronics", "companyName": "Largan Precision" },
+  { "symbol": "017670", "market": "KRX", "sector": "Industrials", "companyName": "SK Telecom" },
+  { "symbol": "316140", "market": "KRX", "sector": "Banking", "companyName": "Woori Financial Group" },
+  { "symbol": "S63", "market": "SGX", "sector": "Industrials", "companyName": "Singapore Technologies Engineering" },
+  { "symbol": "AW9U", "market": "SGX", "sector": "REIT", "companyName": "Keppel REIT" },
+  { "symbol": "BTS", "market": "SET", "sector": "Transport", "companyName": "BTS Group Holdings" },
+  { "symbol": "MER", "market": "PSE", "sector": "Utilities", "companyName": "Manila Electric Company" },
+  { "symbol": "VND", "market": "HOSE", "sector": "Financials", "companyName": "VNDirect Securities" }
+  ,{ "symbol": "EICHERMOT", "market": "NSE", "sector": "Autos", "companyName": "Eicher Motors" }
+  ,{ "symbol": "DIVISLAB", "market": "NSE", "sector": "Healthcare", "companyName": "Divi's Laboratories" }
+  ,{ "symbol": "NESTLEIND", "market": "NSE", "sector": "Consumer Staples", "companyName": "Nestle India" }
+  ,{ "symbol": "7532", "market": "TSE", "sector": "Retail", "companyName": "Pan Pacific International" }
+  ,{ "symbol": "2502", "market": "TSE", "sector": "Consumer Staples", "companyName": "Asahi Group" }
+  ,{ "symbol": "2303", "market": "TWSE", "sector": "Semiconductors", "companyName": "United Microelectronics" }
+  ,{ "symbol": "2382", "market": "TWSE", "sector": "Electronics", "companyName": "Quanta Computer" }
+  ,{ "symbol": "005935", "market": "KRX", "sector": "Electronics", "companyName": "Samsung Electronics Preferred" }
+  ,{ "symbol": "086790", "market": "KRX", "sector": "Banking", "companyName": "Hana Financial Group" }
+  ,{ "symbol": "J36", "market": "SGX", "sector": "Conglomerate", "companyName": "Jardine Matheson Holdings" }
+  ,{ "symbol": "BPCL", "market": "NSE", "sector": "Energy", "companyName": "Bharat Petroleum" }
+  ,{ "symbol": "COALINDIA", "market": "NSE", "sector": "Materials", "companyName": "Coal India" }
+  ,{ "symbol": "LTIM", "market": "NSE", "sector": "Software", "companyName": "LTIMindtree" }
+  ,{ "symbol": "7011", "market": "TSE", "sector": "Industrials", "companyName": "Mitsubishi Heavy Industries" }
+  ,{ "symbol": "3407", "market": "TSE", "sector": "Materials", "companyName": "Asahi Kasei" }
+  ,{ "symbol": "2618", "market": "TWSE", "sector": "Transport", "companyName": "Eva Airways" }
+  ,{ "symbol": "1303", "market": "TWSE", "sector": "Materials", "companyName": "Nan Ya Plastics" }
+  ,{ "symbol": "032830", "market": "KRX", "sector": "Insurance", "companyName": "Samsung Life Insurance" }
+  ,{ "symbol": "00680K", "market": "KRX", "sector": "Autos", "companyName": "Hyundai Rotem" }
+  ,{ "symbol": "C09", "market": "SGX", "sector": "Banking", "companyName": "City Developments" }
+  ,{ "symbol": "S68", "market": "SGX", "sector": "Transport", "companyName": "Singapore Exchange" }
+  ,{ "symbol": "KTB", "market": "SET", "sector": "Banking", "companyName": "Krung Thai Bank" }
+  ,{ "symbol": "BPI", "market": "PSE", "sector": "Banking", "companyName": "Bank of the Philippine Islands" }
+  ,{ "symbol": "CTG", "market": "HOSE", "sector": "Banking", "companyName": "VietinBank" }
+  ,{ "symbol": "SPK", "market": "NZX", "sector": "Telecom", "companyName": "Spark New Zealand" }
+  ,{ "symbol": "ADANIENT", "market": "NSE", "sector": "Conglomerate", "companyName": "Adani Enterprises" }
+  ,{ "symbol": "BAJAJFINSV", "market": "NSE", "sector": "Financials", "companyName": "Bajaj Finserv" }
+  ,{ "symbol": "ONGC", "market": "NSE", "sector": "Energy", "companyName": "ONGC" }
+  ,{ "symbol": "7751", "market": "TSE", "sector": "Electronics", "companyName": "Canon" }
+  ,{ "symbol": "6503", "market": "TSE", "sector": "Industrials", "companyName": "Mitsubishi Electric" }
+  ,{ "symbol": "2408", "market": "TWSE", "sector": "Semiconductors", "companyName": "Nanya Technology" }
+  ,{ "symbol": "2301", "market": "TWSE", "sector": "Electronics", "companyName": "Lite-On Technology" }
+  ,{ "symbol": "012330", "market": "KRX", "sector": "Autos", "companyName": "Hyundai Mobis" }
+  ,{ "symbol": "010130", "market": "KRX", "sector": "Materials", "companyName": "Korea Zinc" }
+  ,{ "symbol": "F34", "market": "SGX", "sector": "Consumer Staples", "companyName": "Wilmar International" }
+  ,{ "symbol": "JSWSTEEL", "market": "NSE", "sector": "Materials", "companyName": "JSW Steel" }
+  ,{ "symbol": "SHRIRAMFIN", "market": "NSE", "sector": "Financials", "companyName": "Shriram Finance" }
+  ,{ "symbol": "HINDALCO", "market": "NSE", "sector": "Materials", "companyName": "Hindalco Industries" }
+  ,{ "symbol": "6301", "market": "TSE", "sector": "Industrials", "companyName": "Komatsu" }
+  ,{ "symbol": "8766", "market": "TSE", "sector": "Insurance", "companyName": "Tokio Marine Holdings" }
+  ,{ "symbol": "1925", "market": "TSE", "sector": "Construction", "companyName": "Daiwa House Industry" }
+  ,{ "symbol": "3034", "market": "TWSE", "sector": "Electronics", "companyName": "Novatek Microelectronics" }
+  ,{ "symbol": "5871", "market": "TWSE", "sector": "Financials", "companyName": "Chailease Holding" }
+  ,{ "symbol": "035250", "market": "KRX", "sector": "Industrials", "companyName": "Kangwon Land" }
+  ,{ "symbol": "000270", "market": "KRX", "sector": "Autos", "companyName": "Kia" }
+  ,{ "symbol": "U96", "market": "SGX", "sector": "Utilities", "companyName": "Sembcorp Industries" }
+  ,{ "symbol": "BN4", "market": "SGX", "sector": "Industrials", "companyName": "Keppel Ltd" }
+  ,{ "symbol": "MINT", "market": "SET", "sector": "Consumer", "companyName": "Minor International" }
+  ,{ "symbol": "MBT", "market": "PSE", "sector": "Banking", "companyName": "Metrobank" }
+  ,{ "symbol": "VCB", "market": "HOSE", "sector": "Banking", "companyName": "Vietcombank" }
+  ,{ "symbol": "HEROMOTOCO", "market": "NSE", "sector": "Autos", "companyName": "Hero MotoCorp" }
+  ,{ "symbol": "TATAMOTORS", "market": "NSE", "sector": "Autos", "companyName": "Tata Motors" }
+  ,{ "symbol": "7735", "market": "TSE", "sector": "Electronics", "companyName": "SCREEN Holdings" }
+  ,{ "symbol": "6645", "market": "TSE", "sector": "Electronics", "companyName": "Omron" }
+  ,{ "symbol": "2885", "market": "TWSE", "sector": "Financials", "companyName": "Yuanta Financial Holding" }
+  ,{ "symbol": "2633", "market": "TWSE", "sector": "Transport", "companyName": "Taiwan High Speed Rail" }
+  ,{ "symbol": "018260", "market": "KRX", "sector": "IT Services", "companyName": "Samsung SDS" }
+  ,{ "symbol": "138040", "market": "KRX", "sector": "Financials", "companyName": "Meritz Financial Group" }
+  ,{ "symbol": "CPF", "market": "SET", "sector": "Consumer Staples", "companyName": "Charoen Pokphand Foods" }
+  ,{ "symbol": "CPN", "market": "SET", "sector": "Property", "companyName": "Central Pattana" }
+  ,{ "symbol": "AC", "market": "PSE", "sector": "Conglomerate", "companyName": "Ayala Corporation" }
+  ,{ "symbol": "JGS", "market": "PSE", "sector": "Conglomerate", "companyName": "JG Summit Holdings" }
+]

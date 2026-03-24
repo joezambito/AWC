@@ -1,0 +1,210 @@
+[
+  { "symbol": "SHEL", "market": "LSE", "sector": "Energy", "companyName": "Shell" },
+  { "symbol": "AZN", "market": "LSE", "sector": "Healthcare", "companyName": "AstraZeneca" },
+  { "symbol": "HSBA", "market": "LSE", "sector": "Banking", "companyName": "HSBC Holdings" },
+  { "symbol": "ULVR", "market": "LSE", "sector": "Consumer Staples", "companyName": "Unilever" },
+  { "symbol": "RIO", "market": "LSE", "sector": "Mining", "companyName": "Rio Tinto" },
+  { "symbol": "REL", "market": "LSE", "sector": "Information Services", "companyName": "RELX" },
+  { "symbol": "IFX", "market": "XETRA", "sector": "Semiconductors", "companyName": "Infineon Technologies" },
+  { "symbol": "SAP", "market": "XETRA", "sector": "Software", "companyName": "SAP" },
+  { "symbol": "SIE", "market": "XETRA", "sector": "Industrials", "companyName": "Siemens" },
+  { "symbol": "ALV", "market": "XETRA", "sector": "Insurance", "companyName": "Allianz" },
+  { "symbol": "MC", "market": "EURONEXT", "sector": "Luxury", "companyName": "LVMH" },
+  { "symbol": "AIR", "market": "EURONEXT", "sector": "Industrials", "companyName": "Airbus" },
+  { "symbol": "BNP", "market": "EURONEXT", "sector": "Banking", "companyName": "BNP Paribas" },
+  { "symbol": "ORA", "market": "EURONEXT", "sector": "Telecom", "companyName": "Orange" },
+  { "symbol": "NESN", "market": "SIX", "sector": "Consumer Staples", "companyName": "Nestle" },
+  { "symbol": "NOVO-B", "market": "OMX", "sector": "Healthcare", "companyName": "Novo Nordisk" },
+  { "symbol": "SAN", "market": "BME", "sector": "Banking", "companyName": "Banco Santander" },
+  { "symbol": "ENEL", "market": "BIT", "sector": "Utilities", "companyName": "Enel" },
+  { "symbol": "PKN", "market": "WSE", "sector": "Energy", "companyName": "Orlen" },
+  { "symbol": "NHY", "market": "OSE", "sector": "Materials", "companyName": "Norsk Hydro" }
+  ,{ "symbol": "BP", "market": "LSE", "sector": "Energy", "companyName": "BP" }
+  ,{ "symbol": "BARC", "market": "LSE", "sector": "Banking", "companyName": "Barclays" }
+  ,{ "symbol": "LLOY", "market": "LSE", "sector": "Banking", "companyName": "Lloyds Banking Group" }
+  ,{ "symbol": "NG", "market": "LSE", "sector": "Utilities", "companyName": "National Grid" }
+  ,{ "symbol": "DGE", "market": "LSE", "sector": "Consumer Staples", "companyName": "Diageo" }
+  ,{ "symbol": "GSK", "market": "LSE", "sector": "Healthcare", "companyName": "GSK" }
+  ,{ "symbol": "PRU", "market": "LSE", "sector": "Insurance", "companyName": "Prudential" }
+  ,{ "symbol": "BMW", "market": "XETRA", "sector": "Autos", "companyName": "BMW" }
+  ,{ "symbol": "MBG", "market": "XETRA", "sector": "Autos", "companyName": "Mercedes-Benz Group" }
+  ,{ "symbol": "VOW3", "market": "XETRA", "sector": "Autos", "companyName": "Volkswagen" }
+  ,{ "symbol": "BAS", "market": "XETRA", "sector": "Chemicals", "companyName": "BASF" }
+  ,{ "symbol": "BAYN", "market": "XETRA", "sector": "Healthcare", "companyName": "Bayer" }
+  ,{ "symbol": "MUV2", "market": "XETRA", "sector": "Insurance", "companyName": "Munich Re" }
+  ,{ "symbol": "ENR", "market": "XETRA", "sector": "Utilities", "companyName": "Siemens Energy" }
+  ,{ "symbol": "RMS", "market": "EURONEXT", "sector": "Luxury", "companyName": "Hermes" }
+  ,{ "symbol": "TTE", "market": "EURONEXT", "sector": "Energy", "companyName": "TotalEnergies" }
+  ,{ "symbol": "SANOFI", "market": "EURONEXT", "sector": "Healthcare", "companyName": "Sanofi" },
+  { "symbol": "DG", "market": "EURONEXT", "sector": "Consumer", "companyName": "Vinci" }
+  ,{ "symbol": "AI", "market": "EURONEXT", "sector": "Industrials", "companyName": "Air Liquide" }
+  ,{ "symbol": "ISP", "market": "BIT", "sector": "Banking", "companyName": "Intesa Sanpaolo" }
+  ,{ "symbol": "UCG", "market": "BIT", "sector": "Banking", "companyName": "UniCredit" }
+  ,{ "symbol": "IBE", "market": "BME", "sector": "Utilities", "companyName": "Iberdrola" }
+  ,{ "symbol": "ITX", "market": "BME", "sector": "Consumer", "companyName": "Inditex" }
+  ,{ "symbol": "AMS", "market": "SIX", "sector": "Healthcare", "companyName": "ams-OSRAM" }
+  ,{ "symbol": "NOVN", "market": "SIX", "sector": "Healthcare", "companyName": "Novartis" }
+  ,{ "symbol": "ROG", "market": "SIX", "sector": "Healthcare", "companyName": "Roche" }
+  ,{ "symbol": "VOLV-B", "market": "OMX", "sector": "Industrials", "companyName": "Volvo" }
+  ,{ "symbol": "ATCO-A", "market": "OMX", "sector": "Industrials", "companyName": "Atlas Copco" }
+  ,{ "symbol": "DNB", "market": "OSE", "sector": "Banking", "companyName": "DNB Bank" }
+  ,{ "symbol": "ADS", "market": "XETRA", "sector": "Consumer", "companyName": "Adidas" }
+  ,{ "symbol": "CON", "market": "XETRA", "sector": "Autos", "companyName": "Continental" }
+  ,{ "symbol": "DB1", "market": "XETRA", "sector": "Financials", "companyName": "Deutsche Boerse" }
+  ,{ "symbol": "HEI", "market": "XETRA", "sector": "Materials", "companyName": "Heidelberg Materials" }
+  ,{ "symbol": "RWE", "market": "XETRA", "sector": "Utilities", "companyName": "RWE" }
+  ,{ "symbol": "VNA", "market": "XETRA", "sector": "REIT", "companyName": "Vonovia" }
+  ,{ "symbol": "SGO", "market": "EURONEXT", "sector": "Materials", "companyName": "Saint-Gobain" }
+  ,{ "symbol": "CS", "market": "EURONEXT", "sector": "Insurance", "companyName": "AXA" }
+  ,{ "symbol": "ACA", "market": "EURONEXT", "sector": "Banking", "companyName": "Credit Agricole" }
+  ,{ "symbol": "CAP", "market": "EURONEXT", "sector": "IT Services", "companyName": "Capgemini" }
+  ,{ "symbol": "SU", "market": "EURONEXT", "sector": "Industrials", "companyName": "Schneider Electric" }
+  ,{ "symbol": "KER", "market": "EURONEXT", "sector": "Luxury", "companyName": "Kering" }
+  ,{ "symbol": "ENI", "market": "BIT", "sector": "Energy", "companyName": "Eni" }
+  ,{ "symbol": "G", "market": "BIT", "sector": "Utilities", "companyName": "Assicurazioni Generali" }
+  ,{ "symbol": "TEN", "market": "BIT", "sector": "Utilities", "companyName": "Tenaris Italy" }
+  ,{ "symbol": "REP", "market": "BME", "sector": "Energy", "companyName": "Repsol" }
+  ,{ "symbol": "FER", "market": "BME", "sector": "Industrials", "companyName": "Ferrovial" }
+  ,{ "symbol": "AENA", "market": "BME", "sector": "Infrastructure", "companyName": "Aena" }
+  ,{ "symbol": "CABK", "market": "BME", "sector": "Banking", "companyName": "CaixaBank" }
+  ,{ "symbol": "ZURN", "market": "SIX", "sector": "Insurance", "companyName": "Zurich Insurance" }
+  ,{ "symbol": "UHR", "market": "SIX", "sector": "Luxury", "companyName": "Swatch Group" }
+  ,{ "symbol": "ERIC-B", "market": "OMX", "sector": "Telecom", "companyName": "Ericsson" }
+  ,{ "symbol": "SAND", "market": "OMX", "sector": "Industrials", "companyName": "Sandvik" }
+  ,{ "symbol": "NDA-SE", "market": "OMX", "sector": "Banking", "companyName": "Nordea" }
+  ,{ "symbol": "MOWI", "market": "OSE", "sector": "Consumer Staples", "companyName": "Mowi" }
+  ,{ "symbol": "ORK", "market": "OSE", "sector": "Consumer Staples", "companyName": "Orkla" }
+  ,{ "symbol": "PKN", "market": "WSE", "sector": "Energy", "companyName": "Orlen" }
+  ,{ "symbol": "PEO", "market": "WSE", "sector": "Banking", "companyName": "Bank Pekao" }
+  ,{ "symbol": "KGH", "market": "WSE", "sector": "Materials", "companyName": "KGHM Polska Miedz" }
+  ,{ "symbol": "AKRBP", "market": "OSE", "sector": "Energy", "companyName": "Aker BP" }
+  ,{ "symbol": "STLAM", "market": "BIT", "sector": "Autos", "companyName": "Stellantis Milan" }
+  ,{ "symbol": "MONC", "market": "BIT", "sector": "Luxury", "companyName": "Moncler" }
+  ,{ "symbol": "RACE", "market": "BIT", "sector": "Autos", "companyName": "Ferrari" }
+  ,{ "symbol": "TEL", "market": "BIT", "sector": "Telecom", "companyName": "Telecom Italia" }
+  ,{ "symbol": "PHIA", "market": "EURONEXT", "sector": "Healthcare", "companyName": "Koninklijke Philips" }
+  ,{ "symbol": "ASML", "market": "EURONEXT", "sector": "Semiconductors", "companyName": "ASML Amsterdam" }
+  ,{ "symbol": "ADYEN", "market": "EURONEXT", "sector": "Fintech", "companyName": "Adyen" }
+  ,{ "symbol": "INGA", "market": "EURONEXT", "sector": "Banking", "companyName": "ING Group" }
+  ,{ "symbol": "WKL", "market": "EURONEXT", "sector": "Information Services", "companyName": "Wolters Kluwer" }
+  ,{ "symbol": "IMB", "market": "LSE", "sector": "Consumer Staples", "companyName": "Imperial Brands" }
+  ,{ "symbol": "RKT", "market": "LSE", "sector": "Consumer", "companyName": "Reckitt" }
+  ,{ "symbol": "STAN", "market": "LSE", "sector": "Banking", "companyName": "Standard Chartered" }
+  ,{ "symbol": "AAL", "market": "LSE", "sector": "Mining", "companyName": "Anglo American" }
+  ,{ "symbol": "GLEN", "market": "LSE", "sector": "Mining", "companyName": "Glencore" }
+  ,{ "symbol": "BT.A", "market": "LSE", "sector": "Telecom", "companyName": "BT Group" }
+  ,{ "symbol": "VOD", "market": "LSE", "sector": "Telecom", "companyName": "Vodafone Group" }
+  ,{ "symbol": "PSON", "market": "LSE", "sector": "Consumer", "companyName": "Pearson" }
+  ,{ "symbol": "SAF", "market": "EURONEXT", "sector": "Defense", "companyName": "Safran" }
+  ,{ "symbol": "HO", "market": "EURONEXT", "sector": "Hotels", "companyName": "Accor" }
+  ,{ "symbol": "RI", "market": "EURONEXT", "sector": "Consumer Staples", "companyName": "Pernod Ricard" }
+  ,{ "symbol": "GLE", "market": "EURONEXT", "sector": "Banking", "companyName": "Societe Generale" }
+  ,{ "symbol": "EL", "market": "EURONEXT", "sector": "Consumer", "companyName": "EssilorLuxottica" }
+  ,{ "symbol": "HEIA", "market": "EURONEXT", "sector": "Consumer Staples", "companyName": "Heineken" }
+  ,{ "symbol": "ABN", "market": "EURONEXT", "sector": "Banking", "companyName": "ABN AMRO" }
+  ,{ "symbol": "KNEBV", "market": "OMX", "sector": "Industrials", "companyName": "Kone" }
+  ,{ "symbol": "NESTE", "market": "OMX", "sector": "Energy", "companyName": "Neste" }
+  ,{ "symbol": "TELIA", "market": "OMX", "sector": "Telecom", "companyName": "Telia Company" }
+  ,{ "symbol": "MTX", "market": "XETRA", "sector": "Industrials", "companyName": "MTU Aero Engines" }
+  ,{ "symbol": "QIA", "market": "XETRA", "sector": "Healthcare", "companyName": "Qiagen" }
+  ,{ "symbol": "HEN3", "market": "XETRA", "sector": "Consumer Staples", "companyName": "Henkel" }
+  ,{ "symbol": "NESN", "market": "SIX", "sector": "Consumer Staples", "companyName": "Nestle" }
+  ,{ "symbol": "ROG", "market": "SIX", "sector": "Healthcare", "companyName": "Roche" }
+  ,{ "symbol": "NOVN", "market": "SIX", "sector": "Healthcare", "companyName": "Novartis" }
+  ,{ "symbol": "UBSG", "market": "SIX", "sector": "Banking", "companyName": "UBS" }
+  ,{ "symbol": "GIVN", "market": "SIX", "sector": "Consumer Staples", "companyName": "Givaudan" }
+  ,{ "symbol": "ATCOA", "market": "OMX", "sector": "Industrials", "companyName": "Atlas Copco" }
+  ,{ "symbol": "VOLV-B", "market": "OMX", "sector": "Industrials", "companyName": "Volvo" }
+  ,{ "symbol": "SAND", "market": "OMX", "sector": "Industrials", "companyName": "Sandvik" }
+  ,{ "symbol": "ELISA", "market": "OMX", "sector": "Telecom", "companyName": "Elisa" }
+  ,{ "symbol": "ORNBV", "market": "OMX", "sector": "Consumer Staples", "companyName": "Orkla" }
+  ,{ "symbol": "BEI", "market": "XETRA", "sector": "Consumer Staples", "companyName": "Beiersdorf" }
+  ,{ "symbol": "P911", "market": "XETRA", "sector": "Autos", "companyName": "Porsche AG" }
+  ,{ "symbol": "DB1", "market": "XETRA", "sector": "Financials", "companyName": "Deutsche Boerse" }
+  ,{ "symbol": "RHM", "market": "XETRA", "sector": "Defense", "companyName": "Rheinmetall" }
+  ,{ "symbol": "ZAL", "market": "XETRA", "sector": "Consumer", "companyName": "Zalando" }
+  ,{ "symbol": "IBE", "market": "BME", "sector": "Utilities", "companyName": "Iberdrola" }
+  ,{ "symbol": "SAN", "market": "BME", "sector": "Banking", "companyName": "Banco Santander" }
+  ,{ "symbol": "BBVA", "market": "BME", "sector": "Banking", "companyName": "BBVA" }
+  ,{ "symbol": "ITX", "market": "BME", "sector": "Retail", "companyName": "Inditex" }
+  ,{ "symbol": "AENA", "market": "BME", "sector": "Transport", "companyName": "Aena" }
+  ,{ "symbol": "DSY", "market": "EURONEXT", "sector": "Software", "companyName": "Dassault Systemes" }
+  ,{ "symbol": "CAP", "market": "EURONEXT", "sector": "IT Services", "companyName": "Capgemini" }
+  ,{ "symbol": "ORA", "market": "EURONEXT", "sector": "Telecom", "companyName": "Orange" }
+  ,{ "symbol": "STM", "market": "EURONEXT", "sector": "Semiconductors", "companyName": "STMicroelectronics" }
+  ,{ "symbol": "LR", "market": "EURONEXT", "sector": "Consumer", "companyName": "Legrand" }
+  ,{ "symbol": "ACA", "market": "EURONEXT", "sector": "Banking", "companyName": "Credit Agricole" }
+  ,{ "symbol": "KER", "market": "EURONEXT", "sector": "Luxury", "companyName": "Kering" }
+  ,{ "symbol": "ABI", "market": "EURONEXT", "sector": "Consumer Staples", "companyName": "Anheuser-Busch InBev" }
+  ,{ "symbol": "UCB", "market": "EURONEXT", "sector": "Healthcare", "companyName": "UCB" }
+  ,{ "symbol": "SOF", "market": "EURONEXT", "sector": "Insurance", "companyName": "Sofina" }
+  ,{ "symbol": "ERF", "market": "EURONEXT", "sector": "Aerospace", "companyName": "Eurofins Scientific" }
+  ,{ "symbol": "ALO", "market": "EURONEXT", "sector": "Utilities", "companyName": "Alstom" }
+  ,{ "symbol": "BN", "market": "EURONEXT", "sector": "Consumer", "companyName": "Danone" }
+  ,{ "symbol": "VIE", "market": "EURONEXT", "sector": "Utilities", "companyName": "Veolia" }
+  ,{ "symbol": "SU", "market": "EURONEXT", "sector": "Industrials", "companyName": "Schneider Electric" }
+  ,{ "symbol": "ENI", "market": "BIT", "sector": "Energy", "companyName": "Eni" }
+  ,{ "symbol": "UCG", "market": "BIT", "sector": "Banking", "companyName": "UniCredit" }
+  ,{ "symbol": "ISP", "market": "BIT", "sector": "Banking", "companyName": "Intesa Sanpaolo" }
+  ,{ "symbol": "ENEL", "market": "BIT", "sector": "Utilities", "companyName": "Enel" }
+  ,{ "symbol": "TEN", "market": "BIT", "sector": "Energy Infrastructure", "companyName": "Tenaris" }
+  ,{ "symbol": "PRY", "market": "BIT", "sector": "Industrials", "companyName": "Prysmian" }
+  ,{ "symbol": "DTE", "market": "XETRA", "sector": "Telecom", "companyName": "Deutsche Telekom" }
+  ,{ "symbol": "EOAN", "market": "XETRA", "sector": "Utilities", "companyName": "E.ON" }
+  ,{ "symbol": "BAS", "market": "XETRA", "sector": "Chemicals", "companyName": "BASF" }
+  ,{ "symbol": "MBG", "market": "XETRA", "sector": "Autos", "companyName": "Mercedes-Benz Group" }
+  ,{ "symbol": "VOW3", "market": "XETRA", "sector": "Autos", "companyName": "Volkswagen" }
+  ,{ "symbol": "IFX", "market": "XETRA", "sector": "Semiconductors", "companyName": "Infineon Technologies" }
+  ,{ "symbol": "ADD", "market": "XETRA", "sector": "Apparel", "companyName": "Adidas" }
+  ,{ "symbol": "BAYN", "market": "XETRA", "sector": "Healthcare", "companyName": "Bayer" }
+  ,{ "symbol": "SHL", "market": "XETRA", "sector": "Healthcare", "companyName": "Siemens Healthineers" }
+  ,{ "symbol": "ENR", "market": "XETRA", "sector": "Industrials", "companyName": "Siemens Energy" }
+  ,{ "symbol": "BMW", "market": "XETRA", "sector": "Autos", "companyName": "BMW" }
+  ,{ "symbol": "ASSA-B", "market": "OMX", "sector": "Industrials", "companyName": "Assa Abloy" }
+  ,{ "symbol": "ERIC-B", "market": "OMX", "sector": "Telecom", "companyName": "Ericsson" }
+  ,{ "symbol": "ALFA", "market": "OMX", "sector": "Industrials", "companyName": "Alfa Laval" }
+  ,{ "symbol": "DSV", "market": "OMX", "sector": "Logistics", "companyName": "DSV" }
+  ,{ "symbol": "NZYM-B", "market": "OMX", "sector": "Healthcare", "companyName": "Novozymes" }
+  ,{ "symbol": "CARL-B", "market": "OMX", "sector": "Consumer Staples", "companyName": "Carlsberg" }
+  ,{ "symbol": "DEMANT", "market": "OMX", "sector": "Healthcare", "companyName": "Demant" }
+  ,{ "symbol": "COLO-B", "market": "OMX", "sector": "Industrials", "companyName": "Coloplast" }
+  ,{ "symbol": "SKA-B", "market": "OMX", "sector": "Construction", "companyName": "Skanska" }
+  ,{ "symbol": "BOL", "market": "OMX", "sector": "Industrials", "companyName": "Boliden" }
+  ,{ "symbol": "AKER", "market": "OMX", "sector": "Industrials", "companyName": "Aker" }
+  ,{ "symbol": "MOWI", "market": "OMX", "sector": "Food", "companyName": "Mowi" }
+  ,{ "symbol": "YAR", "market": "OMX", "sector": "Chemicals", "companyName": "Yara International" }
+  ,{ "symbol": "NDA-FI", "market": "OMX", "sector": "Banking", "companyName": "Nordea Bank" }
+  ,{ "symbol": "SEB-A", "market": "OMX", "sector": "Banking", "companyName": "SEB" }
+  ,{ "symbol": "SWED-A", "market": "OMX", "sector": "Banking", "companyName": "Swedbank" }
+  ,{ "symbol": "TEL2-B", "market": "OMX", "sector": "Telecom", "companyName": "Tele2" }
+  ,{ "symbol": "KESKOB", "market": "OMX", "sector": "Consumer Staples", "companyName": "Kesko" }
+  ,{ "symbol": "SCA-B", "market": "OMX", "sector": "Materials", "companyName": "Svenska Cellulosa" }
+  ,{ "symbol": "UHR", "market": "SIX", "sector": "Luxury", "companyName": "Swatch Group" }
+  ,{ "symbol": "SCMN", "market": "SIX", "sector": "Telecom", "companyName": "Swisscom" }
+  ,{ "symbol": "LONN", "market": "SIX", "sector": "Healthcare", "companyName": "Lonza" }
+  ,{ "symbol": "HOLN", "market": "SIX", "sector": "Materials", "companyName": "Holcim" }
+  ,{ "symbol": "SGSN", "market": "SIX", "sector": "Industrials", "companyName": "SGS" }
+  ,{ "symbol": "ELE", "market": "BME", "sector": "Utilities", "companyName": "Endesa" }
+  ,{ "symbol": "FER", "market": "BME", "sector": "Construction", "companyName": "Ferrovial" }
+  ,{ "symbol": "RED", "market": "BME", "sector": "Utilities", "companyName": "Redeia" }
+  ,{ "symbol": "AMS", "market": "BME", "sector": "Travel", "companyName": "Amadeus IT Group" }
+  ,{ "symbol": "REP", "market": "BME", "sector": "Energy", "companyName": "Repsol" }
+  ,{ "symbol": "LLOY", "market": "LSE", "sector": "Banking", "companyName": "Lloyds Banking Group" }
+  ,{ "symbol": "NWG", "market": "LSE", "sector": "Banking", "companyName": "NatWest Group" }
+  ,{ "symbol": "BA", "market": "LSE", "sector": "Defense", "companyName": "BAE Systems" }
+  ,{ "symbol": "PRX", "market": "EURONEXT", "sector": "Internet", "companyName": "Prosus" }
+  ,{ "symbol": "RAND", "market": "EURONEXT", "sector": "Staffing", "companyName": "Randstad" }
+  ,{ "symbol": "MT", "market": "EURONEXT", "sector": "Materials", "companyName": "ArcelorMittal" }
+  ,{ "symbol": "PUB", "market": "EURONEXT", "sector": "Advertising", "companyName": "Publicis Groupe" }
+  ,{ "symbol": "RNO", "market": "EURONEXT", "sector": "Autos", "companyName": "Renault" }
+  ,{ "symbol": "ENGI", "market": "EURONEXT", "sector": "Utilities", "companyName": "Engie" }
+  ,{ "symbol": "ISPIM", "market": "BIT", "sector": "Consumer", "companyName": "Interpump Group" }
+  ,{ "symbol": "AMP", "market": "BIT", "sector": "Insurance", "companyName": "Amplifon" }
+  ,{ "symbol": "REC", "market": "BME", "sector": "Construction", "companyName": "ACS" }
+  ,{ "symbol": "CLNX", "market": "BME", "sector": "Telecom", "companyName": "Cellnex Telecom" }
+  ,{ "symbol": "SGRO", "market": "LSE", "sector": "REIT", "companyName": "Segro" }
+  ,{ "symbol": "LAND", "market": "LSE", "sector": "REIT", "companyName": "Land Securities" }
+  ,{ "symbol": "PSN", "market": "LSE", "sector": "Housing", "companyName": "Persimmon" }
+  ,{ "symbol": "SSE", "market": "LSE", "sector": "Utilities", "companyName": "SSE" }
+  ,{ "symbol": "MNDI", "market": "LSE", "sector": "Packaging", "companyName": "Mondi" }
+]

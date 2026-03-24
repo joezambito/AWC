@@ -1,0 +1,260 @@
+[
+  { "symbol": "AAPL", "market": "NASDAQ", "sector": "Technology", "companyName": "Apple" },
+  { "symbol": "MSFT", "market": "NASDAQ", "sector": "Software", "companyName": "Microsoft" },
+  { "symbol": "NVDA", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "NVIDIA" },
+  { "symbol": "AMZN", "market": "NASDAQ", "sector": "Consumer", "companyName": "Amazon" },
+  { "symbol": "GOOGL", "market": "NASDAQ", "sector": "Communication", "companyName": "Alphabet" },
+  { "symbol": "META", "market": "NASDAQ", "sector": "Communication", "companyName": "Meta Platforms" },
+  { "symbol": "TSLA", "market": "NASDAQ", "sector": "Autos", "companyName": "Tesla" },
+  { "symbol": "AVGO", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Broadcom" },
+  { "symbol": "AMD", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "AMD" },
+  { "symbol": "NFLX", "market": "NASDAQ", "sector": "Communication", "companyName": "Netflix" },
+  { "symbol": "COST", "market": "NASDAQ", "sector": "Consumer Staples", "companyName": "Costco" },
+  { "symbol": "ADBE", "market": "NASDAQ", "sector": "Software", "companyName": "Adobe" },
+  { "symbol": "QCOM", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Qualcomm" },
+  { "symbol": "INTC", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Intel" },
+  { "symbol": "PLTR", "market": "NASDAQ", "sector": "Software", "companyName": "Palantir" },
+  { "symbol": "JPM", "market": "NYSE", "sector": "Banking", "companyName": "JPMorgan Chase" },
+  { "symbol": "V", "market": "NYSE", "sector": "Payments", "companyName": "Visa" },
+  { "symbol": "MA", "market": "NYSE", "sector": "Payments", "companyName": "Mastercard" },
+  { "symbol": "BRK.B", "market": "NYSE", "sector": "Financials", "companyName": "Berkshire Hathaway" },
+  { "symbol": "LLY", "market": "NYSE", "sector": "Healthcare", "companyName": "Eli Lilly" },
+  { "symbol": "XOM", "market": "NYSE", "sector": "Energy", "companyName": "Exxon Mobil" },
+  { "symbol": "WMT", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Walmart" },
+  { "symbol": "PG", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Procter & Gamble" },
+  { "symbol": "KO", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Coca-Cola" },
+  { "symbol": "UNH", "market": "NYSE", "sector": "Healthcare", "companyName": "UnitedHealth Group" }
+  ,{ "symbol": "ABBV", "market": "NYSE", "sector": "Healthcare", "companyName": "AbbVie" }
+  ,{ "symbol": "MRK", "market": "NYSE", "sector": "Healthcare", "companyName": "Merck" }
+  ,{ "symbol": "PFE", "market": "NYSE", "sector": "Healthcare", "companyName": "Pfizer" }
+  ,{ "symbol": "JNJ", "market": "NYSE", "sector": "Healthcare", "companyName": "Johnson & Johnson" }
+  ,{ "symbol": "BAC", "market": "NYSE", "sector": "Banking", "companyName": "Bank of America" }
+  ,{ "symbol": "GS", "market": "NYSE", "sector": "Banking", "companyName": "Goldman Sachs" }
+  ,{ "symbol": "MS", "market": "NYSE", "sector": "Banking", "companyName": "Morgan Stanley" }
+  ,{ "symbol": "BLK", "market": "NYSE", "sector": "Asset Management", "companyName": "BlackRock" }
+  ,{ "symbol": "BX", "market": "NYSE", "sector": "Asset Management", "companyName": "Blackstone" }
+  ,{ "symbol": "CVX", "market": "NYSE", "sector": "Energy", "companyName": "Chevron" }
+  ,{ "symbol": "COP", "market": "NYSE", "sector": "Energy", "companyName": "ConocoPhillips" }
+  ,{ "symbol": "SLB", "market": "NYSE", "sector": "Energy Services", "companyName": "SLB" }
+  ,{ "symbol": "CAT", "market": "NYSE", "sector": "Industrials", "companyName": "Caterpillar" }
+  ,{ "symbol": "GE", "market": "NYSE", "sector": "Industrials", "companyName": "GE Aerospace" }
+  ,{ "symbol": "RTX", "market": "NYSE", "sector": "Defense", "companyName": "RTX" }
+  ,{ "symbol": "BA", "market": "NYSE", "sector": "Industrials", "companyName": "Boeing" }
+  ,{ "symbol": "DIS", "market": "NYSE", "sector": "Communication", "companyName": "Disney" }
+  ,{ "symbol": "MCD", "market": "NYSE", "sector": "Consumer", "companyName": "McDonald's" }
+  ,{ "symbol": "NKE", "market": "NYSE", "sector": "Consumer", "companyName": "Nike" }
+  ,{ "symbol": "HD", "market": "NYSE", "sector": "Consumer", "companyName": "Home Depot" }
+  ,{ "symbol": "LOW", "market": "NYSE", "sector": "Consumer", "companyName": "Lowe's" }
+  ,{ "symbol": "ORCL", "market": "NYSE", "sector": "Software", "companyName": "Oracle" }
+  ,{ "symbol": "CRM", "market": "NYSE", "sector": "Software", "companyName": "Salesforce" }
+  ,{ "symbol": "NOW", "market": "NYSE", "sector": "Software", "companyName": "ServiceNow" }
+  ,{ "symbol": "IBM", "market": "NYSE", "sector": "Technology", "companyName": "IBM" }
+  ,{ "symbol": "PANW", "market": "NASDAQ", "sector": "Cybersecurity", "companyName": "Palo Alto Networks" }
+  ,{ "symbol": "CRWD", "market": "NASDAQ", "sector": "Cybersecurity", "companyName": "CrowdStrike" }
+  ,{ "symbol": "MU", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Micron Technology" }
+  ,{ "symbol": "AMAT", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Applied Materials" }
+  ,{ "symbol": "LRCX", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Lam Research" }
+  ,{ "symbol": "KLAC", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "KLA" }
+  ,{ "symbol": "ASML", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "ASML ADR" }
+  ,{ "symbol": "TSM", "market": "NYSE", "sector": "Semiconductors", "companyName": "Taiwan Semiconductor ADR" }
+  ,{ "symbol": "ADP", "market": "NASDAQ", "sector": "Information Services", "companyName": "ADP" }
+  ,{ "symbol": "INTU", "market": "NASDAQ", "sector": "Software", "companyName": "Intuit" }
+  ,{ "symbol": "PEP", "market": "NASDAQ", "sector": "Consumer Staples", "companyName": "PepsiCo" }
+  ,{ "symbol": "SBUX", "market": "NASDAQ", "sector": "Consumer", "companyName": "Starbucks" }
+  ,{ "symbol": "CSCO", "market": "NASDAQ", "sector": "Networking", "companyName": "Cisco Systems" }
+  ,{ "symbol": "TMUS", "market": "NASDAQ", "sector": "Telecom", "companyName": "T-Mobile US" }
+  ,{ "symbol": "CMCSA", "market": "NASDAQ", "sector": "Communication", "companyName": "Comcast" }
+  ,{ "symbol": "TXN", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Texas Instruments" }
+  ,{ "symbol": "GILD", "market": "NASDAQ", "sector": "Healthcare", "companyName": "Gilead Sciences" }
+  ,{ "symbol": "VRTX", "market": "NASDAQ", "sector": "Healthcare", "companyName": "Vertex Pharmaceuticals" }
+  ,{ "symbol": "REGN", "market": "NASDAQ", "sector": "Healthcare", "companyName": "Regeneron Pharmaceuticals" }
+  ,{ "symbol": "MELI", "market": "NASDAQ", "sector": "Consumer Tech", "companyName": "MercadoLibre" }
+  ,{ "symbol": "PYPL", "market": "NASDAQ", "sector": "Fintech", "companyName": "PayPal" }
+  ,{ "symbol": "SHOP", "market": "NASDAQ", "sector": "Software", "companyName": "Shopify USA" }
+  ,{ "symbol": "MDB", "market": "NASDAQ", "sector": "Software", "companyName": "MongoDB" }
+  ,{ "symbol": "SNOW", "market": "NYSE", "sector": "Software", "companyName": "Snowflake" }
+  ,{ "symbol": "UBER", "market": "NYSE", "sector": "Transport", "companyName": "Uber Technologies" }
+  ,{ "symbol": "ABNB", "market": "NASDAQ", "sector": "Consumer Tech", "companyName": "Airbnb" }
+  ,{ "symbol": "BKNG", "market": "NASDAQ", "sector": "Consumer", "companyName": "Booking Holdings" }
+  ,{ "symbol": "MAR", "market": "NASDAQ", "sector": "Consumer", "companyName": "Marriott International" }
+  ,{ "symbol": "ETN", "market": "NYSE", "sector": "Industrials", "companyName": "Eaton" }
+  ,{ "symbol": "DE", "market": "NYSE", "sector": "Industrials", "companyName": "Deere & Company" }
+  ,{ "symbol": "HON", "market": "NASDAQ", "sector": "Industrials", "companyName": "Honeywell" }
+  ,{ "symbol": "LMT", "market": "NYSE", "sector": "Defense", "companyName": "Lockheed Martin" }
+  ,{ "symbol": "GD", "market": "NYSE", "sector": "Defense", "companyName": "General Dynamics" }
+  ,{ "symbol": "ELV", "market": "NYSE", "sector": "Healthcare", "companyName": "Elevance Health" }
+  ,{ "symbol": "CI", "market": "NYSE", "sector": "Healthcare", "companyName": "Cigna" }
+  ,{ "symbol": "TMO", "market": "NYSE", "sector": "Healthcare", "companyName": "Thermo Fisher Scientific" }
+  ,{ "symbol": "DHR", "market": "NYSE", "sector": "Healthcare", "companyName": "Danaher" }
+  ,{ "symbol": "NEE", "market": "NYSE", "sector": "Utilities", "companyName": "NextEra Energy" }
+  ,{ "symbol": "DUK", "market": "NYSE", "sector": "Utilities", "companyName": "Duke Energy" }
+  ,{ "symbol": "SO", "market": "NYSE", "sector": "Utilities", "companyName": "Southern Company" }
+  ,{ "symbol": "PLD", "market": "NYSE", "sector": "REIT", "companyName": "Prologis" }
+  ,{ "symbol": "AMT", "market": "NYSE", "sector": "REIT", "companyName": "American Tower" }
+  ,{ "symbol": "EQIX", "market": "NASDAQ", "sector": "REIT", "companyName": "Equinix" }
+  ,{ "symbol": "SPG", "market": "NYSE", "sector": "REIT", "companyName": "Simon Property Group" }
+  ,{ "symbol": "SCHW", "market": "NYSE", "sector": "Financials", "companyName": "Charles Schwab" }
+  ,{ "symbol": "AXP", "market": "NYSE", "sector": "Payments", "companyName": "American Express" }
+  ,{ "symbol": "CB", "market": "NYSE", "sector": "Insurance", "companyName": "Chubb" }
+  ,{ "symbol": "AON", "market": "NYSE", "sector": "Insurance", "companyName": "Aon" }
+  ,{ "symbol": "MO", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Altria Group" }
+  ,{ "symbol": "PM", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Philip Morris" }
+  ,{ "symbol": "MDLZ", "market": "NASDAQ", "sector": "Consumer Staples", "companyName": "Mondelez" }
+  ,{ "symbol": "CVS", "market": "NYSE", "sector": "Healthcare", "companyName": "CVS Health" }
+  ,{ "symbol": "WBA", "market": "NASDAQ", "sector": "Healthcare", "companyName": "Walgreens Boots Alliance" }
+  ,{ "symbol": "TGT", "market": "NYSE", "sector": "Consumer", "companyName": "Target" }
+  ,{ "symbol": "RCL", "market": "NYSE", "sector": "Consumer", "companyName": "Royal Caribbean Group" }
+  ,{ "symbol": "CCL", "market": "NYSE", "sector": "Consumer", "companyName": "Carnival" }
+  ,{ "symbol": "DAL", "market": "NYSE", "sector": "Transport", "companyName": "Delta Air Lines" }
+  ,{ "symbol": "UAL", "market": "NASDAQ", "sector": "Transport", "companyName": "United Airlines" }
+  ,{ "symbol": "AAL", "market": "NASDAQ", "sector": "Transport", "companyName": "American Airlines" }
+  ,{ "symbol": "FDX", "market": "NYSE", "sector": "Transport", "companyName": "FedEx" }
+  ,{ "symbol": "UPS", "market": "NYSE", "sector": "Transport", "companyName": "UPS" }
+  ,{ "symbol": "TT", "market": "NYSE", "sector": "Industrials", "companyName": "Trane Technologies" }
+  ,{ "symbol": "PH", "market": "NYSE", "sector": "Industrials", "companyName": "Parker-Hannifin" }
+  ,{ "symbol": "EMR", "market": "NYSE", "sector": "Industrials", "companyName": "Emerson Electric" }
+  ,{ "symbol": "MMM", "market": "NYSE", "sector": "Industrials", "companyName": "3M" }
+  ,{ "symbol": "USB", "market": "NYSE", "sector": "Banking", "companyName": "US Bancorp" }
+  ,{ "symbol": "PNC", "market": "NYSE", "sector": "Banking", "companyName": "PNC Financial Services" }
+  ,{ "symbol": "TFC", "market": "NYSE", "sector": "Banking", "companyName": "Truist Financial" }
+  ,{ "symbol": "ICE", "market": "NYSE", "sector": "Financials", "companyName": "Intercontinental Exchange" }
+  ,{ "symbol": "CME", "market": "NASDAQ", "sector": "Financials", "companyName": "CME Group" }
+  ,{ "symbol": "SPGI", "market": "NYSE", "sector": "Information Services", "companyName": "S&P Global" }
+  ,{ "symbol": "MCO", "market": "NYSE", "sector": "Information Services", "companyName": "Moody's" }
+  ,{ "symbol": "ADI", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "Analog Devices" }
+  ,{ "symbol": "ON", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "ON Semiconductor" }
+  ,{ "symbol": "NXPI", "market": "NASDAQ", "sector": "Semiconductors", "companyName": "NXP Semiconductors" }
+  ,{ "symbol": "WDAY", "market": "NASDAQ", "sector": "Software", "companyName": "Workday" }
+  ,{ "symbol": "DDOG", "market": "NASDAQ", "sector": "Software", "companyName": "Datadog" }
+  ,{ "symbol": "ZS", "market": "NASDAQ", "sector": "Cybersecurity", "companyName": "Zscaler" }
+  ,{ "symbol": "OKTA", "market": "NASDAQ", "sector": "Cybersecurity", "companyName": "Okta" }
+  ,{ "symbol": "DOCU", "market": "NASDAQ", "sector": "Software", "companyName": "DocuSign" }
+  ,{ "symbol": "ROKU", "market": "NASDAQ", "sector": "Communication", "companyName": "Roku" }
+  ,{ "symbol": "TTD", "market": "NASDAQ", "sector": "Advertising", "companyName": "Trade Desk" }
+  ,{ "symbol": "APP", "market": "NASDAQ", "sector": "AdTech", "companyName": "AppLovin" }
+  ,{ "symbol": "COIN", "market": "NASDAQ", "sector": "Fintech", "companyName": "Coinbase" }
+  ,{ "symbol": "HOOD", "market": "NASDAQ", "sector": "Fintech", "companyName": "Robinhood Markets" }
+  ,{ "symbol": "SOFI", "market": "NASDAQ", "sector": "Fintech", "companyName": "SoFi Technologies" }
+  ,{ "symbol": "WFC", "market": "NYSE", "sector": "Banking", "companyName": "Wells Fargo" }
+  ,{ "symbol": "VZ", "market": "NYSE", "sector": "Telecom", "companyName": "Verizon" }
+  ,{ "symbol": "T", "market": "NYSE", "sector": "Telecom", "companyName": "AT&T" }
+  ,{ "symbol": "CMG", "market": "NYSE", "sector": "Consumer", "companyName": "Chipotle Mexican Grill" }
+  ,{ "symbol": "YUM", "market": "NYSE", "sector": "Consumer", "companyName": "Yum! Brands" }
+  ,{ "symbol": "HLT", "market": "NYSE", "sector": "Consumer", "companyName": "Hilton Worldwide" }
+  ,{ "symbol": "LEN", "market": "NYSE", "sector": "Housing", "companyName": "Lennar" }
+  ,{ "symbol": "CARR", "market": "NYSE", "sector": "Industrials", "companyName": "Carrier Global" }
+  ,{ "symbol": "OTIS", "market": "NYSE", "sector": "Industrials", "companyName": "Otis Worldwide" }
+  ,{ "symbol": "XYL", "market": "NYSE", "sector": "Industrials", "companyName": "Xylem" }
+  ,{ "symbol": "HUBB", "market": "NYSE", "sector": "Industrials", "companyName": "Hubbell" }
+  ,{ "symbol": "RSG", "market": "NYSE", "sector": "Industrials", "companyName": "Republic Services" }
+  ,{ "symbol": "WM", "market": "NYSE", "sector": "Industrials", "companyName": "Waste Management" }
+  ,{ "symbol": "VMC", "market": "NYSE", "sector": "Materials", "companyName": "Vulcan Materials" }
+  ,{ "symbol": "MLM", "market": "NYSE", "sector": "Materials", "companyName": "Martin Marietta Materials" }
+  ,{ "symbol": "APD", "market": "NYSE", "sector": "Chemicals", "companyName": "Air Products and Chemicals" }
+  ,{ "symbol": "SHW", "market": "NYSE", "sector": "Chemicals", "companyName": "Sherwin-Williams" }
+  ,{ "symbol": "PAYX", "market": "NASDAQ", "sector": "Payroll", "companyName": "Paychex" }
+  ,{ "symbol": "FIS", "market": "NYSE", "sector": "Fintech", "companyName": "Fidelity National Information Services" }
+  ,{ "symbol": "BR", "market": "NYSE", "sector": "Information Services", "companyName": "Broadridge Financial Solutions" }
+  ,{ "symbol": "CDW", "market": "NASDAQ", "sector": "IT Services", "companyName": "CDW" }
+  ,{ "symbol": "DECK", "market": "NYSE", "sector": "Apparel", "companyName": "Deckers Outdoor" }
+  ,{ "symbol": "RL", "market": "NYSE", "sector": "Apparel", "companyName": "Ralph Lauren" }
+  ,{ "symbol": "KMI", "market": "NYSE", "sector": "Energy Infrastructure", "companyName": "Kinder Morgan" }
+  ,{ "symbol": "MPC", "market": "NYSE", "sector": "Energy", "companyName": "Marathon Petroleum" }
+  ,{ "symbol": "PSX", "market": "NYSE", "sector": "Energy", "companyName": "Phillips 66" }
+  ,{ "symbol": "EOG", "market": "NYSE", "sector": "Energy", "companyName": "EOG Resources" }
+  ,{ "symbol": "OXY", "market": "NYSE", "sector": "Energy", "companyName": "Occidental Petroleum" }
+  ,{ "symbol": "BK", "market": "NYSE", "sector": "Banking", "companyName": "Bank of New York Mellon" }
+  ,{ "symbol": "AIG", "market": "NYSE", "sector": "Insurance", "companyName": "American International Group" }
+  ,{ "symbol": "MET", "market": "NYSE", "sector": "Insurance", "companyName": "MetLife" }
+  ,{ "symbol": "PRU", "market": "NYSE", "sector": "Insurance", "companyName": "Prudential Financial" }
+  ,{ "symbol": "TRV", "market": "NYSE", "sector": "Insurance", "companyName": "Travelers" }
+  ,{ "symbol": "AMP", "market": "NYSE", "sector": "Asset Management", "companyName": "Ameriprise Financial" }
+  ,{ "symbol": "KKR", "market": "NYSE", "sector": "Asset Management", "companyName": "KKR" }
+  ,{ "symbol": "NDAQ", "market": "NASDAQ", "sector": "Financials", "companyName": "Nasdaq" }
+  ,{ "symbol": "MSCI", "market": "NYSE", "sector": "Information Services", "companyName": "MSCI" }
+  ,{ "symbol": "CPRT", "market": "NASDAQ", "sector": "Industrials", "companyName": "Copart" }
+  ,{ "symbol": "ODFL", "market": "NASDAQ", "sector": "Transport", "companyName": "Old Dominion Freight Line" }
+  ,{ "symbol": "LULU", "market": "NASDAQ", "sector": "Apparel", "companyName": "Lululemon Athletica" }
+  ,{ "symbol": "EBAY", "market": "NASDAQ", "sector": "Consumer", "companyName": "eBay" }
+  ,{ "symbol": "ETSY", "market": "NASDAQ", "sector": "Consumer", "companyName": "Etsy" }
+  ,{ "symbol": "EXPE", "market": "NASDAQ", "sector": "Travel", "companyName": "Expedia Group" }
+  ,{ "symbol": "LUV", "market": "NYSE", "sector": "Airlines", "companyName": "Southwest Airlines" }
+  ,{ "symbol": "NOC", "market": "NYSE", "sector": "Defense", "companyName": "Northrop Grumman" }
+  ,{ "symbol": "LHX", "market": "NYSE", "sector": "Defense", "companyName": "L3Harris Technologies" }
+  ,{ "symbol": "GEV", "market": "NYSE", "sector": "Energy Equipment", "companyName": "GE Vernova" }
+  ,{ "symbol": "CEG", "market": "NASDAQ", "sector": "Utilities", "companyName": "Constellation Energy" }
+  ,{ "symbol": "SRE", "market": "NYSE", "sector": "Utilities", "companyName": "Sempra" }
+  ,{ "symbol": "PCG", "market": "NYSE", "sector": "Utilities", "companyName": "PG&E" }
+  ,{ "symbol": "AEP", "market": "NASDAQ", "sector": "Utilities", "companyName": "American Electric Power" }
+  ,{ "symbol": "D", "market": "NYSE", "sector": "Utilities", "companyName": "Dominion Energy" }
+  ,{ "symbol": "EXC", "market": "NASDAQ", "sector": "Utilities", "companyName": "Exelon" }
+  ,{ "symbol": "PEG", "market": "NYSE", "sector": "Utilities", "companyName": "Public Service Enterprise Group" }
+  ,{ "symbol": "ED", "market": "NYSE", "sector": "Utilities", "companyName": "Consolidated Edison" }
+  ,{ "symbol": "WELL", "market": "NYSE", "sector": "REIT", "companyName": "Welltower" }
+  ,{ "symbol": "O", "market": "NYSE", "sector": "REIT", "companyName": "Realty Income" }
+  ,{ "symbol": "DLR", "market": "NYSE", "sector": "REIT", "companyName": "Digital Realty" }
+  ,{ "symbol": "AMGN", "market": "NASDAQ", "sector": "Biotech", "companyName": "Amgen" }
+  ,{ "symbol": "ISRG", "market": "NASDAQ", "sector": "MedTech", "companyName": "Intuitive Surgical" }
+  ,{ "symbol": "MDT", "market": "NYSE", "sector": "MedTech", "companyName": "Medtronic" }
+  ,{ "symbol": "SYK", "market": "NYSE", "sector": "MedTech", "companyName": "Stryker" }
+  ,{ "symbol": "BSX", "market": "NYSE", "sector": "MedTech", "companyName": "Boston Scientific" }
+  ,{ "symbol": "BDX", "market": "NYSE", "sector": "MedTech", "companyName": "Becton Dickinson" }
+  ,{ "symbol": "EW", "market": "NYSE", "sector": "MedTech", "companyName": "Edwards Lifesciences" }
+  ,{ "symbol": "HCA", "market": "NYSE", "sector": "Healthcare", "companyName": "HCA Healthcare" }
+  ,{ "symbol": "HUM", "market": "NYSE", "sector": "Healthcare", "companyName": "Humana" }
+  ,{ "symbol": "CL", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Colgate-Palmolive" }
+  ,{ "symbol": "KHC", "market": "NASDAQ", "sector": "Consumer Staples", "companyName": "Kraft Heinz" }
+  ,{ "symbol": "GIS", "market": "NYSE", "sector": "Consumer Staples", "companyName": "General Mills" }
+  ,{ "symbol": "SJM", "market": "NYSE", "sector": "Consumer Staples", "companyName": "J.M. Smucker" }
+  ,{ "symbol": "MKC", "market": "NYSE", "sector": "Consumer Staples", "companyName": "McCormick & Company" }
+  ,{ "symbol": "HSY", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Hershey" }
+  ,{ "symbol": "KR", "market": "NYSE", "sector": "Consumer Staples", "companyName": "Kroger" }
+  ,{ "symbol": "DG", "market": "NYSE", "sector": "Retail", "companyName": "Dollar General" }
+  ,{ "symbol": "DLTR", "market": "NASDAQ", "sector": "Retail", "companyName": "Dollar Tree" }
+  ,{ "symbol": "DHI", "market": "NYSE", "sector": "Housing", "companyName": "D.R. Horton" }
+  ,{ "symbol": "PWR", "market": "NYSE", "sector": "Industrials", "companyName": "Quanta Services" }
+  ,{ "symbol": "CTVA", "market": "NYSE", "sector": "Agriculture", "companyName": "Corteva" }
+  ,{ "symbol": "MOS", "market": "NYSE", "sector": "Materials", "companyName": "Mosaic" }
+  ,{ "symbol": "CF", "market": "NYSE", "sector": "Chemicals", "companyName": "CF Industries" }
+  ,{ "symbol": "NUE", "market": "NYSE", "sector": "Materials", "companyName": "Nucor" }
+  ,{ "symbol": "STLD", "market": "NASDAQ", "sector": "Materials", "companyName": "Steel Dynamics" }
+  ,{ "symbol": "FCX", "market": "NYSE", "sector": "Mining", "companyName": "Freeport-McMoRan" }
+  ,{ "symbol": "EMN", "market": "NYSE", "sector": "Chemicals", "companyName": "Eastman Chemical" }
+  ,{ "symbol": "DD", "market": "NYSE", "sector": "Chemicals", "companyName": "DuPont" }
+  ,{ "symbol": "LYB", "market": "NYSE", "sector": "Chemicals", "companyName": "LyondellBasell" }
+  ,{ "symbol": "VST", "market": "NYSE", "sector": "Utilities", "companyName": "Vistra" }
+  ,{ "symbol": "ETR", "market": "NYSE", "sector": "Utilities", "companyName": "Entergy" }
+  ,{ "symbol": "EIX", "market": "NYSE", "sector": "Utilities", "companyName": "Edison International" }
+  ,{ "symbol": "XEL", "market": "NASDAQ", "sector": "Utilities", "companyName": "Xcel Energy" }
+  ,{ "symbol": "AEE", "market": "NYSE", "sector": "Utilities", "companyName": "Ameren" }
+  ,{ "symbol": "ATO", "market": "NYSE", "sector": "Utilities", "companyName": "Atmos Energy" }
+  ,{ "symbol": "CMS", "market": "NYSE", "sector": "Utilities", "companyName": "CMS Energy" }
+  ,{ "symbol": "WEC", "market": "NYSE", "sector": "Utilities", "companyName": "WEC Energy Group" }
+  ,{ "symbol": "AWK", "market": "NYSE", "sector": "Utilities", "companyName": "American Water Works" }
+  ,{ "symbol": "CCI", "market": "NYSE", "sector": "REIT", "companyName": "Crown Castle" }
+  ,{ "symbol": "SBAC", "market": "NASDAQ", "sector": "REIT", "companyName": "SBA Communications" }
+  ,{ "symbol": "VICI", "market": "NYSE", "sector": "REIT", "companyName": "Vici Properties" }
+  ,{ "symbol": "PSA", "market": "NYSE", "sector": "REIT", "companyName": "Public Storage" }
+  ,{ "symbol": "AVB", "market": "NYSE", "sector": "REIT", "companyName": "AvalonBay Communities" }
+  ,{ "symbol": "EQR", "market": "NYSE", "sector": "REIT", "companyName": "Equity Residential" }
+  ,{ "symbol": "CBRE", "market": "NYSE", "sector": "Real Estate Services", "companyName": "CBRE Group" }
+  ,{ "symbol": "AJG", "market": "NYSE", "sector": "Insurance Brokerage", "companyName": "Arthur J. Gallagher" }
+  ,{ "symbol": "MMC", "market": "NYSE", "sector": "Insurance Brokerage", "companyName": "Marsh McLennan" }
+  ,{ "symbol": "CBOE", "market": "CBOE", "sector": "Financials", "companyName": "Cboe Global Markets" }
+  ,{ "symbol": "MKTX", "market": "NASDAQ", "sector": "Financials", "companyName": "MarketAxess" }
+  ,{ "symbol": "RJF", "market": "NYSE", "sector": "Financials", "companyName": "Raymond James Financial" }
+  ,{ "symbol": "TROW", "market": "NASDAQ", "sector": "Asset Management", "companyName": "T. Rowe Price" }
+  ,{ "symbol": "ARES", "market": "NYSE", "sector": "Asset Management", "companyName": "Ares Management" }
+  ,{ "symbol": "APO", "market": "NYSE", "sector": "Asset Management", "companyName": "Apollo Global Management" }
+  ,{ "symbol": "EQT", "market": "NYSE", "sector": "Energy", "companyName": "EQT Corporation" }
+  ,{ "symbol": "DVN", "market": "NYSE", "sector": "Energy", "companyName": "Devon Energy" }
+  ,{ "symbol": "APA", "market": "NASDAQ", "sector": "Energy", "companyName": "APA Corporation" }
+  ,{ "symbol": "FANG", "market": "NASDAQ", "sector": "Energy", "companyName": "Diamondback Energy" }
+  ,{ "symbol": "MRO", "market": "NYSE", "sector": "Energy", "companyName": "Marathon Oil" }
+  ,{ "symbol": "HAL", "market": "NYSE", "sector": "Energy Services", "companyName": "Halliburton" }
+  ,{ "symbol": "BKR", "market": "NASDAQ", "sector": "Energy Services", "companyName": "Baker Hughes" }
+  ,{ "symbol": "NOV", "market": "NYSE", "sector": "Energy Services", "companyName": "NOV" }
+  ,{ "symbol": "TRGP", "market": "NYSE", "sector": "Energy Infrastructure", "companyName": "Targa Resources" }
+  ,{ "symbol": "WMB", "market": "NYSE", "sector": "Energy Infrastructure", "companyName": "Williams Companies" }
+  ,{ "symbol": "PXD", "market": "NYSE", "sector": "Energy", "companyName": "Pioneer Natural Resources" }
+]

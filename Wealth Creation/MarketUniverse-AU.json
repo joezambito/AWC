@@ -1,0 +1,205 @@
+[
+  { "symbol": "BHP", "market": "ASX", "sector": "Mining", "companyName": "BHP Group" },
+  { "symbol": "CBA", "market": "ASX", "sector": "Banking", "companyName": "Commonwealth Bank" },
+  { "symbol": "CSL", "market": "ASX", "sector": "Healthcare", "companyName": "CSL" },
+  { "symbol": "NAB", "market": "ASX", "sector": "Banking", "companyName": "National Australia Bank" },
+  { "symbol": "WBC", "market": "ASX", "sector": "Banking", "companyName": "Westpac" },
+  { "symbol": "ANZ", "market": "ASX", "sector": "Banking", "companyName": "ANZ Group" },
+  { "symbol": "MQG", "market": "ASX", "sector": "Financials", "companyName": "Macquarie Group" },
+  { "symbol": "WES", "market": "ASX", "sector": "Industrials", "companyName": "Wesfarmers" },
+  { "symbol": "WOW", "market": "ASX", "sector": "Consumer Staples", "companyName": "Woolworths Group" },
+  { "symbol": "RIO", "market": "ASX", "sector": "Mining", "companyName": "Rio Tinto" },
+  { "symbol": "FMG", "market": "ASX", "sector": "Mining", "companyName": "Fortescue" },
+  { "symbol": "TLS", "market": "ASX", "sector": "Telecom", "companyName": "Telstra Group" },
+  { "symbol": "GMG", "market": "ASX", "sector": "REIT", "companyName": "Goodman Group" },
+  { "symbol": "COL", "market": "ASX", "sector": "Consumer Staples", "companyName": "Coles Group" },
+  { "symbol": "WDS", "market": "ASX", "sector": "Energy", "companyName": "Woodside Energy" },
+  { "symbol": "TCL", "market": "ASX", "sector": "Infrastructure", "companyName": "Transurban Group" },
+  { "symbol": "ALL", "market": "ASX", "sector": "Consumer", "companyName": "Aristocrat Leisure" },
+  { "symbol": "SUN", "market": "ASX", "sector": "Insurance", "companyName": "Suncorp Group" },
+  { "symbol": "ORG", "market": "ASX", "sector": "Utilities", "companyName": "Origin Energy" },
+  { "symbol": "QBE", "market": "ASX", "sector": "Insurance", "companyName": "QBE Insurance" }
+  ,{ "symbol": "AMC", "market": "ASX", "sector": "Healthcare", "companyName": "Amcor" }
+  ,{ "symbol": "STO", "market": "ASX", "sector": "Energy", "companyName": "Santos" }
+  ,{ "symbol": "APA", "market": "ASX", "sector": "Utilities", "companyName": "APA Group" }
+  ,{ "symbol": "BXB", "market": "ASX", "sector": "Industrials", "companyName": "Brambles" }
+  ,{ "symbol": "CPU", "market": "ASX", "sector": "Information Services", "companyName": "Computershare" }
+  ,{ "symbol": "ASX", "market": "ASX", "sector": "Financials", "companyName": "ASX Limited" }
+  ,{ "symbol": "REA", "market": "ASX", "sector": "Communication", "companyName": "REA Group" }
+  ,{ "symbol": "XRO", "market": "ASX", "sector": "Software", "companyName": "Xero" }
+  ,{ "symbol": "CAR", "market": "ASX", "sector": "Communication", "companyName": "CAR Group" }
+  ,{ "symbol": "COH", "market": "ASX", "sector": "Healthcare", "companyName": "Cochlear" }
+  ,{ "symbol": "RMD", "market": "ASX", "sector": "Healthcare", "companyName": "ResMed" }
+  ,{ "symbol": "SHL", "market": "ASX", "sector": "Healthcare", "companyName": "Sonic Healthcare" }
+  ,{ "symbol": "FPH", "market": "ASX", "sector": "Healthcare", "companyName": "Fisher & Paykel Healthcare" }
+  ,{ "symbol": "SGP", "market": "ASX", "sector": "REIT", "companyName": "Stockland" }
+  ,{ "symbol": "SCG", "market": "ASX", "sector": "REIT", "companyName": "Scentre Group" }
+  ,{ "symbol": "MGR", "market": "ASX", "sector": "REIT", "companyName": "Mirvac Group" }
+  ,{ "symbol": "JHX", "market": "ASX", "sector": "Materials", "companyName": "James Hardie Industries" }
+  ,{ "symbol": "ORI", "market": "ASX", "sector": "Materials", "companyName": "Orica" }
+  ,{ "symbol": "S32", "market": "ASX", "sector": "Mining", "companyName": "South32" }
+  ,{ "symbol": "MIN", "market": "ASX", "sector": "Mining", "companyName": "Mineral Resources" }
+  ,{ "symbol": "EVN", "market": "ASX", "sector": "Mining", "companyName": "Evolution Mining" }
+  ,{ "symbol": "NST", "market": "ASX", "sector": "Mining", "companyName": "Northern Star Resources" }
+  ,{ "symbol": "IGO", "market": "ASX", "sector": "Mining", "companyName": "IGO" }
+  ,{ "symbol": "ALD", "market": "ASX", "sector": "Consumer", "companyName": "Ampol" }
+  ,{ "symbol": "FLT", "market": "ASX", "sector": "Consumer", "companyName": "Flight Centre Travel Group" }
+  ,{ "symbol": "JBH", "market": "ASX", "sector": "Consumer", "companyName": "JB Hi-Fi" }
+  ,{ "symbol": "TPG", "market": "ASX", "sector": "Telecom", "companyName": "TPG Telecom" }
+  ,{ "symbol": "AZJ", "market": "ASX", "sector": "Transport", "companyName": "Aurizon Holdings" }
+  ,{ "symbol": "GPT", "market": "ASX", "sector": "REIT", "companyName": "GPT Group" }
+  ,{ "symbol": "AMP", "market": "ASX", "sector": "Financials", "companyName": "AMP" }
+  ,{ "symbol": "BEN", "market": "ASX", "sector": "Banking", "companyName": "Bendigo and Adelaide Bank" }
+  ,{ "symbol": "BOQ", "market": "ASX", "sector": "Banking", "companyName": "Bank of Queensland" }
+  ,{ "symbol": "HMC", "market": "ASX", "sector": "Financials", "companyName": "HMC Capital" }
+  ,{ "symbol": "IAG", "market": "ASX", "sector": "Insurance", "companyName": "Insurance Australia Group" }
+  ,{ "symbol": "SUN", "market": "ASX", "sector": "Insurance", "companyName": "Suncorp Group" }
+  ,{ "symbol": "MPL", "market": "ASX", "sector": "Insurance", "companyName": "Medibank Private" }
+  ,{ "symbol": "PME", "market": "ASX", "sector": "Healthcare", "companyName": "Pro Medicus" }
+  ,{ "symbol": "HVN", "market": "ASX", "sector": "Consumer", "companyName": "Harvey Norman" }
+  ,{ "symbol": "LOV", "market": "ASX", "sector": "Consumer", "companyName": "Lovisa Holdings" }
+  ,{ "symbol": "NXT", "market": "ASX", "sector": "Technology", "companyName": "NextDC" }
+  ,{ "symbol": "SEK", "market": "ASX", "sector": "Technology", "companyName": "Seek" }
+  ,{ "symbol": "TNE", "market": "ASX", "sector": "Software", "companyName": "TechnologyOne" }
+  ,{ "symbol": "APX", "market": "ASX", "sector": "Software", "companyName": "Appen" }
+  ,{ "symbol": "ILU", "market": "ASX", "sector": "Mining", "companyName": "Iluka Resources" }
+  ,{ "symbol": "LTR", "market": "ASX", "sector": "Mining", "companyName": "Liontown Resources" }
+  ,{ "symbol": "PLS", "market": "ASX", "sector": "Mining", "companyName": "Pilbara Minerals" }
+  ,{ "symbol": "WHC", "market": "ASX", "sector": "Mining", "companyName": "Whitehaven Coal" }
+  ,{ "symbol": "YAL", "market": "ASX", "sector": "Mining", "companyName": "Yancoal Australia" }
+  ,{ "symbol": "PDN", "market": "ASX", "sector": "Mining", "companyName": "Paladin Energy" }
+  ,{ "symbol": "NIC", "market": "ASX", "sector": "Mining", "companyName": "Nickel Industries" }
+  ,{ "symbol": "CHC", "market": "ASX", "sector": "Industrials", "companyName": "Charter Hall" }
+  ,{ "symbol": "DOW", "market": "ASX", "sector": "Utilities", "companyName": "Downer EDI" }
+  ,{ "symbol": "MND", "market": "ASX", "sector": "Energy Services", "companyName": "Monadelphous" }
+  ,{ "symbol": "WEB", "market": "ASX", "sector": "Consumer", "companyName": "Webjet Group" }
+  ,{ "symbol": "VEA", "market": "ASX", "sector": "Healthcare", "companyName": "Viva Energy" }
+  ,{ "symbol": "BSL", "market": "ASX", "sector": "Materials", "companyName": "BlueScope Steel" }
+  ,{ "symbol": "CSR", "market": "ASX", "sector": "Materials", "companyName": "CSR" }
+  ,{ "symbol": "RWC", "market": "ASX", "sector": "Industrials", "companyName": "Reliance Worldwide" }
+  ,{ "symbol": "IRE", "market": "ASX", "sector": "Financials", "companyName": "Iress" }
+  ,{ "symbol": "ABC", "market": "ASX", "sector": "Industrials", "companyName": "Adbri" }
+  ,{ "symbol": "AIA", "market": "ASX", "sector": "Consumer", "companyName": "Auckland International Airport" }
+  ,{ "symbol": "ARB", "market": "ASX", "sector": "Consumer", "companyName": "ARB Corporation" }
+  ,{ "symbol": "BGA", "market": "ASX", "sector": "Consumer Staples", "companyName": "Bega Cheese" }
+  ,{ "symbol": "BKW", "market": "ASX", "sector": "Industrials", "companyName": "Brickworks" }
+  ,{ "symbol": "CNU", "market": "ASX", "sector": "Healthcare", "companyName": "Chorus New Zealand" }
+  ,{ "symbol": "CRN", "market": "ASX", "sector": "Materials", "companyName": "Coronado Global Resources" }
+  ,{ "symbol": "CXO", "market": "ASX", "sector": "Mining", "companyName": "Core Lithium" }
+  ,{ "symbol": "DMP", "market": "ASX", "sector": "Consumer", "companyName": "Domino's Pizza Enterprises" }
+  ,{ "symbol": "ELD", "market": "ASX", "sector": "Consumer", "companyName": "Elders" }
+  ,{ "symbol": "EML", "market": "ASX", "sector": "Fintech", "companyName": "EML Payments" }
+  ,{ "symbol": "GMD", "market": "ASX", "sector": "Mining", "companyName": "Genesis Minerals" }
+  ,{ "symbol": "ING", "market": "ASX", "sector": "Infrastructure", "companyName": "Inghams Group" }
+  ,{ "symbol": "IPL", "market": "ASX", "sector": "Materials", "companyName": "Incitec Pivot" }
+  ,{ "symbol": "LNW", "market": "ASX", "sector": "Technology", "companyName": "Light & Wonder" }
+  ,{ "symbol": "LYC", "market": "ASX", "sector": "Materials", "companyName": "Lynas Rare Earths" }
+  ,{ "symbol": "MFG", "market": "ASX", "sector": "Financials", "companyName": "Magellan Financial Group" }
+  ,{ "symbol": "NWH", "market": "ASX", "sector": "Healthcare", "companyName": "NRW Holdings" }
+  ,{ "symbol": "NVX", "market": "ASX", "sector": "Materials", "companyName": "Novonix" }
+  ,{ "symbol": "QAN", "market": "ASX", "sector": "Transport", "companyName": "Qantas Airways" }
+  ,{ "symbol": "SUL", "market": "ASX", "sector": "Consumer", "companyName": "Super Retail Group" }
+  ,{ "symbol": "SYD", "market": "ASX", "sector": "Infrastructure", "companyName": "Sydney Airport" }
+  ,{ "symbol": "TAH", "market": "ASX", "sector": "Consumer", "companyName": "Tabcorp Holdings" }
+  ,{ "symbol": "VCX", "market": "ASX", "sector": "REIT", "companyName": "Vicinity Centres" }
+  ,{ "symbol": "VNT", "market": "ASX", "sector": "Materials", "companyName": "Ventia Services" }
+  ,{ "symbol": "WTC", "market": "ASX", "sector": "Logistics", "companyName": "WiseTech Global" }
+  ,{ "symbol": "ZIP", "market": "ASX", "sector": "Fintech", "companyName": "Zip Co" }
+  ,{ "symbol": "ALQ", "market": "ASX", "sector": "Healthcare", "companyName": "ALS" }
+  ,{ "symbol": "ASB", "market": "ASX", "sector": "Healthcare", "companyName": "Austal" }
+  ,{ "symbol": "BEN", "market": "ASX", "sector": "Banking", "companyName": "Bendigo and Adelaide Bank" }
+  ,{ "symbol": "BSL", "market": "ASX", "sector": "Materials", "companyName": "BlueScope Steel" }
+  ,{ "symbol": "CMM", "market": "ASX", "sector": "Industrials", "companyName": "Capricorn Metals" }
+  ,{ "symbol": "CPU", "market": "ASX", "sector": "Financials", "companyName": "Computershare" }
+  ,{ "symbol": "CWN", "market": "ASX", "sector": "Consumer", "companyName": "Crown Resorts" }
+  ,{ "symbol": "DHG", "market": "ASX", "sector": "Real Estate", "companyName": "Domain Holdings Australia" }
+  ,{ "symbol": "EVN", "market": "ASX", "sector": "Mining", "companyName": "Evolution Mining" }
+  ,{ "symbol": "HLS", "market": "ASX", "sector": "Healthcare", "companyName": "Healius" }
+  ,{ "symbol": "HUB", "market": "ASX", "sector": "Financials", "companyName": "HUB24" }
+  ,{ "symbol": "IEL", "market": "ASX", "sector": "Education", "companyName": "IDP Education" }
+  ,{ "symbol": "IGO", "market": "ASX", "sector": "Mining", "companyName": "IGO" }
+  ,{ "symbol": "ILU", "market": "ASX", "sector": "Mining", "companyName": "Iluka Resources" }
+  ,{ "symbol": "JHX", "market": "ASX", "sector": "Building Materials", "companyName": "James Hardie Industries" }
+  ,{ "symbol": "MTS", "market": "ASX", "sector": "Industrials", "companyName": "Metcash" }
+  ,{ "symbol": "ORG", "market": "ASX", "sector": "Energy", "companyName": "Origin Energy" }
+  ,{ "symbol": "ORI", "market": "ASX", "sector": "Chemicals", "companyName": "Orica" }
+  ,{ "symbol": "PDL", "market": "ASX", "sector": "Consumer", "companyName": "Pendal Group" }
+  ,{ "symbol": "PMV", "market": "ASX", "sector": "Consumer", "companyName": "Premier Investments" }
+  ,{ "symbol": "QBE", "market": "ASX", "sector": "Insurance", "companyName": "QBE Insurance" }
+  ,{ "symbol": "RHC", "market": "ASX", "sector": "Healthcare", "companyName": "Ramsay Health Care" }
+  ,{ "symbol": "SGR", "market": "ASX", "sector": "Consumer", "companyName": "Star Entertainment Group" }
+  ,{ "symbol": "SMR", "market": "ASX", "sector": "Mining", "companyName": "Stanmore Resources" }
+  ,{ "symbol": "SOL", "market": "ASX", "sector": "Conglomerate", "companyName": "Washington H. Soul Pattinson" }
+  ,{ "symbol": "TCL", "market": "ASX", "sector": "Infrastructure", "companyName": "Transurban" }
+  ,{ "symbol": "VEA", "market": "ASX", "sector": "Healthcare", "companyName": "Viva Energy" }
+  ,{ "symbol": "WES", "market": "ASX", "sector": "Retail", "companyName": "Wesfarmers" }
+  ,{ "symbol": "WOW", "market": "ASX", "sector": "Consumer Staples", "companyName": "Woolworths Group" }
+  ,{ "symbol": "WDS", "market": "ASX", "sector": "Energy", "companyName": "Woodside Energy" }
+  ,{ "symbol": "NAB", "market": "ASX", "sector": "Banking", "companyName": "National Australia Bank" }
+  ,{ "symbol": "ANZ", "market": "ASX", "sector": "Banking", "companyName": "ANZ Group" }
+  ,{ "symbol": "BHP", "market": "ASX", "sector": "Mining", "companyName": "BHP Group" }
+  ,{ "symbol": "RIO", "market": "ASX", "sector": "Mining", "companyName": "Rio Tinto" }
+  ,{ "symbol": "FMG", "market": "ASX", "sector": "Mining", "companyName": "Fortescue" }
+  ,{ "symbol": "MQG", "market": "ASX", "sector": "Financials", "companyName": "Macquarie Group" }
+  ,{ "symbol": "GMG", "market": "ASX", "sector": "REIT", "companyName": "Goodman Group" }
+  ,{ "symbol": "SCG", "market": "ASX", "sector": "REIT", "companyName": "Scentre Group" }
+  ,{ "symbol": "MPL", "market": "ASX", "sector": "Financials", "companyName": "Medibank Private" }
+  ,{ "symbol": "SUN", "market": "ASX", "sector": "Insurance", "companyName": "Suncorp Group" }
+  ,{ "symbol": "ALL", "market": "ASX", "sector": "Gaming", "companyName": "Aristocrat Leisure" }
+  ,{ "symbol": "COH", "market": "ASX", "sector": "Healthcare", "companyName": "Cochlear" }
+  ,{ "symbol": "CSL", "market": "ASX", "sector": "Healthcare", "companyName": "CSL" }
+  ,{ "symbol": "REA", "market": "ASX", "sector": "Internet", "companyName": "REA Group" }
+  ,{ "symbol": "SEK", "market": "ASX", "sector": "Employment", "companyName": "SEEK" }
+  ,{ "symbol": "XRO", "market": "ASX", "sector": "Software", "companyName": "Xero" }
+  ,{ "symbol": "NST", "market": "ASX", "sector": "Mining", "companyName": "Northern Star Resources" }
+  ,{ "symbol": "MIN", "market": "ASX", "sector": "Mining", "companyName": "Mineral Resources" }
+  ,{ "symbol": "AMC", "market": "ASX", "sector": "Healthcare", "companyName": "Amcor" }
+  ,{ "symbol": "APA", "market": "ASX", "sector": "Energy Infrastructure", "companyName": "APA Group" }
+  ,{ "symbol": "ASX", "market": "ASX", "sector": "Financials", "companyName": "ASX Limited" }
+  ,{ "symbol": "BXB", "market": "ASX", "sector": "Logistics", "companyName": "Brambles" }
+  ,{ "symbol": "CAR", "market": "ASX", "sector": "Internet", "companyName": "CAR Group" }
+  ,{ "symbol": "COL", "market": "ASX", "sector": "Consumer Staples", "companyName": "Coles Group" }
+  ,{ "symbol": "JLG", "market": "ASX", "sector": "Consumer", "companyName": "Johns Lyng Group" }
+  ,{ "symbol": "A2M", "market": "ASX", "sector": "Consumer Staples", "companyName": "The a2 Milk Company" }
+  ,{ "symbol": "ANN", "market": "ASX", "sector": "Healthcare", "companyName": "Ansell" }
+  ,{ "symbol": "BAP", "market": "ASX", "sector": "Consumer", "companyName": "Bapcor" }
+  ,{ "symbol": "CDA", "market": "ASX", "sector": "Consumer", "companyName": "Codan" }
+  ,{ "symbol": "CGF", "market": "ASX", "sector": "Financials", "companyName": "Challenger" }
+  ,{ "symbol": "CHC", "market": "ASX", "sector": "Healthcare", "companyName": "Charter Hall" }
+  ,{ "symbol": "IGO", "market": "ASX", "sector": "Mining", "companyName": "IGO Limited" }
+  ,{ "symbol": "IVC", "market": "ASX", "sector": "Healthcare", "companyName": "InvoCare" }
+  ,{ "symbol": "KLS", "market": "ASX", "sector": "Healthcare", "companyName": "Kingsgate Consolidated" }
+  ,{ "symbol": "LTR", "market": "ASX", "sector": "Mining", "companyName": "Liontown Resources" }
+  ,{ "symbol": "MND", "market": "ASX", "sector": "Energy", "companyName": "Monadelphous Group" }
+  ,{ "symbol": "MP1", "market": "ASX", "sector": "Technology", "companyName": "Megaport" }
+  ,{ "symbol": "NEC", "market": "ASX", "sector": "Consumer", "companyName": "Nine Entertainment" }
+  ,{ "symbol": "NIC", "market": "ASX", "sector": "Materials", "companyName": "Nickel Industries" }
+  ,{ "symbol": "NXT", "market": "ASX", "sector": "Data Centres", "companyName": "NextDC" }
+  ,{ "symbol": "ORA", "market": "ASX", "sector": "Packaging", "companyName": "Orora" }
+  ,{ "symbol": "PLS", "market": "ASX", "sector": "Mining", "companyName": "Pilbara Minerals" }
+  ,{ "symbol": "PNI", "market": "ASX", "sector": "Insurance", "companyName": "Pinnacle Investment Management" }
+  ,{ "symbol": "PXA", "market": "ASX", "sector": "Healthcare", "companyName": "PEXA Group" }
+  ,{ "symbol": "RMD", "market": "ASX", "sector": "Healthcare", "companyName": "ResMed" }
+  ,{ "symbol": "SHL", "market": "ASX", "sector": "Healthcare", "companyName": "Sonic Healthcare" }
+  ,{ "symbol": "SIQ", "market": "ASX", "sector": "Industrials", "companyName": "Smartgroup" }
+  ,{ "symbol": "SKC", "market": "ASX", "sector": "Materials", "companyName": "SkyCity Entertainment" }
+  ,{ "symbol": "SQ2", "market": "ASX", "sector": "Fintech", "companyName": "Block Inc CDI" }
+  ,{ "symbol": "SXL", "market": "ASX", "sector": "Media", "companyName": "Southern Cross Media" }
+  ,{ "symbol": "TPG", "market": "ASX", "sector": "Telecom", "companyName": "TPG Telecom" }
+  ,{ "symbol": "WEB", "market": "ASX", "sector": "Travel", "companyName": "Webjet" }
+  ,{ "symbol": "WGX", "market": "ASX", "sector": "Mining", "companyName": "Westgold Resources" }
+  ,{ "symbol": "WOR", "market": "ASX", "sector": "Engineering", "companyName": "Worley" }
+  ,{ "symbol": "WPR", "market": "ASX", "sector": "REIT", "companyName": "Waypoint REIT" }
+  ,{ "symbol": "360", "market": "ASX", "sector": "Software", "companyName": "Life360" }
+  ,{ "symbol": "ADT", "market": "ASX", "sector": "Healthcare", "companyName": "Adriatic Metals" }
+  ,{ "symbol": "AUB", "market": "ASX", "sector": "Insurance", "companyName": "AUB Group" }
+  ,{ "symbol": "EVT", "market": "ASX", "sector": "Consumer", "companyName": "EVT" }
+  ,{ "symbol": "CQR", "market": "ASX", "sector": "REIT", "companyName": "Charter Hall Retail REIT" }
+  ,{ "symbol": "DGT", "market": "ASX", "sector": "REIT", "companyName": "DigiCo Infrastructure REIT" }
+  ,{ "symbol": "GQG", "market": "ASX", "sector": "Asset Management", "companyName": "GQG Partners" }
+  ,{ "symbol": "HMC", "market": "ASX", "sector": "Asset Management", "companyName": "HMC Capital" }
+  ,{ "symbol": "DEG", "market": "ASX", "sector": "Mining", "companyName": "De Grey Mining" }
+  ,{ "symbol": "NEM", "market": "ASX", "sector": "Materials", "companyName": "Newmont Corporation CDI" }
+  ,{ "symbol": "PEK", "market": "ASX", "sector": "Materials", "companyName": "Peak Rare Earths" }
+  ,{ "symbol": "SGP", "market": "ASX", "sector": "REIT", "companyName": "Stockland" }
+]
