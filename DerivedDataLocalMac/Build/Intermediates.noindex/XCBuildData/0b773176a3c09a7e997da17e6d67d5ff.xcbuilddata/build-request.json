@@ -1,0 +1,66 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "b926305581a73ea9edea1ce1540d6234e9b612a33c9b1cd242b808b423b42a19"
+    }
+  ],
+  "containerPath" : "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "arm64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "macosx",
+      "sdk" : "macosx26.2",
+      "sdkVariant" : "iosmac",
+      "supportedArchitectures" : [
+        "arm64e",
+        "arm64",
+        "x86_64"
+      ],
+      "targetArchitecture" : "arm64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Products",
+      "derivedDataPath" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac",
+      "indexDataStoreFolderPath" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+          "CODE_SIGNING_ALLOWED" : "NO"
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/ProfileData",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}
