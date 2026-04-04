@@ -5,29 +5,24 @@ import Foundation
 // NEW extension – does NOT modify any functions in WealthEngineStore+Cache.swift.
 //
 // Problem addressed:
-//   `restoreCache()` (defined in WealthEngineStore+Cache.swift) is a
-//   synchronous @MainActor function.  When it decodes a 128 k-card JSON blob
-//   from UserDefaults it runs entirely on the main thread, blocking tab
-//   navigation and causing the observed 5-minute UI freeze.
+//   `restoreCache()` (defined in WealthEngineStore+Cache.swift) performs
+//   JSON decoding on the main thread.  When the ranked-assets file contains
+//   128 k cards the decode takes several seconds, blocking tab navigation
+//   and causing the observed 5-second+ UI freeze on launch.
 //
 // Solution (new code only):
-//   `restoreCacheInBackground(completion:)` performs all JSON decoding on a
-//   detached background task so the main thread is free throughout.  Only the
-//   final @Published property assignments are dispatched back to the
-//   @MainActor, keeping each hop as lightweight as possible.
+//   `restoreCacheInBackground(completion:)` performs all file I/O and JSON
+//   decoding on a detached background task so the main thread is free
+//   throughout.  Only the final @Published property assignments hop back
+//   to the @MainActor, keeping each hop as lightweight as possible.
+//
+//   `saveInBackground()` encodes and writes large arrays on a background
+//   task, preventing encoding 128 k cards from blocking the UI during a
+//   save cycle.  Timestamps are written to UserDefaults synchronously on
+//   the same background task (they are tiny and thread-safe).
 //
 // Fixes:
-//   Error #7 – UI Thread Fix (heavy JSON decode off main thread)
-
-private enum BackgroundCacheKey {
-    // Mirror of WealthEngineStore+Cache.swift CacheKey constants.
-    // Duplicated here because the originals are file-private.
-    static let lastRefresh      = "awc_engine_last_refresh"
-    static let lastHeavyRefresh = "awc_engine_last_heavy_refresh"
-    static let rankedAssetsData = "awc_engine_ranked_assets"
-    static let scannedSignals   = "awc_engine_scanned_signals"
-    static let holdingsData     = "awc_engine_holdings"
-}
+//   Error #7 – UI Thread Fix (heavy JSON decode / encode off main thread)
 
 extension WealthEngineStore {
 
@@ -36,8 +31,8 @@ extension WealthEngineStore {
     /// Restore the most-recently persisted snapshot into the engine's
     /// @Published properties **without blocking the main thread**.
     ///
-    /// All JSON decoding runs on a detached background task.  Only the
-    /// final property assignments hop back to the @MainActor.
+    /// All file I/O and JSON decoding runs on a detached background task.
+    /// Only the final property assignments hop back to the @MainActor.
     ///
     /// - Parameter completion: An optional closure called on the main actor
     ///   once the restore is complete.  Use this to trigger downstream work
@@ -51,25 +46,32 @@ extension WealthEngineStore {
 
             let defaults = UserDefaults.standard
 
-            // Decode everything on the background thread ─────────────────
-            let lastRefreshDate      = defaults.object(forKey: BackgroundCacheKey.lastRefresh)      as? Date
-            let lastHeavyRefreshDate = defaults.object(forKey: BackgroundCacheKey.lastHeavyRefresh) as? Date
+            // Restore lightweight scalars (still in UserDefaults)
+            let lastRefreshDate      = defaults.object(forKey: "awc_engine_last_refresh")      as? Date
+            let lastHeavyRefreshDate = defaults.object(forKey: "awc_engine_last_heavy_refresh") as? Date
 
+            // Decode large arrays from file-backed cache (off main thread)
             var restoredAssets:   [Opportunity]?
             var restoredSignals:  [MarketSignal]?
             var restoredHoldings: [Holding]?
 
-            if let data = defaults.data(forKey: BackgroundCacheKey.rankedAssetsData) {
+            let fm = FileManager.default
+            let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
+
+            if let url = cacheDir?.appendingPathComponent("awc_engine_ranked_assets.json"),
+               let data = try? Data(contentsOf: url) {
                 restoredAssets = try? JSONDecoder().decode([Opportunity].self, from: data)
             }
-            if let data = defaults.data(forKey: BackgroundCacheKey.scannedSignals) {
+            if let url = cacheDir?.appendingPathComponent("awc_engine_scanned_signals.json"),
+               let data = try? Data(contentsOf: url) {
                 restoredSignals = try? JSONDecoder().decode([MarketSignal].self, from: data)
             }
-            if let data = defaults.data(forKey: BackgroundCacheKey.holdingsData) {
+            if let url = cacheDir?.appendingPathComponent("awc_engine_holdings.json"),
+               let data = try? Data(contentsOf: url) {
                 restoredHoldings = try? JSONDecoder().decode([Holding].self, from: data)
             }
 
-            // Lightweight assignment on the main actor ───────────────────
+            // Lightweight assignment on the main actor
             await MainActor.run {
                 if let date = lastRefreshDate      { self.lastRefresh      = date }
                 if let date = lastHeavyRefreshDate { self.lastHeavyRefresh = date }
@@ -92,11 +94,10 @@ extension WealthEngineStore {
 
     // MARK: - Background cache save
 
-    /// Persist the current engine snapshot to UserDefaults **without
-    /// blocking the main thread**.
+    /// Persist the current engine snapshot **without blocking the main thread**.
     ///
-    /// All JSON encoding runs on a detached background task, preventing
-    /// the encode of 128 k cards from stalling the UI during a save cycle.
+    /// Timestamps are written to UserDefaults and large arrays are JSON-
+    /// encoded and written to file-backed storage – all on a background task.
     func saveInBackground() {
         // Capture value copies before leaving the main actor.
         let capturedAssets        = rankedAssets
@@ -107,21 +108,29 @@ extension WealthEngineStore {
 
         Task.detached(priority: .utility) {
             let defaults = UserDefaults.standard
+            let fm       = FileManager.default
+            let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
 
+            // Lightweight timestamps → UserDefaults
             if let date = capturedRefresh {
-                defaults.set(date, forKey: BackgroundCacheKey.lastRefresh)
+                defaults.set(date, forKey: "awc_engine_last_refresh")
             }
             if let date = capturedHeavyRefresh {
-                defaults.set(date, forKey: BackgroundCacheKey.lastHeavyRefresh)
+                defaults.set(date, forKey: "awc_engine_last_heavy_refresh")
             }
-            if let data = try? JSONEncoder().encode(capturedAssets) {
-                defaults.set(data, forKey: BackgroundCacheKey.rankedAssetsData)
+
+            // Large arrays → file-backed (atomic write)
+            if let url  = cacheDir?.appendingPathComponent("awc_engine_ranked_assets.json"),
+               let data = try? JSONEncoder().encode(capturedAssets) {
+                try? data.write(to: url, options: [.atomic])
             }
-            if let data = try? JSONEncoder().encode(capturedSignals) {
-                defaults.set(data, forKey: BackgroundCacheKey.scannedSignals)
+            if let url  = cacheDir?.appendingPathComponent("awc_engine_scanned_signals.json"),
+               let data = try? JSONEncoder().encode(capturedSignals) {
+                try? data.write(to: url, options: [.atomic])
             }
-            if let data = try? JSONEncoder().encode(capturedHoldings) {
-                defaults.set(data, forKey: BackgroundCacheKey.holdingsData)
+            if let url  = cacheDir?.appendingPathComponent("awc_engine_holdings.json"),
+               let data = try? JSONEncoder().encode(capturedHoldings) {
+                try? data.write(to: url, options: [.atomic])
             }
         }
     }

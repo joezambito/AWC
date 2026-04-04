@@ -185,6 +185,23 @@ final class WealthDownstreamCacheSanity {
 
     // MARK: - Cache invalidation
 
+    /// Invalidate the AI Live results file cache.
+    ///
+    /// Called by `WealthStaleCacheDetector.checkAndRebuildIfNeeded()` before
+    /// triggering a downstream rebuild so that the UI shows all Market cards
+    /// without old AI Live exclusions while the fresh rebuild runs.
+    func invalidateAILiveResults() {
+        guard let url = aiLiveResultsURL else { return }
+        try? FileManager.default.removeItem(at: url)
+        WealthEventLogStore.shared.record(
+            title: "Cache Sanity",
+            detail: "Stale AI Live results invalidated before rebuild.",
+            category: "cache",
+            tintName: "orange",
+            timestamp: .now
+        )
+    }
+
     /// Remove all file-backed downstream caches.
     /// Call on factory reset or sign-out to ensure stale data is not reused.
     func invalidateAllFileCaches() {

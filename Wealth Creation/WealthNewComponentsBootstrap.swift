@@ -52,6 +52,12 @@ enum WealthNewComponentsBootstrap {
         _ = WealthMarketExecutionAudit.shared
         _ = WealthAILiveRejectionAudit.shared
         _ = WealthActivityAdmissionAudit.shared
+        _ = WealthEngineScanScheduler.shared
+        _ = WealthEngineRuntimeCoordinator.shared
+        _ = WealthEngineRuntimeRecovery.shared
+        _ = WealthAILiveCoordinator.shared
+        _ = WealthOrderRestrictionRules.shared
+        _ = WealthPortfolioLifecycleHelper.shared
 
         // Observe `wealthEngineDidBecomeReady` to run audits and persist
         // file-backed downstream state after every successful rebuild.
@@ -67,7 +73,7 @@ enum WealthNewComponentsBootstrap {
 
         WealthEventLogStore.shared.record(
             title: "Pipeline Bootstrap",
-            detail: "New pipeline components activated (audits + cache sanity).",
+            detail: "New pipeline components activated (audits + cache sanity + runtime).",
             category: "orchestration",
             tintName: "blue",
             timestamp: .now
@@ -81,7 +87,8 @@ enum WealthNewComponentsBootstrap {
     // MARK: - Post-ready pipeline
 
     /// Called once after each successful downstream rebuild.
-    /// Runs all audit reports and persists file-backed downstream caches.
+    /// Runs all audit reports, evaluates AI Live candidates (with scan-progress
+    /// gate), runs order-restriction audit, and persists file-backed caches.
     private static func runPostReadyPipeline() {
         let engine = WealthEngineStore.shared
 
@@ -94,18 +101,31 @@ enum WealthNewComponentsBootstrap {
         let marketCards = engine.rankedAssets.filter { $0.rank > 0 }
         WealthDownstreamCacheSanity.shared.saveMarketSnapshot(marketCards)
 
+        // ── AI Live Evaluation (scan-progress gated) ───────────────────
+        // Run the evaluation pass; this also calls the rejection audit
+        // internally and saves the AI Live results to file-backed storage.
+        WealthAILiveCoordinator.shared.evaluateCandidates()
+
         // ── AI Live Rejection Audit ────────────────────────────────────
         // Audits market cards for conditions that cause AI Live shrinkage.
         WealthAILiveRejectionAudit.shared.runAudit(on: marketCards)
 
-        // ── Persist AI Live results (file-backed) ──────────────────────
-        // Cards with a non-zero AI score are the AI Live promotion candidates.
-        let aiLiveCards = marketCards.filter { $0.aiScore > 0 }
-        WealthDownstreamCacheSanity.shared.saveAILiveResults(aiLiveCards)
+        // ── Order Restriction Audit ────────────────────────────────────
+        // Audits AI Live promoted cards for order-restriction blocking.
+        let promotedCards = WealthAILiveCoordinator.shared.promotedCards
+        WealthOrderRestrictionRules.shared.runAudit(on: promotedCards)
 
         // ── Activity Admission Audit ───────────────────────────────────
         // Audits AI Live promoted cards for Activity blocking conditions.
-        WealthActivityAdmissionAudit.shared.runAudit(on: aiLiveCards)
+        WealthActivityAdmissionAudit.shared.runAudit(on: promotedCards)
+
+        // ── Persist AI Live results (file-backed) ──────────────────────
+        // Already saved inside WealthAILiveCoordinator.evaluateCandidates().
+        // Save the Activity state for freshness tracking.
+        let admissibleSymbols = promotedCards
+            .filter { $0.isMarketExecutableCandidate && $0.aiScore > 0 }
+            .map(\.symbol)
+        WealthDownstreamCacheSanity.shared.saveActivityState(admissibleSymbols)
     }
 }
 
