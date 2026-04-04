@@ -2,26 +2,53 @@ import Foundation
 
 // MARK: - WealthEngineStore+Activation
 //
-// Replaces the original synchronous `runActivationSequence()` stub in
-// WealthCore.swift with a version that moves all heavy I/O off the main
-// thread.
+// Extends WealthEngineStore with the one-time startup activation sequence.
 //
-// Problem addressed:
-//   The original implementation ran `WealthMarketUniverseStore.reloadForStartupSequence()`,
-//   `runStartupActivationScan()`, and `runStartupMarketWarmup()` synchronously
-//   on the @MainActor.  Downloading 128 k universe rows + AI brain scan +
-//   market data blocks every UI interaction (scrolling, tab navigation) for
-//   up to 5 minutes on app launch.
+// ── Architecture context ─────────────────────────────────────────────────
 //
-// Solution (threading-only change – NO logic removed):
-//   The heavy download/processing steps are wrapped in
-//   `Task.detached(priority: .userInitiated)` so they execute on a
-//   background executor.  All @Published property assignments that drive
-//   the UI hop back to the @MainActor via `MainActor.run { }` only when
-//   the background work is complete.
+// There are now TWO entry-points that can trigger the startup pipeline:
 //
-//   Pre-flight timer teardown, the startup-delay sleep, cancellation guards,
-//   and the defer cleanup block are all preserved exactly as before.
+//   Path A (NEW – preferred):
+//     ContentView.onAppear
+//       └─ WealthEngineStore.bootstrap()
+//            └─ WealthAppSessionController.prepareLaunch()
+//                 └─ WealthEngineStartupController.beginStartupSequence()
+//                      ├─ runUniverseScanWithProgress()
+//                      ├─ runAIScanWithProgress()
+//                      ├─ runMarketRankingWithProgress()
+//                      └─ runResearchFeedsWithProgress() → rescheduleTimers()
+//
+//   Path B (LEGACY – kept for backward compatibility):
+//     WealthCore.swift → runActivationSequence()  (this file)
+//
+// ── Known issue: Competing startup paths ─────────────────────────────────
+//
+//   If BOTH paths fire (e.g. WealthCore.swift calls runActivationSequence()
+//   AND ContentView calls bootstrap()), the startup pipeline runs twice:
+//   once through Path B's activationTask and once through Path A's
+//   startupTask.  This wastes resources and can corrupt state.
+//
+//   WealthEngineStartupController guards against its own re-entry via
+//   `startupTask == nil && !isStartupComplete`.
+//   Path B guards against its own re-entry via `activationTask == nil`.
+//   But NEITHER guard prevents the OTHER path from running concurrently.
+//
+//   Ideal fix: remove the WealthCore.swift call to runActivationSequence()
+//   and rely exclusively on Path A (WealthAppSessionController).
+//
+// ── Timer architecture note ───────────────────────────────────────────────
+//
+//   The current timer architecture (WealthEngineStore+Timers.swift) uses
+//   `softTimer` (10 m + 20 m soft refresh) and `heavyTimer` (30 m deep
+//   refresh), plus IBKR price timers at 9 m, 19 m, 29 m.
+//
+//   Older stored properties `scheduledCheckpointTimer` and `preScanBurstTimer`
+//   have been removed from WealthEngineStore.  The canonical way to tear
+//   down ALL timers is `invalidateTimers()` from WealthEngineStore+Timers.swift.
+//
+// Fixes:
+//   UI Thread Fix – heavy I/O moved off @MainActor to background tasks
+//   Timer Bug Fix – manual teardown replaced with canonical invalidateTimers()
 
 extension WealthEngineStore {
 
@@ -40,14 +67,10 @@ extension WealthEngineStore {
 
         // Tear down any residual timers from a previous session so they
         // cannot fire while the activation sequence is running.
-        scheduledCheckpointTimer?.invalidate()
-        softTimer?.invalidate()
-        heavyTimer?.invalidate()
-        preScanBurstTimer?.invalidate()
-        scheduledCheckpointTimer = nil
-        softTimer = nil
-        heavyTimer = nil
-        preScanBurstTimer = nil
+        // Uses the canonical invalidation path from WealthEngineStore+Timers.swift
+        // which handles all current timer references (softTimer, heavyTimer,
+        // IBKR timers, extra soft timers) without referencing removed properties.
+        invalidateTimers()
 
         downstreamRecoveryPending = true
 

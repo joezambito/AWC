@@ -2,15 +2,16 @@ import Foundation
 
 // MARK: - WealthEngineStore+Bootstrap
 //
-// Contains the startup entry-points called from ContentView / app lifecycle.
+// ── Startup entry-points (called from ContentView / app lifecycle) ────────
 //
-// Entry-point routing (NEW unified path):
+// PREFERRED path (use this):
 //
 //   ContentView.onAppear
 //     └─ WealthEngineStore.bootstrap()
-//          └─ WealthAppSessionController.prepareLaunch()   ← single entry
-//               ├─ WealthNewComponentsBootstrap.activate()
+//          └─ WealthAppSessionController.prepareLaunch()
+//               ├─ WealthNewComponentsBootstrap.activate()    ← register observers
 //               └─ restoreCacheInBackground { beginStartupSequence() }
+//                    ├─ WealthEngineRuntimeRecovery.runStartupIntegrityCheck()
 //                    ├─ Universe scan (background, off main thread)
 //                    ├─ wait 2 s
 //                    ├─ AI scan (background)
@@ -18,20 +19,28 @@ import Foundation
 //                    ├─ Market ranking (background)
 //                    ├─ wait 1 s
 //                    └─ Research feeds (background)
-//                         └─ rescheduleTimers()
+//                         └─ rescheduleTimers()  (6 timers: 9/10/19/20/29/30 min)
+//
+// LEGACY path (WealthCore.swift only – do not add new callers):
+//
+//   WealthCore.swift
+//     └─ WealthEngineStore.runActivationSequence()  (WealthEngineStore+Activation.swift)
+//
+// ── Foreground re-activation ──────────────────────────────────────────────
 //
 //   ContentView.onChange(scenePhase == .active)
 //     └─ WealthEngineStore.handleForegroundActivation()
 //          └─ WealthAppSessionController.applicationDidBecomeActive()
 //               └─ WealthEngineRuntimeCoordinator.handleBecameActive()
-//                    └─ stale-cache check (no full bootstrap re-run)
+//                    └─ WealthSessionUnlockController.handleSessionResume()
+//                         └─ WealthStaleCacheDetector.checkAndRebuildIfNeeded()
 //
-// Both ContentView entry-points are routed through WealthAppSessionController
-// so that:
-//   • The cache is ALWAYS restored off the main thread (no UI freeze).
-//   • The full startup sequence runs AT MOST ONCE per app lifecycle.
-//   • Foreground re-activations trigger only a stale-cache check, never
-//     a redundant full bootstrap.
+// ── Guarantees ────────────────────────────────────────────────────────────
+//
+//   • cache restore is ALWAYS off the main thread (no UI freeze on launch)
+//   • full startup sequence runs AT MOST ONCE (WealthAppSessionController.hasLaunched)
+//   • foreground re-activations trigger only a stale-cache check, NOT a full restart
+//   • timer scheduling happens AFTER the startup sequence completes
 
 extension WealthEngineStore {
 

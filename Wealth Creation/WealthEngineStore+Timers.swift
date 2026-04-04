@@ -2,14 +2,22 @@ import Foundation
 
 // MARK: - WealthEngineStore+Timers
 //
-// Manages six recurring timers that fire after the startup sequence completes.
+// Current timer architecture (6 recurring timers post-startup):
 //
-//   9  min  – IBKR  : update live prices only
-//   10 min  – Soft  : light refresh (universe, AI, market)
-//   19 min  – IBKR  : update live prices only
-//   20 min  – Soft  : light refresh (universe, AI, market)
-//   29 min  – IBKR  : update live prices only
-//   30 min  – Deep  : heavy refresh (everything)
+//   9  min  – IBKR  : update live prices only           (timerHolder.ibkrTimers)
+//   10 min  – Soft  : light refresh (universe, AI, market) (softTimer)
+//   19 min  – IBKR  : update live prices only           (timerHolder.ibkrTimers)
+//   20 min  – Soft  : light refresh (universe, AI, market) (timerHolder.extraSoftTimers)
+//   29 min  – IBKR  : update live prices only           (timerHolder.ibkrTimers)
+//   30 min  – Deep  : heavy refresh (everything)        (heavyTimer)
+//
+// Stored properties on WealthEngineStore used by this file:
+//   softTimer  (Timer?) – the primary 10-min soft-refresh timer
+//   heavyTimer (Timer?) – the 30-min deep-refresh timer
+//
+// NOTE: `scheduledCheckpointTimer` and `preScanBurstTimer` are NOT part
+// of the current architecture and have been removed from WealthEngineStore.
+// The canonical way to tear down ALL timers is `invalidateTimers()`.
 //
 // All timer callbacks dispatch work to a background thread so the main
 // thread / UI is never blocked.
