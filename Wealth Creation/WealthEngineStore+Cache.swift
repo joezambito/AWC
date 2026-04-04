@@ -18,6 +18,13 @@ import Foundation
 //   • File-backed storage allows atomic writes, file-modification timestamps
 //     for freshness checking, and off-main-thread reads.
 
+// Module-level constant: resolved once at startup, never changes for the
+// lifetime of the process.  Using a module-level let avoids the need for a
+// stored property (which extensions cannot add) while preventing repeated
+// FileManager filesystem lookups on every property access.
+private let wealthEngineCacheDir: URL? =
+    FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+
 extension WealthEngineStore {
 
     // MARK: - UserDefaults keys (lightweight scalars ONLY)
@@ -29,20 +36,16 @@ extension WealthEngineStore {
 
     // MARK: - File-backed cache URLs
 
-    private var cacheDirectory: URL? {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-    }
-
     var rankedAssetsFileURL: URL? {
-        cacheDirectory?.appendingPathComponent("awc_engine_ranked_assets.json")
+        wealthEngineCacheDir?.appendingPathComponent("awc_engine_ranked_assets.json")
     }
 
     var scannedSignalsFileURL: URL? {
-        cacheDirectory?.appendingPathComponent("awc_engine_scanned_signals.json")
+        wealthEngineCacheDir?.appendingPathComponent("awc_engine_scanned_signals.json")
     }
 
     var holdingsFileURL: URL? {
-        cacheDirectory?.appendingPathComponent("awc_engine_holdings.json")
+        wealthEngineCacheDir?.appendingPathComponent("awc_engine_holdings.json")
     }
 
     // MARK: - Public API

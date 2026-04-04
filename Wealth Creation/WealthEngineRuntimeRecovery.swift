@@ -36,8 +36,11 @@ final class WealthEngineRuntimeRecovery {
 
     // MARK: - Startup integrity check
 
-    /// Run at startup (before the startup sequence begins) to detect and
-    /// reset any stuck in-flight state left by a previous interrupted session.
+    /// Pre-flight check run at the START of each startup sequence (before
+    /// `beginStartupSequence()` executes its first scan phase).
+    ///
+    /// Detects and resets any stuck in-flight state left by a previous
+    /// interrupted session so the new startup begins from a clean baseline.
     ///
     /// Safe to call multiple times – each call is idempotent.
     func runStartupIntegrityCheck() {

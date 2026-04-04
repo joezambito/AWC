@@ -37,7 +37,7 @@ final class WealthEngineRuntimeCoordinator {
 
     // MARK: - Private state
 
-    /// Timestamp of the most-recent active-became-active event.
+    /// Timestamp of the most-recent `applicationDidBecomeActive` event.
     /// Used to debounce rapid foreground/background transitions.
     private var lastBecameActiveDate: Date?
 

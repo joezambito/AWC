@@ -47,13 +47,18 @@ final class WealthPortfolioLifecycleHelper {
 
     private var retryTask: Task<Void, Never>?
 
+    /// Maximum number of one-second retry attempts while waiting for
+    /// `tradingLifecycleArmed` to become `true` after startup.
+    private let maxRetryAttempts = 30
+
     private func handleEngineReady() {
         if WealthPortfolioStore.shared.tradingLifecycleArmed {
             triggerAdmissionRerun()
         } else {
             // Trading lifecycle is not yet armed.  Poll once per second for
-            // up to 30 seconds, then give up (the heartbeat timer will retry).
-            scheduleArmedRetry(attemptsRemaining: 30)
+            // up to `maxRetryAttempts` seconds, then give up (the heartbeat
+            // timer will retry).
+            scheduleArmedRetry(attemptsRemaining: maxRetryAttempts)
         }
     }
 
@@ -67,7 +72,7 @@ final class WealthPortfolioLifecycleHelper {
         guard attemptsRemaining > 0 else {
             WealthEventLogStore.shared.record(
                 title: "Portfolio Lifecycle",
-                detail: "scheduleArmedRetry: gave up after 30 attempts – tradingLifecycleArmed never became true.",
+                detail: "scheduleArmedRetry: gave up after \(maxRetryAttempts) attempts – tradingLifecycleArmed never became true.",
                 category: "activity",
                 tintName: "red",
                 timestamp: .now

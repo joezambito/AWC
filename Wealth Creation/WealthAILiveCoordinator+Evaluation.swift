@@ -91,12 +91,19 @@ extension WealthAILiveCoordinator {
         // A card is eligible for AI Live promotion when it passes all
         // observable intake conditions.  The actual score-threshold check
         // is delegated to the Opportunity model (`aiScore > 0`).
+        //
+        // Thresholds mirror the safeguard gate in WealthEngineStore+Materialization:
+        //   earningsRisk < 70  (SafeguardThreshold.earningsRisk)
+        //   macroRisk    < 75  (SafeguardThreshold.macroRisk)
+        let earningsRiskLimit = 70
+        let macroRiskLimit    = 75
+
         let eligible = marketCards.filter { card in
             card.aiScore > 0
             && !card.isDataStale
             && card.isAnomalyStable
-            && card.earningsRisk < 70
-            && card.macroRisk < 75
+            && card.earningsRisk < earningsRiskLimit
+            && card.macroRisk < macroRiskLimit
             && card.rank <= WealthAILiveRejectionAudit.shared.topTierRankThreshold
         }
 
