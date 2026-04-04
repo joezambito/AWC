@@ -2,44 +2,62 @@ import Foundation
 
 // MARK: - WealthEngineStore+Bootstrap
 //
-// Contains the startup entry-point called from ContentView / app lifecycle.
-// Replaces the old "fire everything at once" pattern:
+// Contains the startup entry-points called from ContentView / app lifecycle.
 //
-//  Old (broken):
-//    bootstrap()
-//      ├─ Universe scan  ← all fire simultaneously → UI freeze
-//      ├─ AI scan
-//      ├─ Market scan
-//      └─ Research feeds
+// Entry-point routing (NEW unified path):
 //
-//  New (fixed):
-//    bootstrap()
-//      ├─ Restore cache immediately   ← UI visible with stale data
-//      └─ WealthEngineStartupController.beginStartupSequence()
-//           ├─ Universe scan (background)
-//           ├─ wait 2 s
-//           ├─ AI scan (background)
-//           ├─ wait 1 s
-//           ├─ Market ranking (background)
-//           ├─ wait 1 s
-//           └─ Research feeds (background)
-//                └─ rescheduleTimers()
+//   ContentView.onAppear
+//     └─ WealthEngineStore.bootstrap()
+//          └─ WealthAppSessionController.prepareLaunch()   ← single entry
+//               ├─ WealthNewComponentsBootstrap.activate()
+//               └─ restoreCacheInBackground { beginStartupSequence() }
+//                    ├─ Universe scan (background, off main thread)
+//                    ├─ wait 2 s
+//                    ├─ AI scan (background)
+//                    ├─ wait 1 s
+//                    ├─ Market ranking (background)
+//                    ├─ wait 1 s
+//                    └─ Research feeds (background)
+//                         └─ rescheduleTimers()
+//
+//   ContentView.onChange(scenePhase == .active)
+//     └─ WealthEngineStore.handleForegroundActivation()
+//          └─ WealthAppSessionController.applicationDidBecomeActive()
+//               └─ WealthEngineRuntimeCoordinator.handleBecameActive()
+//                    └─ stale-cache check (no full bootstrap re-run)
+//
+// Both ContentView entry-points are routed through WealthAppSessionController
+// so that:
+//   • The cache is ALWAYS restored off the main thread (no UI freeze).
+//   • The full startup sequence runs AT MOST ONCE per app lifecycle.
+//   • Foreground re-activations trigger only a stale-cache check, never
+//     a redundant full bootstrap.
 
 extension WealthEngineStore {
 
-    // MARK: App bootstrap (called once on launch)
+    // MARK: - App bootstrap (called once on launch from ContentView.onAppear)
 
-    /// Called from `ContentView.onAppear` / `WealthAppSessionController.prepareLaunch`.
-    /// 1. Restores the most-recent persisted cache so the UI is immediately
-    ///    populated with previously-seen data.
-    /// 2. Hands off to `WealthEngineStartupController` which then runs each
-    ///    scan phase in the background with deliberate staggering delays.
+    /// Route all startup work through `WealthAppSessionController.prepareLaunch()`.
+    ///
+    /// `prepareLaunch()` is guarded by a `hasLaunched` flag so it is
+    /// idempotent – safe to call multiple times (e.g. scene reconnects).
+    ///
+    /// All cache I/O and scan phases run off the main thread so the UI
+    /// never freezes on launch.
     func bootstrap() {
-        // 1. Restore persisted state so the UI is not blank on launch.
-        restoreCache()
+        WealthAppSessionController.shared.prepareLaunch()
+    }
 
-        // 2. Kick off the staggered background startup.  The controller
-        //    guards against duplicate invocations internally.
-        WealthEngineStartupController.shared.beginStartupSequence()
+    // MARK: - Foreground activation (called from ContentView scenePhase observer)
+
+    /// Route foreground re-activations through `WealthAppSessionController`
+    /// rather than re-running the full bootstrap.
+    ///
+    /// On a warm open / unlock, this triggers a stale-cache check and
+    /// downstream rebuild if needed.  On the very first launch (startup
+    /// still in progress), this is a no-op so the startup sequence is
+    /// not interrupted.
+    func handleForegroundActivation() {
+        WealthAppSessionController.shared.applicationDidBecomeActive()
     }
 }

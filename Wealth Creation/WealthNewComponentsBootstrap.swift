@@ -135,14 +135,21 @@ extension WealthEngineStore {
 
     /// Drop-in replacement for `bootstrap()` that also activates all new
     /// pipeline components (audit coordinators, cache sanity, background-cache
-    /// helpers) without changing the original `bootstrap()` function.
+    /// helpers).
     ///
-    /// Usage: replace `WealthEngineStore.shared.bootstrap()` in your app or
-    /// scene delegate with `WealthEngineStore.shared.bootstrapWithPipeline()`.
+    /// NOTE: `bootstrap()` now delegates to `WealthAppSessionController.prepareLaunch()`
+    /// which already calls `WealthNewComponentsBootstrap.activate()` internally.
+    /// Calling `bootstrapWithPipeline()` is therefore equivalent to calling
+    /// `bootstrap()` alone.  Both paths are safe – `activate()` is guarded
+    /// by an `isActivated` flag and `prepareLaunch()` by a `hasLaunched` flag.
+    ///
+    /// Usage: `WealthEngineStore.shared.bootstrap()` or
+    ///        `WealthEngineStore.shared.bootstrapWithPipeline()` are equivalent.
     func bootstrapWithPipeline() {
-        // Call the original bootstrap unchanged.
+        // bootstrap() already routes through prepareLaunch() which activates
+        // all new pipeline components.  The explicit activate() call below is
+        // a no-op but kept for safety in case bootstrap() is bypassed.
         bootstrap()
-        // Activate all new pipeline components.
         WealthNewComponentsBootstrap.activate()
     }
 }
