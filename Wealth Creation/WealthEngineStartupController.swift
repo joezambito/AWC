@@ -102,7 +102,12 @@ final class WealthEngineStartupController {
 
         guard !Task.isCancelled else { return }
 
-        // ── Done : start recurring timers ─────────────────────────────────
+        // ── Done : finalise engine state + start recurring timers ────────
+        // Set all @Published flags that downstream systems depend on
+        // (tradingLifecycleArmed, activationCycleComplete, etc.) BEFORE
+        // rescheduling timers so the first timer tick cannot fire before
+        // the engine is marked ready.
+        engine.finalizeActivationState()
         isStartupComplete = true
         startupTask = nil
         engine.rescheduleTimers()

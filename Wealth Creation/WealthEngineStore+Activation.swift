@@ -25,6 +25,42 @@ import Foundation
 
 extension WealthEngineStore {
 
+    // MARK: - Startup state finalisation
+
+    /// Stamp all @Published flags that mark the engine as fully started.
+    ///
+    /// Called by `WealthEngineStartupController` after every scan phase
+    /// completes so that downstream systems (Activity admission, trading
+    /// lifecycle, UI progress indicators) see the correct state regardless
+    /// of whether the legacy `runActivationSequence()` or the new startup
+    /// controller ran the sequence.
+    ///
+    /// Properties updated:
+    ///   • `activationStage`           – resets stage counter to 0 (UI use)
+    ///   • `activationCycleComplete`   – signals startup is done (downstream gate)
+    ///   • `lockedCheckpointProgress`  – seeds checkpoint counter for the first timer cycle
+    ///   • `tradingLifecycleArmed`     – **CRITICAL**: enables Activity admission in
+    ///                                   `WealthPortfolioStore.reconcileActivityAdmissions()`
+    ///   • `startupSequencePhase`      – set to `.idle` so loading spinners clear
+    ///   • `downstreamRecoveryPending` – cleared once startup is complete
+    @MainActor
+    func finalizeActivationState() {
+        activationStage           = 0
+        activationCycleComplete   = true
+        lockedCheckpointProgress  = Self.lockedCheckpointCount
+        tradingLifecycleArmed     = true
+        startupSequencePhase      = .idle
+        downstreamRecoveryPending = false
+
+        WealthEventLogStore.shared.record(
+            title: "Activation State",
+            detail: "finalizeActivationState: tradingLifecycleArmed=true, activationCycleComplete=true.",
+            category: "orchestration",
+            tintName: "green",
+            timestamp: .now
+        )
+    }
+
     // MARK: - Activation sequence
 
     /// Begin the one-time startup activation sequence.
@@ -95,11 +131,7 @@ extension WealthEngineStore {
 
                 // ── UI state update on main thread ────────────────────────
                 await MainActor.run {
-                    self.activationStage = 0
-                    self.activationCycleComplete = true
-                    self.lockedCheckpointProgress = Self.lockedCheckpointCount
-                    self.tradingLifecycleArmed = true
-                    self.startupSequencePhase = .idle
+                    self.finalizeActivationState()
                     self.rescheduleTimers()
                 }
             }.value
