@@ -33,9 +33,9 @@ final class WealthEngineStartupController {
     // MARK: Timing constants (seconds)
 
     private enum Delay {
-        static let afterUniverse: UInt64 = 2_000_000_000  // 2 s
-        static let afterAI:       UInt64 = 1_000_000_000  // 1 s
-        static let afterMarket:   UInt64 = 1_000_000_000  // 1 s
+        static let afterUniverse: UInt64 = 1_000_000_000  // 1 s  (was 2 s)
+        static let afterAI:       UInt64 =   500_000_000  // 0.5 s (was 1 s)
+        static let afterMarket:   UInt64 =   500_000_000  // 0.5 s (was 1 s)
     }
 
     // MARK: Lifecycle

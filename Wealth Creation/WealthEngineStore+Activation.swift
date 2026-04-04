@@ -22,6 +22,14 @@ import Foundation
 //
 //   Pre-flight timer teardown, the startup-delay sleep, cancellation guards,
 //   and the defer cleanup block are all preserved exactly as before.
+//
+// NOTE – preferred startup path:
+//   New code should go through `WealthEngineStore.bootstrap()` →
+//   `WealthAppSessionController.prepareLaunch()` →
+//   `WealthEngineStartupController.beginStartupSequence()`.
+//   `runActivationSequence()` below is retained for compatibility with the
+//   existing `WealthCore.swift` call site and follows the same background-
+//   threading contract.
 
 extension WealthEngineStore {
 
@@ -35,19 +43,20 @@ extension WealthEngineStore {
     ///
     /// Idempotent: subsequent calls while an activation is already in
     /// progress are no-ops.
+    ///
+    /// - Note: Prefer calling `bootstrap()` (which routes through
+    ///   `WealthAppSessionController` and `WealthEngineStartupController`)
+    ///   instead of calling this directly.  Timer teardown is now delegated
+    ///   to `invalidateTimers()` so every timer type is released in one place.
     func runActivationSequence() {
         guard activationTask == nil else { return }
 
         // Tear down any residual timers from a previous session so they
         // cannot fire while the activation sequence is running.
-        scheduledCheckpointTimer?.invalidate()
-        softTimer?.invalidate()
-        heavyTimer?.invalidate()
-        preScanBurstTimer?.invalidate()
-        scheduledCheckpointTimer = nil
-        softTimer = nil
-        heavyTimer = nil
-        preScanBurstTimer = nil
+        // `invalidateTimers()` handles softTimer, heavyTimer,
+        // scheduledCheckpointTimer, preScanBurstTimer, IBKR timers, and
+        // extra soft timers in a single call.
+        invalidateTimers()
 
         downstreamRecoveryPending = true
 

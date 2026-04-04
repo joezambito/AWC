@@ -13,6 +13,11 @@ import Foundation
 //
 // All timer callbacks dispatch work to a background thread so the main
 // thread / UI is never blocked.
+//
+// `invalidateTimers()` is the single teardown entry-point for ALL timer
+// types – softTimer, heavyTimer, scheduledCheckpointTimer,
+// preScanBurstTimer, IBKR timers, and extra soft timers.  Always call
+// `invalidateTimers()` instead of manually nil-ing each reference.
 
 // MARK: - IBKR and extra soft timer storage
 //
@@ -70,6 +75,14 @@ extension WealthEngineStore {
         softTimer = nil
         heavyTimer?.invalidate()
         heavyTimer = nil
+
+        // Invalidate legacy checkpoint and burst timers (defined in WealthCore.swift).
+        // Centralising teardown here prevents duplication across call sites and
+        // ensures every timer is released in a single pass.
+        scheduledCheckpointTimer?.invalidate()
+        scheduledCheckpointTimer = nil
+        preScanBurstTimer?.invalidate()
+        preScanBurstTimer = nil
     }
 
     // MARK: - Private scheduling
