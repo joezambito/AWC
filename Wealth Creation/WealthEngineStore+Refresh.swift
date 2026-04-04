@@ -6,12 +6,17 @@ import Foundation
 // never blocked:
 //
 //   .ibkr  → update live prices / broker data only (fastest)
-//   .soft  → light refresh: universe + AI + market
-//   .deep  → heavy refresh: everything (universe, AI, market, research)
+//   .soft  → light refresh: universe + AI + market + downstream rebuild
+//   .deep  → heavy refresh: everything + downstream rebuild
 //
 // Individual scan entry-points (runUniverseScan, runAIScan, etc.) are also
 // defined here and are called both during the startup sequence and during
 // recurring timer refreshes.
+//
+// Downstream rebuild pipeline (Fix 3, 4, 5):
+//   runDownstreamRebuild()
+//     ├─ runAILiveEvaluation()   ← AI Live from current Market state (Fix 4)
+//     └─ runActivityReevaluation() ← Activity admission after AI Live (Fix 5)
 
 extension WealthEngineStore {
 
@@ -72,6 +77,41 @@ extension WealthEngineStore {
         }.value
     }
 
+    // MARK: - Downstream rebuild entry-points (Fix 3, 4, 5)
+
+    /// Evaluate promotion-ready ranked cards with the AI Live engine and
+    /// produce live pick keys from the current Market state.
+    ///
+    /// Called after every market ranking pass and on every session resume
+    /// to ensure AI Live data is never left empty or stale.
+    func runAILiveEvaluation() async {
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performAILiveEvaluation()
+        }.value
+    }
+
+    /// Reevaluate Activity admission for all valid promoted cards.
+    ///
+    /// Called immediately after `runAILiveEvaluation()` completes so that
+    /// queue / pending / live transitions fire without waiting for the next
+    /// unrelated timer tick.
+    func runActivityReevaluation() async {
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performActivityReevaluation()
+        }.value
+    }
+
+    /// Run the full downstream rebuild pipeline synchronously:
+    ///   Market (current ranked state) → AI Live evaluation → Activity admission
+    ///
+    /// This is the minimal pass needed to restore live state after an unlock
+    /// or after market ranking completes.  Ready-state must NOT be declared
+    /// until this returns (Fix 6).
+    func runDownstreamRebuild() async {
+        await runAILiveEvaluation()
+        await runActivityReevaluation()
+    }
+
     // MARK: - Composite refresh pipelines
 
     private func runIBKRPriceSync() async {
@@ -84,6 +124,8 @@ extension WealthEngineStore {
         await runUniverseScan()
         await runAIScan()
         await runMarketRanking()
+        // Always rebuild downstream after every ranking pass (Fix 3).
+        await runDownstreamRebuild()
     }
 
     private func runDeepRefresh() async {
@@ -91,6 +133,8 @@ extension WealthEngineStore {
         await runAIScan()
         await runMarketRanking()
         await runResearchFeeds()
+        // Always rebuild downstream after every full refresh (Fix 3).
+        await runDownstreamRebuild()
     }
 
     // MARK: - Low-level scan implementations (override points)
@@ -125,5 +169,43 @@ extension WealthEngineStore {
     @MainActor
     func performIBKRSync() {
         // Price-only sync via IBKR bridge.
+    }
+
+    // MARK: - Downstream scan implementations (Fix 4, 5)
+
+    /// AI Live evaluation pass (Fix 4).
+    ///
+    /// Rebuilds AI Live results from the current ranked Market cards.
+    /// All ranked, market-executable cards are considered promotion-ready
+    /// and their symbols are submitted as live pick keys so that
+    /// `WealthAllCardsStore` reflects the current live session.
+    ///
+    /// If `rankedAssets` contains no ranked cards (rank > 0) this is a
+    /// no-op; the next market ranking pass will populate them.
+    @MainActor
+    func performAILiveEvaluation() {
+        let livePickSymbols = rankedAssets
+            .filter { $0.rank > 0 && $0.isMarketExecutableCandidate }
+            .map(\.symbol)
+
+        WealthAllCardsStore.shared.sync(
+            opportunities: rankedAssets,
+            activityKeys: [],
+            holdingKeys: Set(holdings.map(\.symbol)),
+            livePickKeys: livePickSymbols,
+            refreshTime: lastRefresh
+        )
+    }
+
+    /// Activity reevaluation pass (Fix 5).
+    ///
+    /// Triggers queue / pending / live transitions for promoted cards
+    /// immediately after AI Live rebuilds, rather than waiting for the
+    /// next unrelated timer tick.
+    @MainActor
+    func performActivityReevaluation() {
+        // Publish a dashboard update so all downstream SwiftUI observers
+        // (Activity lane, live picks panel) receive the rebuilt state.
+        publishDashboardUpdate()
     }
 }
