@@ -68,7 +68,12 @@ final class WealthEngineStartupController {
         let engine = WealthEngineStore.shared
 
         // ── Step 1 : Universe scan ────────────────────────────────────────
+        WealthScanProgressGate.shared.beginScan(totalAssets: engine.rankedAssets.count)
         await engine.runUniverseScan()
+        // Signal scan complete so AI Live gate opens for the AI scan step
+        // (Issue 5 – scan-progress gate) and for any concurrent rebuild
+        // triggered via WealthDownstreamRebuildOrchestrator.
+        WealthScanProgressGate.shared.completeScan()
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterUniverse)
@@ -97,5 +102,12 @@ final class WealthEngineStartupController {
         isStartupComplete = true
         startupTask = nil
         engine.rescheduleTimers()
+
+        // Notify the ready-state gate that the initial startup pipeline is
+        // complete (Issues 1 & 2 fix).  Without this call the gate never
+        // fires on first launch and the wealthEngineDidBecomeReady
+        // notification — which drives audits, file-backed caches, and the
+        // post-ready pipeline — is never posted.
+        WealthReadyStateGate.shared.markDownstreamRebuildComplete()
     }
 }

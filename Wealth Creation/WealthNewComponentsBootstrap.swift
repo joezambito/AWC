@@ -52,6 +52,9 @@ enum WealthNewComponentsBootstrap {
         _ = WealthMarketExecutionAudit.shared
         _ = WealthAILiveRejectionAudit.shared
         _ = WealthActivityAdmissionAudit.shared
+        // New gate singletons (Issues 4, 5, 6)
+        _ = WealthScanProgressGate.shared
+        _ = WealthTradingLifecycleArmingGate.shared
 
         // Observe `wealthEngineDidBecomeReady` to run audits and persist
         // file-backed downstream state after every successful rebuild.
@@ -67,7 +70,7 @@ enum WealthNewComponentsBootstrap {
 
         WealthEventLogStore.shared.record(
             title: "Pipeline Bootstrap",
-            detail: "New pipeline components activated (audits + cache sanity).",
+            detail: "New pipeline components activated (audits + cache sanity + lifecycle gates).",
             category: "orchestration",
             tintName: "blue",
             timestamp: .now
