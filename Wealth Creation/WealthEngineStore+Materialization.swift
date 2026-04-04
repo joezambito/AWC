@@ -77,9 +77,10 @@ extension WealthEngineStore {
         let routed = WealthCardHoldingRouter.routeFromGreenCheckpoint(rankedAssets)
         let candidates = selectExecutableCandidates(from: routed.greenCards)
         let recheckPassed = applyDataRecheck(to: candidates)
-        let ranked = assignMarketRanks(to: recheckPassed)
 
-        if !ranked.allSatisfy(\.isMarketExecutableCandidate) {
+        // Validate that all re-checked candidates are still market-executable
+        // BEFORE applying ranks, so we fail fast and avoid propagating corrupt data.
+        if !recheckPassed.allSatisfy(\.isMarketExecutableCandidate) {
             WealthEventLogStore.shared.record(
                 title: "Pipeline Rejected",
                 detail: "Non-executable card leaked into Market after materialization.",
@@ -90,7 +91,11 @@ extension WealthEngineStore {
 #if DEBUG
             assertionFailure("Non-executable card leaked into Market during materialization")
 #endif
+            isMarketMaterializationInFlight = false
+            return
         }
+
+        let ranked = assignMarketRanks(to: recheckPassed)
 
         WealthAllCardsStore.shared.sync(
             opportunities: rankedAssets,

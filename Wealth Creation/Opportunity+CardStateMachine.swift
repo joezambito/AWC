@@ -60,25 +60,30 @@ extension Opportunity {
 
     /// Earnings-event risk score (0–100).
     ///
-    /// Maps to the card's `risk` field filtered to earnings-catalyst signals.
     /// A value ≥ 70 triggers the safeguard gate rejection.
     ///
-    /// NOTE: Replace the implementation body with the actual model field once
-    /// it is available (e.g. `risk.earningsScore` or a dedicated property).
+    /// ⚠️ PLACEHOLDER – Replace this computed property with the dedicated
+    /// earnings-risk field from the `Opportunity` model once it is available
+    /// (e.g. a property sourced from earnings-calendar or news-event data).
+    /// The current derivation from the generic `risk` float is NOT semantically
+    /// equivalent to earnings-specific risk and WILL produce incorrect safeguard
+    /// decisions in production until replaced.
     var earningsRisk: Int {
-        // Derive from existing `risk` float property (0–1 range → 0–100).
+        // Temporary: derive from existing `risk` float property (0–1 range → 0–100).
         Int((risk * 100).rounded())
     }
 
     /// Macro-event risk score (0–100).
     ///
-    /// Maps to the card's macro/geopolitical risk component.
     /// A value ≥ 75 triggers the safeguard gate rejection.
     ///
-    /// NOTE: Replace the implementation body with the actual model field once
-    /// it is available.
+    /// ⚠️ PLACEHOLDER – Replace this computed property with a dedicated
+    /// macro/geopolitical risk field from the `Opportunity` model.
+    /// The current inverted-probability calculation is NOT semantically
+    /// equivalent to macro risk and WILL produce incorrect safeguard
+    /// decisions in production until replaced.
     var macroRisk: Int {
-        // Derive from `probability` inverted (high probability = lower macro risk).
+        // Temporary: derive from `probability` inverted (high probability → lower risk).
         Int(((1.0 - probability) * 100).rounded())
     }
 

@@ -14,17 +14,21 @@ import Foundation
 // All timer callbacks dispatch work to a background thread so the main
 // thread / UI is never blocked.
 
-// MARK: - IBKR timer storage
+// MARK: - IBKR and extra soft timer storage
 //
-// Swift extensions cannot add stored properties, so IBKR timer references
-// are kept in this file-private holder.  Since WealthEngineStore is a
+// Swift extensions cannot add stored properties, so timer references that
+// exceed the existing `softTimer` and `heavyTimer` stored properties are
+// kept in this file-private holder.  Since WealthEngineStore is a
 // MainActor-isolated singleton, access is always serialised.
 
-private final class WealthIBKRTimerHolder {
-    var timers: [Timer] = []
+private final class WealthTimerHolder {
+    /// IBKR price-only timers (9 m, 19 m, 29 m).
+    var ibkrTimers: [Timer] = []
+    /// Extra soft timers beyond the first (the first is stored in `softTimer`).
+    var extraSoftTimers: [Timer] = []
 }
 
-private nonisolated(unsafe) let ibkrTimerHolder = WealthIBKRTimerHolder()
+private nonisolated(unsafe) let timerHolder = WealthTimerHolder()
 
 extension WealthEngineStore {
 
@@ -54,10 +58,14 @@ extension WealthEngineStore {
 
     func invalidateTimers() {
         // Invalidate and release all IBKR timers
-        ibkrTimerHolder.timers.forEach { $0.invalidate() }
-        ibkrTimerHolder.timers.removeAll()
+        timerHolder.ibkrTimers.forEach { $0.invalidate() }
+        timerHolder.ibkrTimers.removeAll()
 
-        // Invalidate soft and deep timers
+        // Invalidate extra soft timers
+        timerHolder.extraSoftTimers.forEach { $0.invalidate() }
+        timerHolder.extraSoftTimers.removeAll()
+
+        // Invalidate the primary soft and deep timers
         softTimer?.invalidate()
         softTimer = nil
         heavyTimer?.invalidate()
@@ -68,16 +76,19 @@ extension WealthEngineStore {
 
     private func scheduleRecurringTimers() {
         // IBKR price-only timers (9 m, 19 m, 29 m) – retained in holder
-        ibkrTimerHolder.timers.append(makeIBKRTimer(at: TimerInterval.ibkr1))
-        ibkrTimerHolder.timers.append(makeIBKRTimer(at: TimerInterval.ibkr2))
-        ibkrTimerHolder.timers.append(makeIBKRTimer(at: TimerInterval.ibkr3))
+        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr1))
+        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr2))
+        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr3))
 
-        // Soft refresh timers (10 m, 20 m)
-        scheduleSoftTimer(at: TimerInterval.soft1)
-        scheduleSoftTimer(at: TimerInterval.soft2)
+        // Soft refresh timers (10 m, 20 m).
+        // The first is stored in the existing `softTimer` property; the
+        // second is retained in `timerHolder.extraSoftTimers` to prevent
+        // the reference from being lost and to enable proper invalidation.
+        softTimer = makeSoftTimer(at: TimerInterval.soft1)
+        timerHolder.extraSoftTimers.append(makeSoftTimer(at: TimerInterval.soft2))
 
         // Deep refresh timer (30 m)
-        scheduleDeepTimer(at: TimerInterval.deep)
+        heavyTimer = makeDeepTimer(at: TimerInterval.deep)
     }
 
     private func makeIBKRTimer(at interval: TimeInterval) -> Timer {
@@ -89,25 +100,21 @@ extension WealthEngineStore {
         }
     }
 
-    private func scheduleSoftTimer(at interval: TimeInterval) {
-        // Keep a reference to the last created soft timer so it can be
-        // invalidated via `invalidateTimers()`.
-        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+    private func makeSoftTimer(at interval: TimeInterval) -> Timer {
+        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task.detached(priority: .userInitiated) { [weak self] in
                 await self?.refresh(mode: .soft)
             }
         }
-        softTimer = timer
     }
 
-    private func scheduleDeepTimer(at interval: TimeInterval) {
-        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+    private func makeDeepTimer(at interval: TimeInterval) -> Timer {
+        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task.detached(priority: .userInitiated) { [weak self] in
                 await self?.refresh(mode: .deep)
             }
         }
-        heavyTimer = timer
     }
 }
