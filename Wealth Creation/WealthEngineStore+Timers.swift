@@ -14,6 +14,18 @@ import Foundation
 // All timer callbacks dispatch work to a background thread so the main
 // thread / UI is never blocked.
 
+// MARK: - IBKR timer storage
+//
+// Swift extensions cannot add stored properties, so IBKR timer references
+// are kept in this file-private holder.  Since WealthEngineStore is a
+// MainActor-isolated singleton, access is always serialised.
+
+private final class WealthIBKRTimerHolder {
+    var timers: [Timer] = []
+}
+
+private nonisolated(unsafe) let ibkrTimerHolder = WealthIBKRTimerHolder()
+
 extension WealthEngineStore {
 
     // MARK: Timer intervals (seconds)
@@ -41,6 +53,11 @@ extension WealthEngineStore {
     // MARK: - Timer lifecycle (internal helpers)
 
     func invalidateTimers() {
+        // Invalidate and release all IBKR timers
+        ibkrTimerHolder.timers.forEach { $0.invalidate() }
+        ibkrTimerHolder.timers.removeAll()
+
+        // Invalidate soft and deep timers
         softTimer?.invalidate()
         softTimer = nil
         heavyTimer?.invalidate()
@@ -50,10 +67,10 @@ extension WealthEngineStore {
     // MARK: - Private scheduling
 
     private func scheduleRecurringTimers() {
-        // IBKR price-only timers (9 m, 19 m, 29 m)
-        scheduleIBKRTimer(at: TimerInterval.ibkr1)
-        scheduleIBKRTimer(at: TimerInterval.ibkr2)
-        scheduleIBKRTimer(at: TimerInterval.ibkr3)
+        // IBKR price-only timers (9 m, 19 m, 29 m) – retained in holder
+        ibkrTimerHolder.timers.append(makeIBKRTimer(at: TimerInterval.ibkr1))
+        ibkrTimerHolder.timers.append(makeIBKRTimer(at: TimerInterval.ibkr2))
+        ibkrTimerHolder.timers.append(makeIBKRTimer(at: TimerInterval.ibkr3))
 
         // Soft refresh timers (10 m, 20 m)
         scheduleSoftTimer(at: TimerInterval.soft1)
@@ -63,7 +80,7 @@ extension WealthEngineStore {
         scheduleDeepTimer(at: TimerInterval.deep)
     }
 
-    private func scheduleIBKRTimer(at interval: TimeInterval) {
+    private func makeIBKRTimer(at interval: TimeInterval) -> Timer {
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task.detached(priority: .userInitiated) { [weak self] in

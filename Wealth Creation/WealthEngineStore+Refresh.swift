@@ -30,7 +30,7 @@ extension WealthEngineStore {
 
     /// Dispatch a refresh on the appropriate background queue.
     /// This method is safe to call from any context; it always executes
-    /// the actual work on a `.userInitiated` background thread.
+    /// the actual work via `Task.detached` on a `.userInitiated` background thread.
     func refresh(mode: RefreshMode) async {
         switch mode {
         case .ibkr:
@@ -46,53 +46,38 @@ extension WealthEngineStore {
 
     /// Download all opportunity cards and score them.
     func runUniverseScan() async {
-        await DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self else { return }
-            Task { @MainActor [weak self] in
-                self?.performUniverseScan()
-            }
-        }
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performUniverseScan()
+        }.value
     }
 
     /// Rate cards with AI score + confidence (reference only, no ranking).
     func runAIScan() async {
-        await DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self else { return }
-            Task { @MainActor [weak self] in
-                self?.performAIScan()
-            }
-        }
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performAIScan()
+        }.value
     }
 
     /// Apply the market ranking gate (top 100 executable greens only).
     func runMarketRanking() async {
-        await DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self else { return }
-            Task { @MainActor [weak self] in
-                self?.performMarketRanking()
-            }
-        }
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performMarketRanking()
+        }.value
     }
 
     /// Append final research-feed intel to ranked cards.
     func runResearchFeeds() async {
-        await DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self else { return }
-            Task { @MainActor [weak self] in
-                self?.performResearchFeeds()
-            }
-        }
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performResearchFeeds()
+        }.value
     }
 
     // MARK: - Composite refresh pipelines
 
     private func runIBKRPriceSync() async {
-        await DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self else { return }
-            Task { @MainActor [weak self] in
-                self?.performIBKRSync()
-            }
-        }
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.performIBKRSync()
+        }.value
     }
 
     private func runSoftRefresh() async {
@@ -111,8 +96,8 @@ extension WealthEngineStore {
     // MARK: - Low-level scan implementations (override points)
     //
     // These @MainActor methods perform the actual data work and update
-    // @Published properties.  They are called only from background-initiated
-    // Tasks and dispatch back to the main actor via the enclosing Task block.
+    // @Published properties.  Task.detached above ensures they are scheduled
+    // on a background executor before hopping to @MainActor for the update.
 
     @MainActor
     func performUniverseScan() {
@@ -140,18 +125,5 @@ extension WealthEngineStore {
     @MainActor
     func performIBKRSync() {
         // Price-only sync via IBKR bridge.
-    }
-}
-
-// MARK: - DispatchQueue async/await shim
-
-private extension DispatchQueue {
-    func async(_ work: @escaping () -> Void) async {
-        await withCheckedContinuation { continuation in
-            self.async {
-                work()
-                continuation.resume()
-            }
-        }
     }
 }
