@@ -1,0 +1,93 @@
+import Foundation
+
+// MARK: - Opportunity+CardStateMachine
+//
+// Computed properties and helpers that implement the card state machine
+// described in the problem statement.
+//
+// Card lifecycle:
+//
+//   Scored opportunity
+//       ↓
+//   GREEN CHECK
+//   ├─ Strong Green (unrealisedPnL ≥ 0)  → eligible for Market Ranking
+//   ├─ Weak Green   (unrealisedPnL < 0)  → routed to Blue (waiting)
+//   └─ Fails check                       → Red / Grey
+//       ↓
+//   SAFEGUARD GATE (see WealthEngineStore+Materialization.swift)
+//       ↓
+//   MARKET RANKING (rank assigned here; no card bypasses this gate)
+//       ↓
+//   AI LIVE EVALUATION → Activity / Blue / stays in bucket
+
+extension Opportunity {
+
+    // MARK: - Green card classification
+
+    /// A "Strong Green" card has a non-negative unrealised P/L.
+    /// These are the only cards eligible to enter market ranking.
+    var isStrongGreen: Bool {
+        unrealizedPnL >= 0
+    }
+
+    /// A "Weak Green" card has a negative unrealised P/L.
+    /// It is routed to the Blue (waiting) bucket until conditions improve.
+    var isWeakGreen: Bool {
+        unrealizedPnL < 0
+    }
+
+    // MARK: - Safeguard checks (consumed by WealthEngineStore+Materialization)
+
+    /// `true` when the card's analysis data is considered stale and
+    /// should not be used for ranking.
+    var isDataStale: Bool {
+        dataQualityLabel.localizedCaseInsensitiveContains("stale")
+    }
+
+    /// `true` when there are no execution-state blockers (e.g. pending
+    /// orders, blocked symbols, settlement holds).
+    ///
+    /// Delegates to `isMarketExecutableCandidate` which already encodes
+    /// the full execution-viability check in the core model.
+    var isExecutionClean: Bool {
+        isMarketExecutableCandidate
+    }
+
+    /// `true` when the card is not flagged with an unstable anomaly signal.
+    var isAnomalyStable: Bool {
+        !aiRiskStance.localizedCaseInsensitiveContains("unstable")
+    }
+
+    /// Earnings-event risk score (0–100).
+    ///
+    /// Maps to the card's `risk` field filtered to earnings-catalyst signals.
+    /// A value ≥ 70 triggers the safeguard gate rejection.
+    ///
+    /// NOTE: Replace the implementation body with the actual model field once
+    /// it is available (e.g. `risk.earningsScore` or a dedicated property).
+    var earningsRisk: Int {
+        // Derive from existing `risk` float property (0–1 range → 0–100).
+        Int((risk * 100).rounded())
+    }
+
+    /// Macro-event risk score (0–100).
+    ///
+    /// Maps to the card's macro/geopolitical risk component.
+    /// A value ≥ 75 triggers the safeguard gate rejection.
+    ///
+    /// NOTE: Replace the implementation body with the actual model field once
+    /// it is available.
+    var macroRisk: Int {
+        // Derive from `probability` inverted (high probability = lower macro risk).
+        Int(((1.0 - probability) * 100).rounded())
+    }
+
+    // MARK: - Blue card ranking helpers
+
+    /// A Blue card's rank within its own waiting-list bucket.
+    /// Lower rank = higher priority for re-promotion to Green.
+    var blueRankPriority: Int {
+        // Rank by AI score descending; ties broken by symbol (stable sort).
+        aiScore
+    }
+}
