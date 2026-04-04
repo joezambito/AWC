@@ -69,14 +69,29 @@ extension WealthEngineStore {
     // MARK: - Private helpers
 
     private func clearPersistedCache() {
-        let keys = [
+        // Remove lightweight UserDefaults timestamps
+        let defaultsKeys = [
             "awc_engine_last_refresh",
-            "awc_engine_last_heavy_refresh",
-            "awc_engine_ranked_assets",
-            "awc_engine_scanned_signals",
-            "awc_engine_holdings"
+            "awc_engine_last_heavy_refresh"
         ]
         let defaults = UserDefaults.standard
-        keys.forEach { defaults.removeObject(forKey: $0) }
+        defaultsKeys.forEach { defaults.removeObject(forKey: $0) }
+
+        // Remove file-backed large-array caches
+        let fm       = FileManager.default
+        let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
+        let fileNames = [
+            "awc_engine_ranked_assets.json",
+            "awc_engine_scanned_signals.json",
+            "awc_engine_holdings.json"
+        ]
+        for name in fileNames {
+            if let url = cacheDir?.appendingPathComponent(name) {
+                try? fm.removeItem(at: url)
+            }
+        }
+
+        // Remove downstream file-backed caches
+        WealthDownstreamCacheSanity.shared.invalidateAllFileCaches()
     }
 }

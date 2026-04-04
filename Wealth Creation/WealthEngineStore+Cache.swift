@@ -5,17 +5,47 @@ import Foundation
 // Handles persisting the engine's current snapshot so that on the next
 // app launch the UI can be populated immediately from cache (before the
 // background startup sequence delivers fresh data).
+//
+// ── Persistence strategy ──────────────────────────────────────────────────
+// Large payloads (ranked assets, scanned signals, holdings) are stored as
+// JSON files in the app's Caches directory.  Only lightweight scalar values
+// (timestamps) are kept in UserDefaults.
+//
+// Rationale:
+//   • UserDefaults is synchronous at app launch – decoding 128 k ranked
+//     assets on the main thread caused multi-second UI freezes.
+//   • UserDefaults has practical limits (~4 MB) before reliability degrades.
+//   • File-backed storage allows atomic writes, file-modification timestamps
+//     for freshness checking, and off-main-thread reads.
+
+// Module-level constant: resolved once at startup, never changes for the
+// lifetime of the process.  Using a module-level let avoids the need for a
+// stored property (which extensions cannot add) while preventing repeated
+// FileManager filesystem lookups on every property access.
+private let wealthEngineCacheDir: URL? =
+    FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
 
 extension WealthEngineStore {
 
-    // MARK: - Cache storage keys
+    // MARK: - UserDefaults keys (lightweight scalars ONLY)
 
-    private enum CacheKey {
+    private enum DefaultsKey {
         static let lastRefresh      = "awc_engine_last_refresh"
         static let lastHeavyRefresh = "awc_engine_last_heavy_refresh"
-        static let rankedAssetsData = "awc_engine_ranked_assets"
-        static let scannedSignals   = "awc_engine_scanned_signals"
-        static let holdingsData     = "awc_engine_holdings"
+    }
+
+    // MARK: - File-backed cache URLs
+
+    var rankedAssetsFileURL: URL? {
+        wealthEngineCacheDir?.appendingPathComponent("awc_engine_ranked_assets.json")
+    }
+
+    var scannedSignalsFileURL: URL? {
+        wealthEngineCacheDir?.appendingPathComponent("awc_engine_scanned_signals.json")
+    }
+
+    var holdingsFileURL: URL? {
+        wealthEngineCacheDir?.appendingPathComponent("awc_engine_holdings.json")
     }
 
     // MARK: - Public API
@@ -26,76 +56,88 @@ extension WealthEngineStore {
     ///
     /// Called as the very first step of `bootstrap()` – before any network
     /// or scan work begins.
+    ///
+    /// Large array decoding is **not** performed here – call
+    /// `restoreCacheInBackground(completion:)` (from
+    /// `WealthEngineStore+BackgroundCache.swift`) to avoid blocking the
+    /// main thread.  This synchronous variant restores timestamps only and
+    /// is kept for compatibility with any call site that cannot be made async.
     func restoreCache() {
         let defaults = UserDefaults.standard
-
-        if let stored = defaults.object(forKey: CacheKey.lastRefresh) as? Date {
+        if let stored = defaults.object(forKey: DefaultsKey.lastRefresh) as? Date {
             lastRefresh = stored
         }
-        if let stored = defaults.object(forKey: CacheKey.lastHeavyRefresh) as? Date {
+        if let stored = defaults.object(forKey: DefaultsKey.lastHeavyRefresh) as? Date {
             lastHeavyRefresh = stored
         }
-
-        restoreRankedAssets(from: defaults)
-        restoreScannedSignals(from: defaults)
-        restoreHoldings(from: defaults)
+        restoreRankedAssetsFromFile()
+        restoreScannedSignalsFromFile()
+        restoreHoldingsFromFile()
     }
 
-    /// Persist the current engine snapshot to `UserDefaults`.
-    /// Call after any scan phase that produces meaningful state changes.
+    /// Persist the current engine snapshot.
+    ///   • Timestamps → UserDefaults (tiny, read synchronously at launch)
+    ///   • Large arrays → Caches directory JSON files (atomic, off-thread-safe)
+    ///
+    /// Prefer `saveInBackground()` (from `WealthEngineStore+BackgroundCache.swift`)
+    /// to avoid encoding 128 k cards on the main thread.
     func save() {
         let defaults = UserDefaults.standard
-
         if let date = lastRefresh {
-            defaults.set(date, forKey: CacheKey.lastRefresh)
+            defaults.set(date, forKey: DefaultsKey.lastRefresh)
         }
         if let date = lastHeavyRefresh {
-            defaults.set(date, forKey: CacheKey.lastHeavyRefresh)
+            defaults.set(date, forKey: DefaultsKey.lastHeavyRefresh)
         }
-
-        persistRankedAssets(to: defaults)
-        persistScannedSignals(to: defaults)
-        persistHoldings(to: defaults)
+        persistRankedAssetsToFile()
+        persistScannedSignalsToFile()
+        persistHoldingsToFile()
     }
 
-    // MARK: - Private helpers
+    // MARK: - Private file I/O helpers
 
-    private func restoreRankedAssets(from defaults: UserDefaults) {
-        guard
-            let data = defaults.data(forKey: CacheKey.rankedAssetsData),
-            let decoded = try? JSONDecoder().decode([Opportunity].self, from: data)
+    private func restoreRankedAssetsFromFile() {
+        guard let url = rankedAssetsFileURL,
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode([Opportunity].self, from: data)
         else { return }
         rankedAssets = decoded
     }
 
-    private func persistRankedAssets(to defaults: UserDefaults) {
-        guard let data = try? JSONEncoder().encode(rankedAssets) else { return }
-        defaults.set(data, forKey: CacheKey.rankedAssetsData)
+    private func persistRankedAssetsToFile() {
+        guard let url = rankedAssetsFileURL,
+              let data = try? JSONEncoder().encode(rankedAssets)
+        else { return }
+        try? data.write(to: url, options: [.atomic])
     }
 
-    private func restoreScannedSignals(from defaults: UserDefaults) {
-        guard
-            let data = defaults.data(forKey: CacheKey.scannedSignals),
-            let decoded = try? JSONDecoder().decode([MarketSignal].self, from: data)
+    private func restoreScannedSignalsFromFile() {
+        guard let url = scannedSignalsFileURL,
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode([MarketSignal].self, from: data)
         else { return }
         scannedSignals = decoded
     }
 
-    private func persistScannedSignals(to defaults: UserDefaults) {
-        guard let data = try? JSONEncoder().encode(scannedSignals) else { return }
-        defaults.set(data, forKey: CacheKey.scannedSignals)
+    private func persistScannedSignalsToFile() {
+        guard let url = scannedSignalsFileURL,
+              let data = try? JSONEncoder().encode(scannedSignals)
+        else { return }
+        try? data.write(to: url, options: [.atomic])
     }
 
-    private func restoreHoldings(from defaults: UserDefaults) {
-        guard
-            let data = defaults.data(forKey: CacheKey.holdingsData),
-            let decoded = try? JSONDecoder().decode([Holding].self, from: data)
+    private func restoreHoldingsFromFile() {
+        guard let url = holdingsFileURL,
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode([Holding].self, from: data)
         else { return }
         holdings = decoded
     }
 
-    private func persistHoldings(to defaults: UserDefaults) {
-        guard let data = try? JSONEncoder().encode(holdings) else { return }
-        defaults.set(data, forKey: CacheKey.holdingsData)
+    private func persistHoldingsToFile() {
+        guard let url = holdingsFileURL,
+              let data = try? JSONEncoder().encode(holdings)
+        else { return }
+        try? data.write(to: url, options: [.atomic])
     }
 }

@@ -67,29 +67,38 @@ final class WealthEngineStartupController {
     private func runStartupSequence() async {
         let engine = WealthEngineStore.shared
 
+        // ── Pre-flight: integrity check ───────────────────────────────────
+        // Reset any stuck in-flight state from a previous interrupted session
+        // before starting a new run.
+        WealthEngineRuntimeRecovery.shared.runStartupIntegrityCheck()
+
+        // Mark cache restore complete (restoreCacheInBackground was already
+        // called before beginStartupSequence; record it in the scheduler).
+        WealthEngineScanScheduler.shared.markPhaseComplete(.cacheRestore)
+
         // ── Step 1 : Universe scan ────────────────────────────────────────
-        await engine.runUniverseScan()
+        await engine.runUniverseScanWithProgress()
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterUniverse)
         guard !Task.isCancelled else { return }
 
         // ── Step 2 : AI scan ─────────────────────────────────────────────
-        await engine.runAIScan()
+        await engine.runAIScanWithProgress()
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterAI)
         guard !Task.isCancelled else { return }
 
         // ── Step 3 : Market ranking ───────────────────────────────────────
-        await engine.runMarketRanking()
+        await engine.runMarketRankingWithProgress()
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterMarket)
         guard !Task.isCancelled else { return }
 
         // ── Step 4 : Research feeds ───────────────────────────────────────
-        await engine.runResearchFeeds()
+        await engine.runResearchFeedsWithProgress()
 
         guard !Task.isCancelled else { return }
 
@@ -97,5 +106,16 @@ final class WealthEngineStartupController {
         isStartupComplete = true
         startupTask = nil
         engine.rescheduleTimers()
+
+        // Signal that startup is complete so the ready-state gate can be
+        // armed by the first downstream rebuild (triggered via the
+        // wealthEngineDidBecomeReady notification path).
+        WealthEventLogStore.shared.record(
+            title: "Startup Controller",
+            detail: "Startup sequence complete. Timers rescheduled.",
+            category: "orchestration",
+            tintName: "green",
+            timestamp: .now
+        )
     }
 }

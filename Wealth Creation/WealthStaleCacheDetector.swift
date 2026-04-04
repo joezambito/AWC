@@ -15,8 +15,10 @@ import Foundation
 //   • `isCachedMarketWithoutLiveScores()` – detects the Market-exists /
 //     AI-scores-absent mismatch.
 //   • `isCacheStale(threshold:)` – detects data older than a threshold.
-//   • `checkAndRebuildIfNeeded()` – combines both checks and delegates to
-//     `WealthDownstreamRebuildOrchestrator` when either condition is true.
+//   • `isAILiveResultsStale()` – detects stale AI Live file cache.
+//   • `checkAndRebuildIfNeeded()` – combines all checks and delegates to
+//     `WealthDownstreamRebuildOrchestrator` when any condition is true.
+//     Uses the 5-minute post-unlock threshold per the problem statement.
 //
 // Fixes:
 //   Error #2 – Stale-Cache Detection
@@ -31,13 +33,17 @@ final class WealthStaleCacheDetector {
     static let shared = WealthStaleCacheDetector()
     private init() {}
 
-    // MARK: Stale-data threshold
+    // MARK: Stale-data thresholds
 
-    /// Cache is considered stale when the last refresh is older than this
-    /// interval (default: 30 minutes, matching the deep-refresh timer).
-    private let defaultThreshold: TimeInterval = 30 * 60
+    /// Post-unlock stale threshold: if last refresh is older than this,
+    /// force a downstream rebuild so live AI scores are always refreshed
+    /// on every unlock or app reopen.  5 minutes matches the problem
+    /// statement requirement ("stale lastRefresh > 5 min").
+    let postUnlockStaleThreshold: TimeInterval = 5 * 60
 
-    // MARK: - Public API
+    /// Background freshness threshold: matches the deep-refresh timer (30 min)
+    /// used for background validation by `WealthDownstreamCacheSanity`.
+    let backgroundFreshnessThreshold: TimeInterval = 30 * 60    // MARK: - Public API
 
     /// Returns `true` when `rankedAssets` is non-empty (Market cache
     /// restored) but every ranked asset has an AI score of zero, meaning
@@ -57,26 +63,62 @@ final class WealthStaleCacheDetector {
         return Date().timeIntervalSince(lastRefresh) > threshold
     }
 
-    /// Convenience overload using `defaultThreshold`.
+    /// Convenience overload using the post-unlock stale threshold (5 min).
     func isCacheStale() -> Bool {
-        isCacheStale(threshold: defaultThreshold)
+        isCacheStale(threshold: postUnlockStaleThreshold)
     }
 
-    /// Run both stale-cache checks and trigger a downstream rebuild when
-    /// either condition is detected.
+    /// Returns `true` when the AI Live results file is missing or was
+    /// written more than `postUnlockStaleThreshold` ago.
+    func isAILiveResultsStale() -> Bool {
+        !WealthDownstreamCacheSanity.shared.isAILiveResultsFresh
+    }
+
+    /// Returns `true` when the Activity state file is missing or stale.
+    func isActivityStateStale() -> Bool {
+        !WealthDownstreamCacheSanity.shared.isActivityStateFresh
+    }
+
+    /// Run all stale-cache checks and trigger a downstream rebuild when
+    /// any condition is detected.
+    ///
+    /// Checks (any one triggers rebuild):
+    ///   1. Cached Market cards but AI Live scores all-zero
+    ///   2. Last refresh older than 5 minutes (post-unlock threshold)
+    ///   3. AI Live results file is missing or stale
+    ///   4. Activity state file is missing or stale
+    ///
+    /// When stale AI Live results are detected, they are invalidated before
+    /// the rebuild so the UI shows all Market cards without old exclusions
+    /// while the fresh AI Live pass runs.
     ///
     /// This is the primary call-site used by `WealthSessionUnlockController`
     /// on every unlock / app reopen.
     func checkAndRebuildIfNeeded() {
-        let missingLiveScores = isCachedMarketWithoutLiveScores()
-        let cacheIsStale      = isCacheStale()
+        let missingLiveScores  = isCachedMarketWithoutLiveScores()
+        let cacheIsStale       = isCacheStale()
+        let aiLiveStale        = isAILiveResultsStale()
+        let activityStale      = isActivityStateStale()
 
-        if missingLiveScores || cacheIsStale {
-            let reason = missingLiveScores ? "missing-ai-live-scores" : "stale-cache"
+        var reasons: [String] = []
+        if missingLiveScores  { reasons.append("missing-ai-live-scores") }
+        if cacheIsStale       { reasons.append("stale-cache->5min") }
+        if aiLiveStale        { reasons.append("stale-ai-live-file") }
+        if activityStale      { reasons.append("stale-activity-file") }
+
+        let needsRebuild = !reasons.isEmpty
+
+        if needsRebuild {
+            // Invalidate stale AI Live results so the UI shows Market cards
+            // without old exclusions while the fresh rebuild runs.
+            if missingLiveScores || aiLiveStale {
+                WealthDownstreamCacheSanity.shared.invalidateAILiveResults()
+            }
+            let reason = reasons.joined(separator: ", ")
             WealthDownstreamRebuildOrchestrator.shared.triggerRebuild(reason: reason)
         } else {
-            // Cache is fresh and live scores are present; trigger a lightweight
-            // rebuild anyway so Activity always re-evaluates after unlock.
+            // Cache is fresh; trigger a lightweight rebuild anyway so
+            // Activity always re-evaluates after unlock.
             WealthDownstreamRebuildOrchestrator.shared.triggerRebuild(reason: "session-resume")
         }
     }
