@@ -38,16 +38,10 @@ extension WealthEngineStore {
     func runActivationSequence() {
         guard activationTask == nil else { return }
 
-        // Tear down any residual timers from a previous session so they
+        // Tear down any residual timer from a previous session so it
         // cannot fire while the activation sequence is running.
         scheduledCheckpointTimer?.invalidate()
-        softTimer?.invalidate()
-        heavyTimer?.invalidate()
-        preScanBurstTimer?.invalidate()
         scheduledCheckpointTimer = nil
-        softTimer = nil
-        heavyTimer = nil
-        preScanBurstTimer = nil
 
         downstreamRecoveryPending = true
 
