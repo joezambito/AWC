@@ -10,8 +10,8 @@ import Foundation
 //   Scored opportunity
 //       ↓
 //   GREEN CHECK
-//   ├─ Strong Green (unrealisedPnL ≥ 0)  → eligible for Market Ranking
-//   ├─ Weak Green   (unrealisedPnL < 0)  → routed to Blue (waiting)
+//   ├─ Strong Green (unrealizedPnL ≥ 0)  → eligible for Market Ranking
+//   ├─ Weak Green   (unrealizedPnL < 0)  → routed to Blue (waiting)
 //   └─ Fails check                       → Red / Grey
 //       ↓
 //   SAFEGUARD GATE (see WealthEngineStore+Materialization.swift)
@@ -24,13 +24,13 @@ extension Opportunity {
 
     // MARK: - Green card classification
 
-    /// A "Strong Green" card has a non-negative unrealised P/L.
+    /// A "Strong Green" card has a non-negative unrealized P/L.
     /// These are the only cards eligible to enter market ranking.
     var isStrongGreen: Bool {
         unrealizedPnL >= 0
     }
 
-    /// A "Weak Green" card has a negative unrealised P/L.
+    /// A "Weak Green" card has a negative unrealized P/L.
     /// It is routed to the Blue (waiting) bucket until conditions improve.
     var isWeakGreen: Bool {
         unrealizedPnL < 0
