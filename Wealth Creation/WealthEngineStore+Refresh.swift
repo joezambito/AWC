@@ -124,6 +124,26 @@ extension WealthEngineStore {
 
     @MainActor
     func performIBKRSync() {
-        // Price-only sync via IBKR bridge.
+        let bridge = WealthIBKRBridge.shared
+        guard bridge.apiReady else { return }
+
+        // Subscribe to live market data for the top-ranked market candidates.
+        // Quotes arrive asynchronously via the bridge's event-handler system.
+        // Cap at 25 symbols to stay within TWS simultaneous subscription limits
+        // for standard accounts.
+        let candidates = rankedAssets
+            .filter { $0.rank > 0 }
+            .prefix(25)
+
+        for opportunity in candidates {
+            let contract = WealthIBKRContract(
+                symbol:   opportunity.symbol,
+                secType:  "STK",
+                exchange: "SMART",
+                currency: "USD",
+                conId:    nil
+            )
+            bridge.subscribeMarketData(contract: contract)
+        }
     }
 }

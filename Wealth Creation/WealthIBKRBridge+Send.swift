@@ -43,6 +43,7 @@ extension WealthIBKRBridge {
 
     func subscribeMarketData(contract: WealthIBKRContract) -> Int {
         let reqID = nextReqID()
+        subscriptions[reqID] = Subscription(contract: contract, requestID: reqID)
         // Message ID 1 = REQ_MKT_DATA, version 11
         send([
             "1",
@@ -70,6 +71,8 @@ extension WealthIBKRBridge {
     }
 
     func cancelMarketData(requestID: Int) {
+        subscriptions.removeValue(forKey: requestID)
+        partialQuotes.removeValue(forKey: requestID)
         // Message ID 2 = CANCEL_MKT_DATA, version 1
         send(["2", "1", "\(requestID)"])
     }

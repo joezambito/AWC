@@ -22,6 +22,20 @@ struct WealthBrokerQuote: Equatable {
     let volume: Int
 }
 
+/// Accumulates individual TWS tick fields for a single market-data request
+/// until a complete bid/ask/last triple is available to emit as a quote event.
+struct WealthPartialQuote {
+    var bid:    Double = .nan
+    var ask:    Double = .nan
+    var last:   Double = .nan
+    var volume: Int    = 0
+
+    /// `true` when bid, ask, and last have all been populated.
+    var isComplete: Bool {
+        !bid.isNaN && !ask.isNaN && !last.isNaN
+    }
+}
+
 struct WealthIBKRContract: Equatable {
     let symbol: String
     let secType: String
@@ -60,8 +74,10 @@ final class WealthIBKRBridge {
     private var connection: NWConnection?
     private var eventHandlers: [EventHandler] = []
     private(set) var subscriptions: [Int: Subscription] = [:]
-    private var nextRequestID = 1
+    var nextRequestID = 1
     var receiveBuffer = Data()
+    /// Partial quote state accumulated per request ID while ticks arrive.
+    var partialQuotes: [Int: WealthPartialQuote] = [:]
 
     // MARK: - Init
 
@@ -192,7 +208,7 @@ final class WealthIBKRBridge {
     }
 
     private func handleApiMessage(data: Data) {
-        // Market data ticks, account updates, etc. parsed here in future extensions
+        parseApiMessage(data: data)
     }
 
     // MARK: - Low-Level Send (existing — do not modify)
