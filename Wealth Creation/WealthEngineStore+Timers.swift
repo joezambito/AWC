@@ -70,6 +70,14 @@ extension WealthEngineStore {
         softTimer = nil
         heavyTimer?.invalidate()
         heavyTimer = nil
+
+        // Invalidate legacy single-timer properties (defined in WealthCore.swift).
+        // These are no-ops once the new 6-timer system is in place, but must be
+        // cleared here so runActivationSequence() does not need to reference them.
+        scheduledCheckpointTimer?.invalidate()
+        scheduledCheckpointTimer = nil
+        preScanBurstTimer?.invalidate()
+        preScanBurstTimer = nil
     }
 
     // MARK: - Private scheduling

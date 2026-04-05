@@ -40,14 +40,9 @@ extension WealthEngineStore {
 
         // Tear down any residual timers from a previous session so they
         // cannot fire while the activation sequence is running.
-        scheduledCheckpointTimer?.invalidate()
-        softTimer?.invalidate()
-        heavyTimer?.invalidate()
-        preScanBurstTimer?.invalidate()
-        scheduledCheckpointTimer = nil
-        softTimer = nil
-        heavyTimer = nil
-        preScanBurstTimer = nil
+        // `invalidateTimers()` covers all timer references (IBKR, soft,
+        // deep, and legacy single-timer properties).
+        invalidateTimers()
 
         downstreamRecoveryPending = true
 
