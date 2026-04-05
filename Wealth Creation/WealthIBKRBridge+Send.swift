@@ -35,13 +35,22 @@ extension WealthIBKRBridge {
     func sendStartAPI() {
         // Message ID 71 = START_API, version 2
         // Fields: msgID, version, clientId, optionalCapabilities
-        logHandshakeState("sendStartAPI", detail: "Sending START_API (71) clientId=0")
-        send(["71", "2", "0", ""])
+        logHandshakeState("sendStartAPI", detail: "Sending START_API (71) clientId=\(clientID)")
+        send(["71", "2", "\(clientID)", ""])
     }
 
     // MARK: - Market Data
 
     func subscribeMarketData(contract: WealthIBKRContract) -> Int {
+        // Issue 9: validate contract inputs before sending to TWS.
+        guard !contract.symbol.trimmingCharacters(in: .whitespaces).isEmpty else {
+            Self.sendLog.warning("IBKRBridge.subscribeMarketData: empty symbol — request skipped.")
+            return -1
+        }
+        guard !contract.secType.trimmingCharacters(in: .whitespaces).isEmpty else {
+            Self.sendLog.warning("IBKRBridge.subscribeMarketData: empty secType — request skipped.")
+            return -1
+        }
         let reqID = nextReqID()
         // Message ID 1 = REQ_MKT_DATA, version 11
         send([

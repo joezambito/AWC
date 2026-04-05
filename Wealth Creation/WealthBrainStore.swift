@@ -61,6 +61,31 @@ final class WealthBrainStore {
         )
     }
 
+    /// Send the current brain status to the IBKR integration layer.
+    ///
+    /// Issue 5: surfaces network/integration errors to WealthEventLogStore
+    /// so they are user-visible rather than silently dropped.
+    func sendBrainStatusUpdate() {
+        guard WealthIBKRBridge.shared.apiReady else {
+            WealthEventLogStore.shared.record(
+                title: "Brain Status Update",
+                detail: "Error: IBKR integration not ready — brain status update could not be sent.",
+                category: "brain",
+                tintName: "red",
+                timestamp: .now
+            )
+            return
+        }
+        let store = WealthEngineStore.shared
+        WealthEventLogStore.shared.record(
+            title: "Brain Status Update",
+            detail: "stage=\(store.activationStage) | assets=\(store.rankedAssets.count) | cycleComplete=\(store.activationCycleComplete)",
+            category: "brain",
+            tintName: "green",
+            timestamp: .now
+        )
+    }
+
     // MARK: - Brain primitives (override points)
     //
     // These stubs are the designated call sites.  Full implementations live
