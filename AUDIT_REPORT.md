@@ -119,10 +119,10 @@ The 33 committed files are entirely Swift extensions on types whose base definit
 
 ---
 
-### BUG-9: `restoreCache()` Decodes Large Arrays on Main Thread
+### BUG-9: `restoreCache()` Comment Claims It Does Not Decode Large Arrays — Implementation Does
 **File:** `Wealth Creation/WealthEngineStore+Cache.swift`  
 **Function:** `restoreCache()` — lines 65–76  
-**What happens:** The function header comment says "Large array decoding is **not** performed here." The implementation then immediately calls `restoreRankedAssetsFromFile()`, `restoreScannedSignalsFromFile()`, and `restoreHoldingsFromFile()` — which each perform JSON decoding of potentially 128,000 records. This is the same main-thread freeze the `BackgroundCache` extension was designed to fix. Any call site that uses `restoreCache()` instead of `restoreCacheInBackground()` will freeze the UI on launch.
+**What happens:** The function's header comment explicitly states "Large array decoding is **not** performed here." This is incorrect. The implementation immediately calls `restoreRankedAssetsFromFile()`, `restoreScannedSignalsFromFile()`, and `restoreHoldingsFromFile()`, each of which performs JSON decoding of potentially 128,000 records synchronously on the calling thread. The comment is misleading: it describes intended behavior that the implementation does not follow. Any call site that relies on the stated contract — expecting this method to be safe on the main thread — will freeze the UI. The `BackgroundCache` extension was added precisely to fix this freeze, but as long as `restoreCache()` exists with a false contract comment, it will be called by developers who read the comment and trust it.
 
 ---
 
