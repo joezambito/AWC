@@ -1,107 +1,299 @@
 import Foundation
 
-// MARK: - WealthEngineScanScheduler
-//
-// NEW code only.  Does NOT modify any existing functions.
-//
-// Problem addressed:
-//   The AI Live pass can attempt to promote Market cards before the universe
-//   scan has reached a minimum completion threshold.  This causes AI Live
-//   results to be built from a partial universe, leading to stale rankings
-//   and empty Activity queues.
-//
-// Solution (new code only):
-//   `WealthEngineScanScheduler` tracks an observable scan-progress value
-//   (0.0 – 1.0) that is updated as each phase of the startup sequence
-//   completes.  Downstream consumers (notably `WealthAILiveCoordinator`)
-//   read `currentProgress` before evaluating candidates and gate promotion
-//   behind `minimumProgressForAILive`.
-//
-// Fixes:
-//   Blocker #5 – Scan progress gate missing from AI Live visibility
-//   Problem #7 – AI Live starvation: scan progress not at minimum gate
+extension WealthEngineStore {
+    private var phoneStartupScanDelayNanoseconds: UInt64 { 2_000_000_000 }
+    private var warmStartRefreshDelayNanoseconds: UInt64 { 3_000_000_000 }
+    private var warmStartRefreshWatchdogNanoseconds: UInt64 { 20_000_000_000 }
+    private var phoneStartupFinalizeDelayNanoseconds: UInt64 { 2_000_000_000 }
+    private var softScanDurationNanoseconds: UInt64 { 4_000_000_000 }
+    private var deepScanDurationNanoseconds: UInt64 { 8_000_000_000 }
 
-@MainActor
-final class WealthEngineScanScheduler {
-
-    // MARK: Shared instance
-
-    static let shared = WealthEngineScanScheduler()
-    private init() {}
-
-    // MARK: - Scan phases
-
-    /// Ordered list of scan phases.  Progress is computed as completed /
-    /// total phases so the value is uniformly distributed across the pipeline.
-    enum ScanPhase: Int, CaseIterable {
-        case cacheRestore  = 0
-        case universeScan  = 1
-        case aiScan        = 2
-        case marketRanking = 3
-        case researchFeeds = 4
+    var prefersFullSpeedActivation: Bool {
+#if targetEnvironment(macCatalyst)
+        return true
+#else
+        return false
+#endif
     }
 
-    // MARK: - Progress state
+    func runActivationSequence() {
+        guard activationTask == nil else { return }
+        scheduledCheckpointTimer?.invalidate()
+        softTimer?.invalidate()
+        heavyTimer?.invalidate()
+        preScanBurstTimer?.invalidate()
+        scheduledCheckpointTimer = nil
+        softTimer = nil
+        heavyTimer = nil
+        preScanBurstTimer = nil
+        downstreamRecoveryPending = true
 
-    /// Current overall scan progress (0.0 = no phases complete, 1.0 = all done).
-    private(set) var currentProgress: Double = 0
+        activationTask = Task { @MainActor [self] in
+            defer {
+                if Task.isCancelled {
+                    pendingRefreshPayload = nil
+                    startupSequencePhase = .idle
+                    endDashboardRefreshFreeze()
+                }
+                activationTask = nil
+            }
 
-    /// The minimum scan progress required before AI Live is allowed to
-    /// promote Market candidates.  Requires at least universe scan + AI scan
-    /// complete (phases 1 and 2 of 4 data phases → 0.5).
-    let minimumProgressForAILive: Double = 0.5
+            startupSequencePhase = .waitingToScan
+            try? await Task.sleep(nanoseconds: phoneStartupScanDelayNanoseconds)
+            guard !Task.isCancelled else { return }
 
-    /// `true` when the scan has reached the AI Live promotion gate.
-    var hasReachedAILiveGate: Bool {
-        currentProgress >= minimumProgressForAILive
+            let reusedCachedUniverse = WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
+            guard !Task.isCancelled else { return }
+
+            if !reusedCachedUniverse {
+                startupSequencePhase = .universeRefreshRunning
+                await WealthMarketUniverseStore.shared.reloadForStartupSequence()
+                guard !Task.isCancelled else { return }
+            }
+
+            startupSequencePhase = .aiScanRunning
+            startScanProgressAnimation(for: .startup)
+            await runStartupActivationScan()
+            guard !Task.isCancelled else { return }
+
+            await applyPendingRefreshState()
+            guard !Task.isCancelled else { return }
+
+            startupSequencePhase = .marketWarmupRunning
+            await runStartupMarketWarmup()
+            guard !Task.isCancelled else { return }
+
+            activationStage = 0
+            activationCycleComplete = true
+            lockedCheckpointProgress = Self.lockedCheckpointCount
+            tradingLifecycleArmed = true
+            await refreshDownstreamPromotionStateAfterStartupGate()
+            guard !Task.isCancelled else { return }
+            startupSequencePhase = .idle
+            rescheduleTimers()
+        }
     }
 
-    // MARK: - Phase tracking
+    func prepareForFreshLaunch() {
+        scheduledCheckpointTimer?.invalidate()
+        softTimer?.invalidate()
+        heavyTimer?.invalidate()
+        preScanBurstTimer?.invalidate()
+        scheduledCheckpointTimer = nil
+        softTimer = nil
+        heavyTimer = nil
+        preScanBurstTimer = nil
+        activationTask?.cancel()
+        activationTask = nil
+        hasBootstrapped = false
+        pendingRefreshPayload = nil
+        pendingPublishTask?.cancel()
+        pendingPublishTask = nil
+        scanProgressAnimationTask?.cancel()
+        scanProgressAnimationTask = nil
+        scanProgressAnimationEndsAt = nil
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
+        activationStage = 0
+        activationCycleComplete = false
+        lockedCheckpointProgress = 0
+        tradingLifecycleArmed = false
+        downstreamRecoveryPending = false
+        startupSequencePhase = .idle
+        appOpenUpdatedAt = nil
+        invalidatePersistedMarketRestoreGuard()
+        endDashboardRefreshFreeze()
+    }
 
-    private var completedPhases: Set<ScanPhase> = []
+    func bootstrap() {
+        guard !hasBootstrapped else { return }
+        hasBootstrapped = true
+        catchUpRecurringCyclesIfNeeded()
 
-    // MARK: - Public API
+        restorePersistedMarketCacheIfNeeded()
+        if useWarmStartupCacheIfAvailable() {
+            return
+        }
 
-    /// Mark a scan phase as complete and update `currentProgress`.
-    ///
-    /// Safe to call multiple times for the same phase – duplicate calls
-    /// are no-ops.
-    func markPhaseComplete(_ phase: ScanPhase) {
-        guard !completedPhases.contains(phase) else { return }
-        completedPhases.insert(phase)
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
+        activationStage = 0
+        activationCycleComplete = false
+        lockedCheckpointProgress = 0
+        tradingLifecycleArmed = false
+        runActivationSequence()
+    }
 
-        let totalPhases = Double(ScanPhase.allCases.count)
-        currentProgress = Double(completedPhases.count) / totalPhases
+    func handleForegroundActivation() {
+        guard activationTask == nil else { return }
+        catchUpRecurringCyclesIfNeeded()
+        restorePersistedMarketCacheIfNeeded()
+        if useWarmStartupCacheIfAvailable() {
+            return
+        }
+        if let lastRefresh, Date().timeIntervalSince(lastRefresh) < 8 {
+            return
+        }
 
-        WealthEventLogStore.shared.record(
-            title: "Scan Scheduler",
-            detail: "Phase complete: \(phase) | progress=\(String(format: "%.0f%%", currentProgress * 100))",
-            category: "orchestration",
-            tintName: currentProgress >= minimumProgressForAILive ? "green" : "blue",
-            timestamp: .now
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
+        activationStage = 0
+        activationCycleComplete = false
+        lockedCheckpointProgress = 0
+        tradingLifecycleArmed = false
+        runActivationSequence()
+    }
+
+    @discardableResult
+    private func useCachedPhoneStateIfAvailable() -> Bool {
+        guard !(scanUniverse.isEmpty && rankedAssets.isEmpty) else { return false }
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
+        activationStage = 0
+        activationCycleComplete = true
+        lockedCheckpointProgress = Self.lockedCheckpointCount
+        tradingLifecycleArmed = false
+        return true
+    }
+
+    @discardableResult
+    private func useWarmStartupCacheIfAvailable() -> Bool {
+        let restoredUniverse = WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
+        let restoredCards = useCachedPhoneStateIfAvailable()
+
+        guard restoredUniverse || restoredCards || hasUsableWarmStartCardCache else { return false }
+        guard hasUsableWarmStartCardCache || restoredUniverse else { return false }
+
+        applyWarmStartVisibleState()
+        if downstreamRecoveryPending {
+            runActivationSequence()
+        } else {
+            queueSilentWarmStartRefreshIfNeeded()
+        }
+        return true
+    }
+
+    private func queueSilentWarmStartRefreshIfNeeded() {
+        guard activationTask == nil else { return }
+        guard warmStartRefreshTask == nil else { return }
+
+        let staleInterval = max(60, configuredSoftRefreshMinutes * 60)
+        let shouldRefresh = lastRefresh == nil || Date().timeIntervalSince(lastRefresh!) >= staleInterval
+        guard shouldRefresh else { return }
+
+        warmStartRefreshTask = Task { [weak self] in
+            guard let self else { return }
+
+            let watchdog = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: self?.warmStartRefreshWatchdogNanoseconds ?? 20_000_000_000)
+                guard let self else { return }
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    WealthEventLogStore.shared.record(
+                        title: "Warm Refresh Watchdog",
+                        detail: "Silent warm-start refresh exceeded the watchdog window and was cancelled to keep cached UI stable.",
+                        category: "refresh",
+                        tintName: "orange",
+                        timestamp: .now
+                    )
+                    self.warmStartRefreshTask?.cancel()
+                }
+            }
+
+            defer {
+                watchdog.cancel()
+                Task { @MainActor [weak self] in
+                    self?.warmStartRefreshTask = nil
+                }
+            }
+
+            try? await Task.sleep(nanoseconds: warmStartRefreshDelayNanoseconds)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard self.activationTask == nil else { return }
+                guard !self.isDashboardRefreshInFlight else { return }
+                WealthEventLogStore.shared.record(
+                    title: "Warm Refresh",
+                    detail: "Cached open is staying visible while a silent background refresh runs.",
+                    category: "refresh",
+                    tintName: "cyan",
+                    timestamp: .now
+                )
+            }
+
+            await self.refreshAsync(mode: .soft, publishToUI: false)
+        }
+    }
+
+    func startScanProgressAnimation(for mode: RefreshMode) {
+        guard let durationNanoseconds = progressAnimationDurationNanoseconds(for: mode) else { return }
+        scanProgressAnimationTask?.cancel()
+        scanProgressAnimationTask = nil
+        scanProgressAnimationEndsAt = Date().addingTimeInterval(Double(durationNanoseconds) / 1_000_000_000)
+        activationStageTotal = Self.lockedCheckpointCount
+        activationStage = 0
+        activationCycleComplete = false
+        lockedCheckpointProgress = 0
+
+        let stepDelayNanoseconds = max(1, durationNanoseconds / UInt64(Self.lockedCheckpointCount))
+        scanProgressAnimationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            for step in 1...Self.lockedCheckpointCount {
+                guard !Task.isCancelled else { return }
+                self.activationStage = step
+                self.lockedCheckpointProgress = step
+                if step < Self.lockedCheckpointCount {
+                    try? await Task.sleep(nanoseconds: stepDelayNanoseconds)
+                }
+            }
+        }
+    }
+
+    func progressAnimationDurationNanoseconds(for mode: RefreshMode) -> UInt64? {
+        switch mode {
+        case .soft:
+            return softScanDurationNanoseconds
+        case .heavy, .deep:
+            return deepScanDurationNanoseconds
+        case .startup:
+            return phoneStartupFinalizeDelayNanoseconds
+        case .quick:
+            return nil
+        }
+    }
+
+    func pendingDashboardPublishDelayNanoseconds(now: Date = .now) -> UInt64 {
+        let baseDelayNanoseconds: UInt64 = 2_000_000_000
+        guard let endsAt = scanProgressAnimationEndsAt else { return baseDelayNanoseconds }
+        let remainingSeconds = max(0, endsAt.timeIntervalSince(now))
+        let remainingNanoseconds = UInt64(remainingSeconds * 1_000_000_000)
+        return baseDelayNanoseconds + remainingNanoseconds
+    }
+
+    private func runStartupMarketWarmup() async {
+        let portfolio = WealthPortfolioStore.shared
+        let universeStore = WealthMarketUniverseStore.shared
+        let quoteStore = WealthBrokerQuoteStore.shared
+        let snapshotStore = WealthPreparedSnapshotStore.shared
+
+        isMarketMaterializationInFlight = true
+        defer { isMarketMaterializationInFlight = false }
+
+        let marketCandidates = WealthAllCardsStore.shared.currentMarketCards(preferredRefreshTime: lastRefresh)
+
+        snapshotStore.invalidatePreparedMarkets()
+        snapshotStore.refreshMarkets(
+            engine: self,
+            portfolio: portfolio,
+            universeStore: universeStore,
+            quoteStore: quoteStore
         )
-
-        // Post a notification so any observer (e.g. AI Live coordinator)
-        // can react to progress changes without polling.
-        NotificationCenter.default.post(
-            name: .wealthScanProgressDidUpdate,
-            object: nil,
-            userInfo: ["progress": currentProgress]
+        WealthMarketViewCycleStore.shared.syncCycle(
+            candidates: marketCandidates,
+            cycleMarker: lastRefresh
         )
+        if let pendingMarketMaterializationTask {
+            await pendingMarketMaterializationTask.value
+        } else {
+            await Task.yield()
+        }
+        snapshotStore.refreshCore(engine: self, portfolio: portfolio)
     }
-
-    /// Reset the scheduler (e.g. after factory reset or for a new scan cycle).
-    func reset() {
-        completedPhases.removeAll()
-        currentProgress = 0
-    }
-}
-
-// MARK: - Notification name
-
-extension Notification.Name {
-    /// Posted on the main thread whenever `WealthEngineScanScheduler`
-    /// updates scan progress.  `userInfo["progress"]` contains the new
-    /// `Double` value (0.0 – 1.0).
-    static let wealthScanProgressDidUpdate = Notification.Name("WealthScanProgressDidUpdate")
 }
