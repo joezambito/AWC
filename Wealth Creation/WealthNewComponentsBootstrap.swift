@@ -52,10 +52,8 @@ enum WealthNewComponentsBootstrap {
         _ = WealthMarketExecutionAudit.shared
         _ = WealthAILiveRejectionAudit.shared
         _ = WealthActivityAdmissionAudit.shared
-        _ = WealthEngineScanScheduler.shared
         _ = WealthEngineRuntimeCoordinator.shared
         _ = WealthEngineRuntimeRecovery.shared
-        _ = WealthAILiveCoordinator.shared
         _ = WealthOrderRestrictionRules.shared
         _ = WealthPortfolioLifecycleHelper.shared
         _ = WealthBrainStore.shared
@@ -102,18 +100,22 @@ enum WealthNewComponentsBootstrap {
         let marketCards = engine.rankedAssets.filter { $0.rank > 0 }
         WealthDownstreamCacheSanity.shared.saveMarketSnapshot(marketCards)
 
-        // ── AI Live Evaluation (scan-progress gated) ───────────────────
-        // Run the evaluation pass; this also calls the rejection audit
-        // internally and saves the AI Live results to file-backed storage.
-        WealthAILiveCoordinator.shared.evaluateCandidates()
-
-        // ── AI Live Rejection Audit ────────────────────────────────────
-        // Audits market cards for conditions that cause AI Live shrinkage.
-        WealthAILiveRejectionAudit.shared.runAudit(on: marketCards)
-
-        // ── Order Restriction Audit ────────────────────────────────────
-        // Audits AI Live promoted cards for order-restriction blocking.
-        let promotedCards = WealthAILiveCoordinator.shared.promotedCards
+        // ── AI Live Evaluation ─────────────────────────────────────────────
+        // Derive promoted cards using the real static evaluate() API via livePicks().
+        let portfolio = WealthPortfolioStore.shared
+        let activityKeys = Set(portfolio.activityOpportunities.map(WealthOpportunityLaneRules.laneKey))
+        let holdingKeys = Set(
+            portfolio.holdings
+                .filter { $0.orderState != .filled }
+                .map(WealthOpportunityLaneRules.laneKey)
+        )
+        let promotedCards = WealthAILiveCoordinator.livePicks(
+            from: marketCards,
+            aiLiveResults: engine.aiLiveResultsByKey,
+            activityKeys: activityKeys,
+            holdingKeys: holdingKeys,
+            spendableCash: portfolio.freeBuyingPower
+        )
         WealthOrderRestrictionRules.shared.runAudit(on: promotedCards)
 
         // ── Activity Admission Audit ───────────────────────────────────
@@ -121,7 +123,7 @@ enum WealthNewComponentsBootstrap {
         WealthActivityAdmissionAudit.shared.runAudit(on: promotedCards)
 
         // ── Persist AI Live results (file-backed) ──────────────────────
-        // Already saved inside WealthAILiveCoordinator.evaluateCandidates().
+        // Already saved by the refresh pipeline via persistMarketCacheSnapshot.
         // Save the Activity state for freshness tracking.
         let admissibleSymbols = promotedCards
             .filter { $0.isMarketExecutableCandidate }

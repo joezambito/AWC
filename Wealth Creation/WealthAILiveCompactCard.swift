@@ -2,28 +2,43 @@ import SwiftUI
 
 // MARK: - WealthAILiveCompactCard
 //
-// A compact SwiftUI card that surfaces the primary AI Live selection
-// (the highest-ranked promoted opportunity) inline in any dashboard or
-// panel view.
-//
-// Usage:
-//   WealthAILiveCompactCard()
-//     .environmentObject(WealthEngineStore.shared)
+// A compact SwiftUI card that surfaces the primary AI Live selection.
+// Primary selection logic lives in the real Xcode project source.
+// This file is a placeholder to avoid phantom @StateObject/shared references.
 
 struct WealthAILiveCompactCard: View {
 
-    // MARK: - State
-
-    @StateObject private var coordinator = WealthAILiveCoordinator.shared
-
-    // MARK: - Body
+    @EnvironmentObject private var engine: WealthEngineStore
 
     var body: some View {
-        if let card = WealthAILiveCoordinator.shared.primarySelection {
+        let promotedCard = primarySelection
+        if let card = promotedCard {
             cardView(card)
         } else {
             emptyView
         }
+    }
+
+    private var primarySelection: Opportunity? {
+        let portfolio = WealthPortfolioStore.shared
+        let activityKeys = Set(portfolio.activityOpportunities.map(WealthOpportunityLaneRules.laneKey))
+        let holdingKeys = Set(
+            portfolio.holdings
+                .filter { $0.orderState != .filled }
+                .map(WealthOpportunityLaneRules.laneKey)
+        )
+        return WealthAILiveCoordinator.livePicks(
+            from: engine.rankedAssets,
+            aiLiveResults: engine.aiLiveResultsByKey,
+            activityKeys: activityKeys,
+            holdingKeys: holdingKeys,
+            spendableCash: portfolio.freeBuyingPower
+        )
+        .sorted {
+            if $0.rank != $1.rank { return $0.rank < $1.rank }
+            return $0.symbol < $1.symbol
+        }
+        .first
     }
 
     // MARK: - Sub-views

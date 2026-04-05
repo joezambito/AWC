@@ -1,135 +1,190 @@
 import Foundation
 
-// MARK: - WealthAILiveCoordinator
-//
-// NEW code only.  Does NOT modify any existing functions.
-//
-// Coordinates the AI Live evaluation pass: determines which Market-ranked
-// cards are eligible for AI Live promotion given the current scan progress
-// and card quality state.
-
-@MainActor
-final class WealthAILiveCoordinator {
-
-    // MARK: Shared instance
-
-    static let shared = WealthAILiveCoordinator()
-    private init() {}
-
-    // MARK: - Public state
-
-    /// Cards currently promoted to AI Live (non-empty only after at least
-    /// one evaluation pass has run at or above the scan-progress gate).
-    private(set) var promotedCards: [Opportunity] = []
-
-    /// Last time `evaluateCandidates()` ran to completion.
-    private(set) var lastEvaluationDate: Date?
-}
-
-// MARK: - WealthAILiveCoordinator+Evaluation
-//
-// Problem addressed:
-//   AI Live was promoting Market cards before the universe scan reached a
-//   minimum completion level.  Cards evaluated at low scan-progress have
-//   missing AI scores (all-zero), leading to stale promotion decisions and
-//   empty Activity queues.
-//
-// Solution (new code only):
-//   `evaluateCandidates()` reads `WealthEngineScanScheduler.currentProgress`
-//   before evaluating any card.  If the progress has not reached
-//   `minimumProgressForAILive` (default: 0.5, i.e. universe + AI scan done),
-//   evaluation is skipped and an audit event is logged.
-//
-// Fixes:
-//   Blocker #5 – Scan progress gate missing from AI Live visibility
-
 extension WealthAILiveCoordinator {
+    struct EvaluatedCandidate {
+        let opportunity: Opportunity
+        let result: WealthAILiveResult
+    }
 
-    // MARK: - Evaluation entry-point
+    @MainActor
+    static func evaluate(
+        opportunities: [Opportunity],
+        currentActivity: [Opportunity],
+        holdings: [Holding],
+        spendableCash: Double,
+        returnedFromActivity: [String: WealthActivityRefusalHandoff]
+    ) -> WealthAILiveEvaluation {
+        let holdingKeys = Set(holdings.map(WealthOpportunityLaneRules.laneKey))
+        let currentActivityKeys = Set(currentActivity.map(WealthOpportunityLaneRules.laneKey))
 
-    /// Evaluate all market-ranked cards against the AI Live intake conditions
-    /// and update `promotedCards` with the resulting set.
-    ///
-    /// Returns without evaluating if:
-    ///   • Scan progress is below `minimumProgressForAILive`.
-    ///   • The engine has no ranked assets.
-    ///
-    /// Safe to call from any context (always runs on `@MainActor`).
-    func evaluateCandidates() {
-        let scheduler = WealthEngineScanScheduler.shared
+        let rankedCandidates = opportunities
+            .map {
+                let key = WealthOpportunityLaneRules.laneKey($0)
+                return EvaluatedCandidate(
+                    opportunity: $0,
+                    result: liveValidation(for: $0, returnedFromActivity: returnedFromActivity[key])
+                )
+            }
+            .sorted(by: rankingOrder)
 
-        // ── Scan-progress gate ────────────────────────────────────────────
-        guard scheduler.hasReachedAILiveGate else {
-            WealthEventLogStore.shared.record(
-                title: "AI Live Coordinator",
-                detail: "Evaluation skipped: scan progress \(String(format: "%.0f%%", scheduler.currentProgress * 100)) < minimum \(String(format: "%.0f%%", scheduler.minimumProgressForAILive * 100)).",
-                category: "ai-live",
-                tintName: "orange",
-                timestamp: .now
-            )
-            return
+        var rankedResults = rankedCandidates.reduce(into: [String: WealthAILiveResult]()) { partialResult, candidate in
+            partialResult[candidate.result.key] = candidate.result
         }
 
-        let engine = WealthEngineStore.shared
-        let marketCards = engine.rankedAssets.filter { $0.rank > 0 }
+        let selectedKeys = selectPromotedKeys(
+            from: rankedCandidates,
+            rankedResults: rankedResults,
+            holdingKeys: holdingKeys,
+            spendableCash: spendableCash
+        )
 
-        guard !marketCards.isEmpty else {
-            WealthEventLogStore.shared.record(
-                title: "AI Live Coordinator",
-                detail: "Evaluation skipped: no ranked market cards.",
-                category: "ai-live",
-                tintName: "orange",
-                timestamp: .now
-            )
-            return
+        let replacedActivityKeys = currentActivityKeys.subtracting(selectedKeys)
+        let newSelectedKeys = selectedKeys.subtracting(currentActivityKeys)
+        let replacementPairs = pairedReplacements(
+            currentActivity: currentActivity,
+            replacedActivityKeys: replacedActivityKeys,
+            newSelectedKeys: newSelectedKeys,
+            rankedResults: rankedResults
+        )
+        let replacementByNewKey = replacementPairs.reduce(into: [String: String]()) { partialResult, pair in
+            partialResult[pair.0] = pair.1
+        }
+        let replacedByOldKey = replacementPairs.reduce(into: [String: String]()) { partialResult, pair in
+            partialResult[pair.1] = pair.0
         }
 
-        // ── Run the rejection audit (measurement only, no logic changes) ──
-        WealthAILiveRejectionAudit.shared.runAudit(on: marketCards)
-
-        // ── Promotion filter (75 % re-validation of Market ranking) ─────
-        // AI Live does NOT promote cards — that is Market's exclusive job.
-        // AI Live only validates that Market-ranked cards are still good
-        // against the 75 % risk thresholds.  aiScore and topTierRank are
-        // not checked here; rank is assigned solely by the Market file.
-        //
-        // Thresholds mirror the safeguard gate in WealthEngineStore+Materialization:
-        //   earningsRisk < SafeguardThreshold.earningsRisk (70)
-        //   macroRisk    < SafeguardThreshold.macroRisk    (75)
-        let earningsRiskLimit = SafeguardThreshold.earningsRisk
-        let macroRiskLimit    = SafeguardThreshold.macroRisk
-
-        let eligible = marketCards.filter { card in
-            !card.isDataStale
-            && card.isAnomalyStable
-            && card.earningsRisk < earningsRiskLimit
-            && card.macroRisk < macroRiskLimit
+        if !replacementByNewKey.isEmpty {
+            for key in newSelectedKeys {
+                guard replacementByNewKey[key] != nil else { continue }
+                if let current = rankedResults[key] {
+                    rankedResults[key] = current.with(
+                        decision: WealthAILiveDecision.replaceExisting,
+                        reason: "\(current.reason) Promoted over a weaker current Activity card by Market rank."
+                    )
+                }
+            }
         }
 
-        promotedCards      = eligible
-        lastEvaluationDate = Date()
-
-        // Persist to file-backed cache so the result survives app restart.
-        WealthDownstreamCacheSanity.shared.saveAILiveResults(eligible)
-
-        // Push the promoted symbol set into WealthAllCardsStore so that
-        // livePickKeys reflects the current AI Live result.  The sync() call
-        // in materializeMarketCandidates() hardcodes livePickKeys: [] because
-        // evaluation has not yet run at that point; this targeted update
-        // corrects the count without requiring a full re-sync.
-        WealthAllCardsStore.shared.updateLivePickKeys(eligible.map(\.symbol))
-
-        WealthEventLogStore.shared.record(
-            title: "AI Live Coordinator",
-            detail: "Evaluation complete: \(marketCards.count) market → \(eligible.count) promoted.",
-            category: "ai-live",
-            tintName: eligible.isEmpty ? "red" : "green",
-            timestamp: .now
+        return WealthAILiveEvaluation(
+            resultsByKey: rankedResults,
+            promotedKeys: selectedKeys,
+            replacedActivityKeys: replacedActivityKeys,
+            replacementByNewKey: replacementByNewKey,
+            replacedByOldKey: replacedByOldKey
         )
     }
 
-    /// `true` when `promotedCards` is non-empty.
-    var hasPromotedCards: Bool {
-        !promotedCards.isEmpty
+    @MainActor
+    static func livePicks(
+        from opportunities: [Opportunity],
+        aiLiveResults: [String: WealthAILiveResult],
+        activityKeys: Set<String>,
+        holdingKeys: Set<String>,
+        spendableCash: Double
+    ) -> [Opportunity] {
+        _ = spendableCash
+        var selected: [Opportunity] = []
+
+        let sorted = opportunities.sorted { lhs, rhs in
+            if lhs.rank != rhs.rank { return lhs.rank < rhs.rank }
+            return lhs.symbol.localizedStandardCompare(rhs.symbol) == .orderedAscending
+        }
+
+        for opportunity in sorted {
+            let key = WealthOpportunityLaneRules.laneKey(opportunity)
+            guard let result = aiLiveResults[key], result.allowsActivityPromotion else { continue }
+            guard opportunity.rank > 0 else { continue }
+            guard opportunity.hasFreshPromotionRefresh else { continue }
+            guard !activityKeys.contains(key) else { continue }
+            guard !holdingKeys.contains(key) else { continue }
+            guard opportunity.orderState != OrderExecutionState.filled else { continue }
+
+            selected.append(opportunity)
+        }
+
+        return selected
+    }
+
+    fileprivate static func liveValidation(
+        for opportunity: Opportunity,
+        returnedFromActivity handoff: WealthActivityRefusalHandoff?
+    ) -> WealthAILiveResult {
+        var reasons: [String] = []
+
+        if let handoff {
+            reasons.append("\(handoff.state.rawValue): \(handoff.reason)")
+        }
+
+        if opportunity.rank <= 0 {
+            reasons.append("Market rank is missing")
+        }
+
+        if !opportunity.hasFreshPromotionRefresh {
+            reasons.append("Latest Market refresh is too old for AI Live promotion")
+        }
+
+        if opportunity.orderState == .filled {
+            reasons.append("Order is already filled")
+        }
+
+        if opportunity.dataQualityLabel.uppercased() == "AGING" {
+            reasons.append("Data quality is aging")
+        } else if opportunity.dataQualityLabel.uppercased() == "STALE" {
+            reasons.append("Data quality is stale")
+        }
+
+        if opportunity.earningsEventRisk >= 70 {
+            reasons.append("Earnings event risk is elevated")
+        }
+
+        if opportunity.macroEventRisk >= 75 {
+            reasons.append("Macro event risk is elevated")
+        }
+
+        if opportunity.advancedSignal.anomalyState != "STABLE" {
+            reasons.append("Live anomaly signal is elevated")
+        }
+
+        if opportunity.advancedSignal.executionState != "EXECUTION CLEAN" {
+            reasons.append("Execution quality is no longer clean")
+        }
+
+        if let readinessReason = opportunity.executionReadiness.reason {
+            reasons.append(readinessReason)
+        }
+
+        let decision: WealthAILiveDecision
+        if opportunity.rank <= 0 ||
+            !opportunity.hasFreshPromotionRefresh ||
+            opportunity.orderState == .filled ||
+            !opportunity.isExecutionEligible ||
+            opportunity.dataQualityLabel.uppercased() == "STALE" ||
+            opportunity.earningsEventRisk >= 70 ||
+            opportunity.macroEventRisk >= 75 ||
+            opportunity.advancedSignal.anomalyState != "STABLE" ||
+            opportunity.advancedSignal.executionState != "EXECUTION CLEAN" {
+            decision = .reject
+        } else {
+            decision = .promote
+        }
+
+        let reason: String
+        if reasons.isEmpty {
+            reason = "AI Live accepted the card using Market rank as authority."
+        } else if decision == .promote {
+            reason = "Market rank remained valid. \(reasons.joined(separator: " "))"
+        } else {
+            reason = reasons.joined(separator: " ")
+        }
+
+        return WealthAILiveResult(
+            key: WealthOpportunityLaneRules.laneKey(opportunity),
+            symbol: opportunity.symbol,
+            market: opportunity.market,
+            aiLiveDecision: decision,
+            reason: reason,
+            activityReturnState: handoff?.state,
+            activityReturnReason: handoff?.reason
+        )
     }
 }

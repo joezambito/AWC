@@ -50,34 +50,3 @@ struct WealthAILiveIntakeCondition: Equatable {
     /// Optional detail message (e.g. measured value vs threshold).
     let detail: String?
 }
-
-// MARK: - WealthAILiveCoordinator+Models extension
-
-extension WealthAILiveCoordinator {
-
-    /// Build a list of intake conditions for diagnostic display.
-    func intakeConditions(for opportunity: Opportunity) -> [WealthAILiveIntakeCondition] {
-        [
-            WealthAILiveIntakeCondition(
-                name:   "Data not stale",
-                passed: !opportunity.isDataStale,
-                detail: opportunity.isDataStale ? "STALE" : "FRESH"
-            ),
-            WealthAILiveIntakeCondition(
-                name:   "Anomaly stable",
-                passed: opportunity.isAnomalyStable,
-                detail: opportunity.isAnomalyStable ? "STABLE" : "UNSTABLE"
-            ),
-            WealthAILiveIntakeCondition(
-                name:   "Earnings risk < 70",
-                passed: opportunity.earningsRisk < 70,
-                detail: "earningsRisk=\(opportunity.earningsRisk)"
-            ),
-            WealthAILiveIntakeCondition(
-                name:   "Macro risk < 75",
-                passed: opportunity.macroRisk < 75,
-                detail: "macroRisk=\(opportunity.macroRisk)"
-            ),
-        ]
-    }
-}

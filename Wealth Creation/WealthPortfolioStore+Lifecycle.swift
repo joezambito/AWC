@@ -46,8 +46,21 @@ extension WealthPortfolioStore {
             return
         }
 
-        // Run the admission audit so the diagnostic counters are up-to-date.
-        let promotedCards = WealthAILiveCoordinator.shared.promotedCards
+        let engine = WealthEngineStore.shared
+        let portfolioStore = WealthPortfolioStore.shared
+        let activityKeys = Set(portfolioStore.activityOpportunities.map(WealthOpportunityLaneRules.laneKey))
+        let holdingKeys = Set(
+            portfolioStore.holdings
+                .filter { $0.orderState != .filled }
+                .map(WealthOpportunityLaneRules.laneKey)
+        )
+        let promotedCards = WealthAILiveCoordinator.livePicks(
+            from: engine.rankedAssets,
+            aiLiveResults: engine.aiLiveResultsByKey,
+            activityKeys: activityKeys,
+            holdingKeys: holdingKeys,
+            spendableCash: portfolioStore.freeBuyingPower
+        )
         WealthActivityAdmissionAudit.shared.runAudit(on: promotedCards)
 
         // Trigger the Activity admission pass.
