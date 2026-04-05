@@ -2,6 +2,16 @@ import Foundation
 
 // MARK: - WealthAppSessionController
 //
+// REPLACEMENT FILE — Startup Audit & Lag Tracing added.
+//
+// Tracing additions (observe only – no logic change):
+//   `WealthStartupLagTracer.shared.trace(_:)` calls inserted at the start of
+//   each lifecycle entry-point so the console and in-app event log show
+//   exactly when each phase fires and the elapsed time since app launch.
+//   No existing logic, branch, or return path has been altered.
+//
+// Original documentation preserved below.
+//
 // NEW code only.  Does NOT modify any existing functions.
 //
 // Problem addressed:
@@ -59,11 +69,16 @@ final class WealthAppSessionController {
         guard !hasLaunched else { return }
         hasLaunched = true
 
+        // ── Startup trace ─────────────────────────────────────────────────
+        WealthStartupLagTracer.shared.trace("prepareLaunch – start")
+
         // Activate pipeline singletons (registers all NC observers)
         WealthNewComponentsBootstrap.activate()
+        WealthStartupLagTracer.shared.trace("prepareLaunch – pipeline singletons activated")
 
         // Restore cache off the main thread, then start the startup sequence.
         WealthEngineStore.shared.restoreCacheInBackground {
+            WealthStartupLagTracer.shared.trace("prepareLaunch – cache restore complete; startup sequence beginning")
             WealthEngineStartupController.shared.beginStartupSequence()
         }
 
@@ -87,6 +102,9 @@ final class WealthAppSessionController {
     /// If startup has not yet completed, the startup sequence is already
     /// running the full pipeline – no additional action is taken.
     func applicationDidBecomeActive() {
+        // ── Startup trace ─────────────────────────────────────────────────
+        WealthStartupLagTracer.shared.trace("applicationDidBecomeActive – fired")
+
         WealthEngineRuntimeCoordinator.shared.handleBecameActive()
 
         WealthEventLogStore.shared.record(
