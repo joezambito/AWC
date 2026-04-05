@@ -31,10 +31,16 @@ extension WealthEngineStore {
     /// Replaces direct calls to `runUniverseScan()` in the startup sequence
     /// so progress is always recorded.  The original `runUniverseScan()` is
     /// unchanged and still available for callers that do not need tracking.
+    ///
+    /// Also records the universe download fingerprint via
+    /// `recordUniverseDownloaded()` so the first timer cycle correctly
+    /// detects whether a re-download is needed.
     func runUniverseScanWithProgress() async {
         postRefreshPhaseWillBegin(.universeScan)
         await runUniverseScan()
         WealthEngineScanScheduler.shared.markPhaseComplete(.universeScan)
+        // Seed the universe fingerprint so timer cycles can detect changes.
+        await MainActor.run { [weak self] in self?.recordUniverseDownloaded() }
         postRefreshPhaseDidComplete(.universeScan)
     }
 
@@ -47,10 +53,17 @@ extension WealthEngineStore {
     }
 
     /// Market ranking with scan-scheduler progress tracking.
+    ///
+    /// Also records `recordCardsRefreshed()` so subsequent timer cycles
+    /// can correctly compare the market-data-updated timestamp against this
+    /// completion point when deciding whether to re-score cards.
     func runMarketRankingWithProgress() async {
         postRefreshPhaseWillBegin(.marketRanking)
         await runMarketRanking()
         WealthEngineScanScheduler.shared.markPhaseComplete(.marketRanking)
+        // Seed the cards-refreshed timestamp so timer cycles can detect
+        // whether market data has been updated since this pass completed.
+        await MainActor.run { [weak self] in self?.recordCardsRefreshed() }
         postRefreshPhaseDidComplete(.marketRanking)
     }
 
