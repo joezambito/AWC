@@ -109,6 +109,14 @@ extension WealthEngineStore {
     @MainActor
     func performAIScan() {
         // AI scoring pass – populates aiScore + confidence on each card.
+        WealthBrainStore.shared.ingest(
+            opportunities: rankedAssets,
+            focusOpportunity: rankedAssets.first(where: { $0.rank == 1 }),
+            stage: activationStage,
+            stageTotal: 6,
+            cycleComplete: activationCycleComplete,
+            lastRefresh: lastRefresh
+        )
     }
 
     @MainActor

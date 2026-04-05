@@ -58,6 +58,7 @@ enum WealthNewComponentsBootstrap {
         _ = WealthAILiveCoordinator.shared
         _ = WealthOrderRestrictionRules.shared
         _ = WealthPortfolioLifecycleHelper.shared
+        _ = WealthBrainStore.shared
 
         // Observe `wealthEngineDidBecomeReady` to run audits and persist
         // file-backed downstream state after every successful rebuild.

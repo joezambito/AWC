@@ -75,45 +75,59 @@ extension WealthEngineStore {
     // MARK: - Private scheduling
 
     private func scheduleRecurringTimers() {
-        // IBKR price-only timers (9 m, 19 m, 29 m) – retained in holder
-        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr1))
-        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr2))
-        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr3))
+        // IBKR price-only timers (9 m, 19 m, 29 m) – retained in holder.
+        // Stages 0, 2, 4 correspond to the three IBKR price-sync events
+        // within a 30-minute cycle (see problem statement §2).
+        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr1, stage: 0))
+        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr2, stage: 2))
+        timerHolder.ibkrTimers.append(makeIBKRTimer(at: TimerInterval.ibkr3, stage: 4))
 
-        // Soft refresh timers (10 m, 20 m).
+        // Soft refresh timers (10 m, 20 m) – stages 1 and 3.
         // The first is stored in the existing `softTimer` property; the
         // second is retained in `timerHolder.extraSoftTimers` to prevent
         // the reference from being lost and to enable proper invalidation.
-        softTimer = makeSoftTimer(at: TimerInterval.soft1)
-        timerHolder.extraSoftTimers.append(makeSoftTimer(at: TimerInterval.soft2))
+        softTimer = makeSoftTimer(at: TimerInterval.soft1, stage: 1)
+        timerHolder.extraSoftTimers.append(makeSoftTimer(at: TimerInterval.soft2, stage: 3))
 
-        // Deep refresh timer (30 m)
-        heavyTimer = makeDeepTimer(at: TimerInterval.deep)
+        // Deep refresh timer (30 m) – stage 5
+        heavyTimer = makeDeepTimer(at: TimerInterval.deep, stage: 5)
     }
 
-    private func makeIBKRTimer(at interval: TimeInterval) -> Timer {
+    private func makeIBKRTimer(at interval: TimeInterval, stage: Int) -> Timer {
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task.detached(priority: .userInitiated) { [weak self] in
-                await self?.refresh(mode: .ibkr)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.activationStage = stage
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    await self?.refresh(mode: .ibkr)
+                }
             }
         }
     }
 
-    private func makeSoftTimer(at interval: TimeInterval) -> Timer {
+    private func makeSoftTimer(at interval: TimeInterval, stage: Int) -> Timer {
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task.detached(priority: .userInitiated) { [weak self] in
-                await self?.refresh(mode: .soft)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.activationStage = stage
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    await self?.refresh(mode: .soft)
+                }
             }
         }
     }
 
-    private func makeDeepTimer(at interval: TimeInterval) -> Timer {
+    private func makeDeepTimer(at interval: TimeInterval, stage: Int) -> Timer {
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task.detached(priority: .userInitiated) { [weak self] in
-                await self?.refresh(mode: .deep)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.activationStage = stage
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    await self?.refresh(mode: .deep)
+                }
             }
         }
     }
