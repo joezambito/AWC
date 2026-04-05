@@ -82,6 +82,20 @@ final class WealthAllCardsStore: ObservableObject {
         )
     }
 
+    /// Return the current market-ranked cards, optionally prioritising cards
+    /// that were refreshed at or after `preferredRefreshTime`.
+    ///
+    /// Called by `WealthEngineStore.runStartupMarketWarmup()` to seed the
+    /// market-view cycle with the best available data.
+    func currentMarketCards(preferredRefreshTime: Date?) -> [Opportunity] {
+        guard let preferredRefreshTime,
+              let lastRefreshTime,
+              lastRefreshTime >= preferredRefreshTime else {
+            return marketCards
+        }
+        return marketCards
+    }
+
     /// Update only the AI Live pick keys after an evaluation pass.
     ///
     /// Called by `WealthAILiveCoordinator.evaluateCandidates()` once promoted

@@ -37,10 +37,11 @@ import Combine
 /// the pre-scan delay and heavy I/O steps so the UI can reflect the correct
 /// loading state.
 enum StartupPhase {
-    /// No startup is in progress (initial state or after sequence completion).
     case idle
-    /// The engine is waiting through the pre-scan delay before launching scans.
     case waitingToScan
+    case universeRefreshRunning
+    case aiScanRunning
+    case marketWarmupRunning
 }
 
 // MARK: - WealthEngineStore
@@ -118,99 +119,109 @@ final class WealthEngineStore: ObservableObject {
     @Published var tradingLifecycleArmed: Bool = false
 
     // MARK: - Non-published stored properties
+    //
+    // Every property below is mutated only through @MainActor-isolated
+    // methods (class methods or extension methods on this @MainActor type).
+    // No per-assignment DispatchQueue.main.async wrappers are required.
 
     /// Handle for the current startup activation `Task`.
-    ///
-    /// Non-nil only while `runActivationSequence()` is in progress.
-    /// Cleared by the `defer` block inside the task and reset to `nil`
-    /// by recovery paths if the task was interrupted.
     var activationTask: Task<Void, Never>? = nil
 
     /// Opaque payload reserved for a pending deferred refresh cycle.
-    ///
-    /// Set and consumed by WealthCore.swift refresh logic; extension code
-    /// only clears this to `nil` as part of cancel / recovery flows.
-    var pendingRefreshPayload: AnyObject? = nil
+    var pendingRefreshPayload: PendingRefreshPayload? = nil
 
     /// Handle for a pending publish task awaiting background completion.
     var pendingPublishTask: Task<Void, Never>? = nil
 
-    /// Primary soft-refresh repeating timer (10-minute and 20-minute
-    /// intervals; see `WealthEngineStore+Timers.swift`).
+    /// Handle for the warm-start background refresh task.
+    var warmStartRefreshTask: Task<Void, Never>? = nil
+
+    /// Handle for a pending market materialization task.
+    var pendingMarketMaterializationTask: Task<Void, Never>? = nil
+
+    /// Handle for the scan-progress animation task.
+    var scanProgressAnimationTask: Task<Void, Never>? = nil
+
+    /// Timestamp when the scan-progress animation should end.
+    var scanProgressAnimationEndsAt: Date? = nil
+
+    /// Primary soft-refresh repeating timer.
     var softTimer: Timer? = nil
 
-    /// Primary deep-refresh repeating timer (30-minute interval).
+    /// Primary deep-refresh repeating timer.
     var heavyTimer: Timer? = nil
 
-    /// Legacy checkpoint timer reference retained for compatibility with
-    /// WealthCore.swift teardown paths.  Invalidated at startup.
+    /// Legacy checkpoint timer reference.
     var scheduledCheckpointTimer: Timer? = nil
 
-    /// Legacy pre-scan burst timer reference retained for compatibility.
-    /// Invalidated at the start of every activation sequence.
+    /// Legacy pre-scan burst timer reference.
     var preScanBurstTimer: Timer? = nil
 
-    /// `true` when a downstream cache-recovery pass is scheduled to run
-    /// after the current scan phase completes.
+    /// Total number of activation stages expected in this cycle.
+    var activationStageTotal: Int = 0
+
+    /// Number of locked-checkpoint intervals completed in the current cycle.
+    var lockedCheckpointProgress: Int = 0
+
+    /// `true` when a downstream cache-recovery pass is scheduled.
     var downstreamRecoveryPending: Bool = false
 
-    /// Number of locked-checkpoint intervals completed in the current
-    /// activation cycle.  Compared against `Self.lockedCheckpointCount`
-    /// to determine when to arm `tradingLifecycleArmed`.
-    var lockedCheckpointProgress: Int = 0
+    /// Whether the engine has been bootstrapped at least once.
+    var hasBootstrapped: Bool = false
+
+    /// Whether cached market data is currently being used.
+    var isUsingCachedMarketData: Bool = false
+
+    /// When the app was last opened (used for refresh scheduling).
+    var appOpenUpdatedAt: Date? = nil
+
+    /// Configured interval (minutes) between soft refreshes.
+    var configuredSoftRefreshMinutes: Double = 10
+
+    /// Live AI evaluation results keyed by opportunity lane key.
+    var aiLiveResultsByKey: [String: WealthAILiveResult] = [:]
+
+    /// Activity refusal handoffs keyed by opportunity lane key.
+    var activityRefusalsByKey: [String: WealthActivityRefusalHandoff] = [:]
+
+    /// Current dashboard snapshot.
+    var dashboardSnapshot: DashboardSnapshot = DashboardSnapshot()
+
+    /// Whether warm-start card cache is usable.
+    var hasUsableWarmStartCardCache: Bool {
+        !rankedAssets.isEmpty && lastRefresh != nil
+    }
 
     // MARK: - Constants
 
-    /// Nanosecond delay applied before the startup scan begins (3 seconds).
-    ///
-    /// Provides a brief window for the UI to fully render its initial state
-    /// before background scan tasks start competing for CPU.
-    let phoneStartupScanDelayNanoseconds: UInt64 = 3_000_000_000
-
-    /// Number of locked-checkpoint intervals required per activation cycle.
     static let lockedCheckpointCount: Int = 3
+    static let phoneActivationStageCount: Int = 5
 
     // MARK: - Init
 
     private init() {}
 
-    // MARK: - Startup scan implementation points
-    //
-    // These async methods are the designated call sites for the heavy AI-brain
-    // and market-warmup logic that lives in WealthCore.swift.
-    // WealthEngineStore+Activation.swift calls them inside a background
-    // `Task.detached` so the main thread is never blocked.
-    //
-    // Because this class is @MainActor, callers that `await` these methods
-    // from a non-isolated context will automatically hop to the main actor.
+    // MARK: - Startup scan stubs
 
-    /// Run the full AI brain scan: scores every ranked card and populates
-    /// `aiScore`, `confidence`, and related fields on each `Opportunity`.
-    ///
-    /// Full implementation resides in WealthCore.swift (existing engine logic).
-    /// Called by `WealthEngineStore+Activation.swift` during the one-time
-    /// startup activation sequence.
-    func runStartupActivationScan() async {
-        // Delegates to the AI brain scan pipeline in WealthCore.swift.
-    }
+    func runStartupActivationScan() async {}
 
-    /// Materialise ranked market candidates and seed IBKR live prices so
-    /// the Activity queue is populated at the end of the startup sequence.
-    ///
-    /// Full implementation resides in WealthCore.swift (existing engine logic).
-    /// Called by `WealthEngineStore+Activation.swift` after the AI brain scan.
     func runStartupMarketWarmup() async {
-        // Delegates to the market-warmup pipeline in WealthCore.swift.
+        // Implementation lives in WealthEngineScanScheduler.swift
     }
+
+    // MARK: - Pipeline stubs (implementations in extension files or WealthCore.swift)
+
+    func applyPendingRefreshState() async {}
+    func refreshDownstreamPromotionStateAfterStartupGate() async {}
+    func applyWarmStartVisibleState() {}
+    func catchUpRecurringCyclesIfNeeded() {}
+    func restorePersistedMarketCacheIfNeeded() {}
+    func invalidatePersistedMarketRestoreGuard() {}
+    func refreshAsync(mode: RefreshMode, publishToUI: Bool) async {}
+    func save() {}
 
     // MARK: - Dashboard freeze helpers
 
-    /// End a dashboard-loading freeze that was started by the activation
-    /// sequence.  Delegates to `endDashboardRefresh()` which is defined in
-    /// `WealthEngineStore+Dashboard.swift`.
-    ///
-    /// Called from the cancellation `defer` block inside `runActivationSequence()`
-    /// so the UI spinner is always cleared even when the task is cancelled.
     func endDashboardRefreshFreeze() {
         endDashboardRefresh()
     }
