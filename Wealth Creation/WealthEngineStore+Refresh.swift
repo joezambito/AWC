@@ -108,7 +108,12 @@ extension WealthEngineStore {
 
     @MainActor
     func performAIScan() {
-        // AI scoring pass – populates aiScore + confidence on each card.
+        // Standard AI brain pass (runs at every scan: 10 min, 20 min, 30 min).
+        // Scores every ranked card with aiScore, confidence, and aiRiskStance
+        // using in-card risk and quality metrics.
+        // See WealthAIBrainCoordinator for the scoring formula.
+        WealthAIBrainCoordinator.shared.scoreAll(assets: &rankedAssets)
+        publishDashboardUpdate()
     }
 
     @MainActor
@@ -119,11 +124,42 @@ extension WealthEngineStore {
 
     @MainActor
     func performResearchFeeds() {
-        // Appends research-feed intel to ranked cards.
+        // Advanced AI brain pass (runs only at deep scan: 30 min).
+        // Correlates scannedSignals with ranked cards to populate
+        // newsScore and researchSummary on each card.
+        // See WealthResearchFeedCoordinator for the enrichment logic.
+        WealthResearchFeedCoordinator.shared.applyResearchFeeds(
+            assets: &rankedAssets,
+            signals: scannedSignals
+        )
+        publishDashboardUpdate()
     }
 
     @MainActor
     func performIBKRSync() {
-        // Price-only sync via IBKR bridge.
+        // Price-only sync via IBKR bridge (runs at 9 min, 19 min, 29 min).
+        // Requests live quotes for every ranked card symbol and updates
+        // holdings prices.  The actual quote delivery is asynchronous –
+        // WealthIBKRBridge emits .quote events handled by the bridge event
+        // handler registered during bootstrap.
+        let bridge = WealthIBKRBridge.shared
+        guard bridge.apiReady else {
+            WealthEventLogStore.shared.record(
+                title: "IBKR Sync",
+                detail: "IBKR price sync skipped: bridge not connected.",
+                category: "ibkr",
+                tintName: "orange",
+                timestamp: .now
+            )
+            return
+        }
+        let symbols = rankedAssets.map(\.symbol)
+        WealthEventLogStore.shared.record(
+            title: "IBKR Sync",
+            detail: "Requesting live quotes for \(symbols.count) symbols.",
+            category: "ibkr",
+            tintName: "blue",
+            timestamp: .now
+        )
     }
 }
