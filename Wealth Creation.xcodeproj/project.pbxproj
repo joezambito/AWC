@@ -65,6 +65,14 @@
 		BF516B62FF0147FA77AC5CE5 /* WealthStartupLagTracer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F959594FEA93B59132662B /* WealthStartupLagTracer.swift */; };
 		DCC7979110AEA9E2E56D5B4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7AAFBD3F6FF17D3AB2C488BA /* Assets.xcassets */; };
 		0C2263317E137FE67A7DCF52 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EEAD0C3E6075081DABFD390E /* Preview Assets.xcassets */; };
+		1E878EF644442573D32681A3 /* WealthBrainModuleRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51B08C6271D134C7FF0AF92 /* WealthBrainModuleRegistry.swift */; };
+		DCFA4C842697B931C28298FD /* WealthCardHoldingStoreSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8663B228C1AF52A874C128C /* WealthCardHoldingStoreSupport.swift */; };
+		E2B5C56251AFC63CFE26D89D /* WealthCloudSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18516491D344D8B3D8C3686F /* WealthCloudSyncCoordinator.swift */; };
+		34F535AFB015062FC60F6A36 /* WealthConfidenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05A51F23CBE760FA6D5F330 /* WealthConfidenceStore.swift */; };
+		F8E14EE33CDF0A843E3B317D /* WealthDataAliveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 768B08F9788B934A04DFAB9F /* WealthDataAliveStore.swift */; };
+		25B962B132282FCC0117E91A /* WealthGreenCardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2913193EAB9330A83EF9CBF /* WealthGreenCardsStore.swift */; };
+		A7733201C2C025CA33549199 /* WealthGreyCardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1E9315C119BB497B073A85 /* WealthGreyCardsStore.swift */; };
+		79582F4539B422D8221993D5 /* WealthLiveMarketDataStore+Payload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51CBB131C45BA995296F7A1 /* WealthLiveMarketDataStore+Payload.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -128,6 +136,14 @@
 		5B2D202CE60EDF9CCDE6683C /* WealthSessionUnlockController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthSessionUnlockController.swift"; sourceTree = "<group>"; };
 		8ABECEAA76ED7AAC5C81F5EA /* WealthStaleCacheDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthStaleCacheDetector.swift"; sourceTree = "<group>"; };
 		51F959594FEA93B59132662B /* WealthStartupLagTracer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthStartupLagTracer.swift"; sourceTree = "<group>"; };
+		F51B08C6271D134C7FF0AF92 /* WealthBrainModuleRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthBrainModuleRegistry.swift; sourceTree = "<group>"; };
+		E8663B228C1AF52A874C128C /* WealthCardHoldingStoreSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthCardHoldingStoreSupport.swift; sourceTree = "<group>"; };
+		18516491D344D8B3D8C3686F /* WealthCloudSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthCloudSyncCoordinator.swift; sourceTree = "<group>"; };
+		F05A51F23CBE760FA6D5F330 /* WealthConfidenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthConfidenceStore.swift; sourceTree = "<group>"; };
+		768B08F9788B934A04DFAB9F /* WealthDataAliveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthDataAliveStore.swift; sourceTree = "<group>"; };
+		F2913193EAB9330A83EF9CBF /* WealthGreenCardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthGreenCardsStore.swift; sourceTree = "<group>"; };
+		1F1E9315C119BB497B073A85 /* WealthGreyCardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthGreyCardsStore.swift; sourceTree = "<group>"; };
+		D51CBB131C45BA995296F7A1 /* WealthLiveMarketDataStore+Payload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WealthLiveMarketDataStore+Payload.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -227,6 +243,14 @@
 				5B2D202CE60EDF9CCDE6683C /* WealthSessionUnlockController.swift */,
 				8ABECEAA76ED7AAC5C81F5EA /* WealthStaleCacheDetector.swift */,
 				51F959594FEA93B59132662B /* WealthStartupLagTracer.swift */,
+				F51B08C6271D134C7FF0AF92 /* WealthBrainModuleRegistry.swift */,
+				E8663B228C1AF52A874C128C /* WealthCardHoldingStoreSupport.swift */,
+				18516491D344D8B3D8C3686F /* WealthCloudSyncCoordinator.swift */,
+				F05A51F23CBE760FA6D5F330 /* WealthConfidenceStore.swift */,
+				768B08F9788B934A04DFAB9F /* WealthDataAliveStore.swift */,
+				F2913193EAB9330A83EF9CBF /* WealthGreenCardsStore.swift */,
+				1F1E9315C119BB497B073A85 /* WealthGreyCardsStore.swift */,
+				D51CBB131C45BA995296F7A1 /* WealthLiveMarketDataStore+Payload.swift */,
 				7AAFBD3F6FF17D3AB2C488BA /* Assets.xcassets */,
 				BD41A092ACFFC84576B298D2 /* Wealth Creation.entitlements */,
 				A10D4760EBAA946622B2454F /* Preview Content */,
@@ -360,6 +384,14 @@
 				FC18F2667BBF4B7C90D1F5C5 /* WealthSessionUnlockController.swift in Sources */,
 				2B8ECEEC092F51473206CF82 /* WealthStaleCacheDetector.swift in Sources */,
 				BF516B62FF0147FA77AC5CE5 /* WealthStartupLagTracer.swift in Sources */,
+				1E878EF644442573D32681A3 /* WealthBrainModuleRegistry.swift in Sources */,
+				DCFA4C842697B931C28298FD /* WealthCardHoldingStoreSupport.swift in Sources */,
+				E2B5C56251AFC63CFE26D89D /* WealthCloudSyncCoordinator.swift in Sources */,
+				34F535AFB015062FC60F6A36 /* WealthConfidenceStore.swift in Sources */,
+				F8E14EE33CDF0A843E3B317D /* WealthDataAliveStore.swift in Sources */,
+				25B962B132282FCC0117E91A /* WealthGreenCardsStore.swift in Sources */,
+				A7733201C2C025CA33549199 /* WealthGreyCardsStore.swift in Sources */,
+				79582F4539B422D8221993D5 /* WealthLiveMarketDataStore+Payload.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
