@@ -94,8 +94,22 @@ final class PersistenceManager {
     func loadBundle() -> EngineStateBundle? {
         guard let url = bundleURL else { return nil }
 
-        guard let data = try? Data(contentsOf: url) else {
-            Self.log.info("PersistenceManager.loadBundle: no bundle file found.")
+        // Use a throwing read so we can distinguish "file absent" (expected on
+        // first launch) from a genuine I/O error (disk full, permissions, etc.)
+        // and log each case at the appropriate severity level.
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            let nsErr = error as NSError
+            let isNotFound = nsErr.domain == NSCocoaErrorDomain
+                && (nsErr.code == NSFileNoSuchFileError
+                    || nsErr.code == NSFileReadNoSuchFileError)
+            if isNotFound {
+                Self.log.info("PersistenceManager.loadBundle: no bundle file found.")
+            } else {
+                Self.log.error("PersistenceManager.loadBundle: file read failed – \(error.localizedDescription)")
+            }
             return nil
         }
 

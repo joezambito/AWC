@@ -80,6 +80,9 @@ final class WealthPortfolioLifecycleHelper {
             return
         }
 
+        // Cancel the previous retry task before creating a new one so the old
+        // Task.sleep does not outlive its purpose and accumulate in the pool.
+        retryTask?.cancel()
         retryTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
             guard !Task.isCancelled, let self else { return }

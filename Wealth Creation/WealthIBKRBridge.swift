@@ -74,7 +74,8 @@ final class WealthIBKRBridge {
     // Using a named serial queue keeps the main dispatch queue free for
     // UI rendering and startup async tasks during the period when IBKR is
     // connecting alongside the universe download.
-    private nonisolated(unsafe) static let ibkrNetworkQueue = DispatchQueue(
+    // DispatchQueue conforms to Sendable so nonisolated(unsafe) is not needed.
+    private static let ibkrNetworkQueue = DispatchQueue(
         label: "com.awc.ibkr-bridge",
         qos: .userInitiated
     )

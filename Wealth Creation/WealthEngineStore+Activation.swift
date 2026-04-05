@@ -58,8 +58,11 @@ extension WealthEngineStore {
                 if Task.isCancelled {
                     pendingRefreshPayload = nil
                     startupSequencePhase = .idle
-                    endDashboardRefreshFreeze()
                 }
+                // Always clear the dashboard-refresh flag so the UI spinner
+                // is never stuck — regardless of whether the task completed
+                // normally or was cancelled.
+                endDashboardRefreshFreeze()
                 activationTask = nil
             }
 
