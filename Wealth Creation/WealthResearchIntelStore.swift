@@ -36,14 +36,7 @@ final class WealthResearchIntelStore {
     ///
     /// UI layers can read `store.intelBySymbol["AAPL"]` to obtain the
     /// most recent `WealthResearchCard` for a given card.
-    private(set) var intelBySymbol: [String: WealthResearchCard] = [:] {
-        didSet {
-            NotificationCenter.default.post(
-                name: .wealthResearchIntelDidUpdate,
-                object: nil
-            )
-        }
-    }
+    private(set) var intelBySymbol: [String: WealthResearchCard] = [:]
 
     // MARK: - Cache file URL
 
@@ -57,21 +50,31 @@ final class WealthResearchIntelStore {
     /// Update the store with a freshly-evaluated research card.
     ///
     /// If a card for the same symbol already exists it is replaced.
-    /// Triggers `wealthResearchIntelDidUpdate` notification.
+    /// Posts `wealthResearchIntelDidUpdate` only when the card differs
+    /// from the previously stored value.
     func update(_ card: WealthResearchCard) {
+        guard intelBySymbol[card.symbol] != card else { return }
         intelBySymbol[card.symbol] = card
+        NotificationCenter.default.post(name: .wealthResearchIntelDidUpdate, object: nil)
     }
 
     /// Update the store with a batch of freshly-evaluated research cards.
     ///
-    /// More efficient than calling `update(_:)` in a loop because the
-    /// `didSet` observer fires only once after the entire batch is applied.
+    /// Builds a merged dictionary first so only one notification is posted
+    /// if any card differs.  No notification is posted when nothing changed.
     func updateBatch(_ cards: [WealthResearchCard]) {
+        guard !cards.isEmpty else { return }
         var next = intelBySymbol
+        var changed = false
         for card in cards {
-            next[card.symbol] = card
+            if next[card.symbol] != card {
+                next[card.symbol] = card
+                changed = true
+            }
         }
+        guard changed else { return }
         intelBySymbol = next
+        NotificationCenter.default.post(name: .wealthResearchIntelDidUpdate, object: nil)
     }
 
     /// Return the most recently stored research intel for `symbol`, or
@@ -84,7 +87,10 @@ final class WealthResearchIntelStore {
     /// `activeSymbols`.  Call this after a market ranking pass to prune
     /// stale entries for cards that dropped out of the ranked set.
     func pruneSymbolsNotIn(_ activeSymbols: Set<String>) {
-        intelBySymbol = intelBySymbol.filter { activeSymbols.contains($0.key) }
+        let pruned = intelBySymbol.filter { activeSymbols.contains($0.key) }
+        guard pruned.count != intelBySymbol.count else { return }
+        intelBySymbol = pruned
+        NotificationCenter.default.post(name: .wealthResearchIntelDidUpdate, object: nil)
     }
 
     // MARK: - Persistence
@@ -101,7 +107,7 @@ final class WealthResearchIntelStore {
             try data.write(to: url, options: [.atomic])
             WealthEventLogStore.shared.record(
                 title: "Research Intel Store",
-                detail: "Persisted \(intelBySymbol.count) research cards (\(data.count / 1024) KB).",
+                detail: "Persisted \(intelBySymbol.count) research cards (\(String(format: "%.1f", Double(data.count) / 1024.0)) KB).",
                 category: "research",
                 tintName: "blue",
                 timestamp: .now

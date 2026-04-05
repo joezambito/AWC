@@ -163,14 +163,21 @@ extension WealthEngineStore {
         lastHeavyRefresh = .now
 
         // ── 7. Audit log ─────────────────────────────────────────────────
-        let spikingSymbols = refreshedCards.filter(\.priceSpike).map(\.symbol).joined(separator: ", ")
-        let elevatedVol    = refreshedCards.filter { $0.volumeSignal == "Elevated" }.count
+        let elevatedVol   = refreshedCards.filter { $0.volumeSignal == "Elevated" }.count
+        let spikeCount    = refreshedCards.filter(\.priceSpike).count
+        let spikeDetail   = spikeCount == 0
+            ? "none"
+            : refreshedCards
+                .filter(\.priceSpike)
+                .prefix(10)
+                .map(\.symbol)
+                .joined(separator: ", ")
         WealthEventLogStore.shared.record(
             title: "Research Feeds",
             detail: """
                 Deep refresh complete: \(refreshedCards.count) cards evaluated. \
                 Elevated volume: \(elevatedVol). \
-                Price spikes: \(spikingSymbols.isEmpty ? "none" : spikingSymbols).
+                Price spikes: \(spikeDetail).
                 """,
             category: "research",
             tintName: "green",

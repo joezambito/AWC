@@ -123,9 +123,10 @@ struct WealthResearchFeedEngine {
     ///   otherwise                            → 0.00–0.49 (neutral/bearish)
     private static func computeSocialScore(_ o: Opportunity) -> Double {
         if o.aiScore >= 75 && o.probability >= 0.70 {
-            // Bullish zone: blend both signals into the 0.80–1.00 range.
+            // Bullish zone: blend both signals then clamp to 0.80–1.00.
+            // blend is in ~0.75–1.00 range; we simply clamp to [0.80, 1.00].
             let blend = (Double(o.aiScore) / 100.0 * 0.70) + (o.probability * 0.30)
-            return min(1.0, 0.80 + (blend - 0.80) * 0.20)
+            return min(1.0, max(0.80, blend))
         } else if o.aiScore >= 55 && o.probability >= 0.50 {
             // Neutral-bullish zone: 0.50–0.79.
             let blend = (Double(o.aiScore) / 100.0 * 0.60) + (o.probability * 0.40)
@@ -252,9 +253,11 @@ struct WealthResearchFeedEngine {
 
     /// Build the list of intelligence data-source channel labels.
     ///
-    /// "AI Brain" and "Volume Analysis" are always present.
-    /// "IBKR Market Data" is added only when a live broker quote was used.
-    /// "Social Feeds" and "Risk Engine" are always present (computed values).
+    /// Always present: "AI Brain", "Volume Analysis", "Social Feeds", "Risk Engine".
+    /// These represent analytical components that are always evaluated, even when
+    /// the underlying signals are derived from AI scores rather than live data.
+    /// "IBKR Market Data" is inserted after "AI Brain" only when a live broker
+    /// quote was used during this evaluation pass.
     private static func buildIntelligenceChannels(quoteAvailable: Bool) -> [String] {
         var channels = ["AI Brain", "Volume Analysis", "Social Feeds", "Risk Engine"]
         if quoteAvailable {
