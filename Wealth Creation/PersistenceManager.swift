@@ -51,7 +51,7 @@ final class PersistenceManager {
     // MARK: - File URLs
 
     /// Single bundle file that replaces the three separate cache files.
-    var bundleURL: URL? {
+    private var bundleURL: URL? {
         FileManager.default
             .urls(for: .cachesDirectory, in: .userDomainMask)
             .first?

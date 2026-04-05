@@ -72,38 +72,6 @@ extension WealthEngineStore {
         }.value
     }
 
-    // MARK: - Scan entry-points with scan-scheduler progress reporting
-    //
-    // Called exclusively by WealthEngineStartupController so that each scan
-    // phase is both executed AND recorded in WealthEngineScanScheduler.
-    // Using separate wrappers keeps the base run* methods free of startup-
-    // specific concerns and lets timer refreshes call them without triggering
-    // redundant progress events.
-
-    /// Universe scan + progress mark for WealthEngineStartupController.
-    func runUniverseScanWithProgress() async {
-        await runUniverseScan()
-        WealthEngineScanScheduler.shared.markPhaseComplete(.universeScan)
-    }
-
-    /// AI scan + progress mark for WealthEngineStartupController.
-    func runAIScanWithProgress() async {
-        await runAIScan()
-        WealthEngineScanScheduler.shared.markPhaseComplete(.aiScan)
-    }
-
-    /// Market ranking + progress mark for WealthEngineStartupController.
-    func runMarketRankingWithProgress() async {
-        await runMarketRanking()
-        WealthEngineScanScheduler.shared.markPhaseComplete(.marketRanking)
-    }
-
-    /// Research feeds + progress mark for WealthEngineStartupController.
-    func runResearchFeedsWithProgress() async {
-        await runResearchFeeds()
-        WealthEngineScanScheduler.shared.markPhaseComplete(.researchFeeds)
-    }
-
     // MARK: - Composite refresh pipelines
 
     private func runIBKRPriceSync() async {
