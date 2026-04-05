@@ -107,11 +107,18 @@ extension WealthAILiveCoordinator {
             && card.rank <= WealthAILiveRejectionAudit.shared.topTierRankThreshold
         }
 
-        promotedCards    = eligible
+        promotedCards      = eligible
         lastEvaluationDate = Date()
 
         // Persist to file-backed cache so the result survives app restart.
         WealthDownstreamCacheSanity.shared.saveAILiveResults(eligible)
+
+        // Push the promoted symbol set into WealthAllCardsStore so that
+        // livePickKeys reflects the current AI Live result.  The sync() call
+        // in materializeMarketCandidates() hardcodes livePickKeys: [] because
+        // evaluation has not yet run at that point; this targeted update
+        // corrects the count without requiring a full re-sync.
+        WealthAllCardsStore.shared.updateLivePickKeys(eligible.map(\.symbol))
 
         WealthEventLogStore.shared.record(
             title: "AI Live Coordinator",

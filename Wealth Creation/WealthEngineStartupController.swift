@@ -181,12 +181,24 @@ final class WealthEngineStartupController {
         WealthStartupLagTracer.shared.trace("rescheduleTimers – done; startup complete")
         WealthStartupLagTracer.shared.printSummary()
 
-        // Signal that startup is complete so the ready-state gate can be
-        // armed by the first downstream rebuild (triggered via the
-        // wealthEngineDidBecomeReady notification path).
+        // Mark the downstream rebuild complete now that the startup sequence
+        // has run all four phases (universe → AI scan → market ranking →
+        // research feeds).  This transitions isFullyReady to true and fires
+        // wealthEngineDidBecomeReady so the post-ready pipeline (AI Live
+        // evaluation, Activity reconciliation, audit passes, cache sanity
+        // validation) executes on first launch.
+        //
+        // Without this call isDownstreamRebuildComplete stays false, isFullyReady
+        // stays false, wealthEngineDidBecomeReady never fires, and every
+        // downstream observer (WealthPortfolioLifecycleHelper, WealthNewComponentsBootstrap,
+        // WealthDownstreamCacheSanity) is permanently dormant on first launch —
+        // producing a count mismatch where Xcode logs show market cards but the
+        // simulator UI shows none.
+        WealthReadyStateGate.shared.markDownstreamRebuildComplete()
+
         WealthEventLogStore.shared.record(
             title: "Startup Controller",
-            detail: "Startup sequence complete. Timers rescheduled.",
+            detail: "Startup sequence complete. Timers rescheduled. Ready-state gate armed.",
             category: "orchestration",
             tintName: "green",
             timestamp: .now
