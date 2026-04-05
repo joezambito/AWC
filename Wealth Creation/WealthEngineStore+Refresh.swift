@@ -109,11 +109,14 @@ extension WealthEngineStore {
     @MainActor
     func performAIScan() {
         // AI scoring pass – populates aiScore + confidence on each card.
+        // stageCount: one stage per scheduled timer event in a 30-minute cycle
+        // (IBKR×3 at 9/19/29 min + Soft×2 at 10/20 min + Deep×1 at 30 min).
+        let stageCount = 6
         WealthBrainStore.shared.ingest(
             opportunities: rankedAssets,
             focusOpportunity: rankedAssets.first(where: { $0.rank == 1 }),
             stage: activationStage,
-            stageTotal: 6,
+            stageTotal: stageCount,
             cycleComplete: activationCycleComplete,
             lastRefresh: lastRefresh
         )

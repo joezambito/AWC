@@ -99,9 +99,7 @@ extension WealthEngineStore {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.activationStage = stage
-                Task.detached(priority: .userInitiated) { [weak self] in
-                    await self?.refresh(mode: .ibkr)
-                }
+                await self.refresh(mode: .ibkr)
             }
         }
     }
@@ -112,9 +110,7 @@ extension WealthEngineStore {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.activationStage = stage
-                Task.detached(priority: .userInitiated) { [weak self] in
-                    await self?.refresh(mode: .soft)
-                }
+                await self.refresh(mode: .soft)
             }
         }
     }
@@ -125,9 +121,7 @@ extension WealthEngineStore {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.activationStage = stage
-                Task.detached(priority: .userInitiated) { [weak self] in
-                    await self?.refresh(mode: .deep)
-                }
+                await self.refresh(mode: .deep)
             }
         }
     }
