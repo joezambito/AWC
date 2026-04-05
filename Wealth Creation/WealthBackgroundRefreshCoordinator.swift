@@ -2,10 +2,14 @@ import Foundation
 
 // MARK: - WealthBackgroundRefreshCoordinator
 //
-// Coordinates background app refresh requests from the OS.
-// Ensures the engine performs a soft refresh when iOS/macOS wakes the app
-// in the background so that market data stays reasonably fresh even when
-// the app is not in the foreground.
+// Responds to OS background-refresh grants and the wealthEngineDidBecomeReady
+// notification.  Runs a soft refresh only when data is actually stale.
+//
+// Fix: previously this coordinator triggered refresh(mode: .soft) immediately
+// on every wealthEngineDidBecomeReady event regardless of freshness.  Because
+// startup itself just downloaded the universe, that caused an immediate second
+// download the moment startup completed.  The coordinator now checks
+// WealthDataAliveStore before deciding what to refresh.
 
 @MainActor
 final class WealthBackgroundRefreshCoordinator {
@@ -22,10 +26,10 @@ final class WealthBackgroundRefreshCoordinator {
     private(set) var lastBackgroundRefresh: Date?
     private var isRefreshInFlight = false
 
-    /// Minimum interval between background refresh attempts (15 minutes).
+    /// Minimum interval between full background refresh attempts (15 minutes).
     private let minimumRefreshInterval: TimeInterval = 15 * 60
 
-    // MARK: - App state observations
+    // MARK: - Observations
 
     private func registerForAppStateNotifications() {
         NotificationCenter.default.addObserver(
@@ -41,16 +45,23 @@ final class WealthBackgroundRefreshCoordinator {
 
     // MARK: - Refresh logic
 
-    /// Perform a soft background refresh if enough time has passed since
-    /// the last one.  Safe to call from any context.
     func performBackgroundRefreshIfNeeded() async {
         guard !isRefreshInFlight else { return }
 
+        // Throttle: don't refresh if we refreshed recently.
         if let last = lastBackgroundRefresh,
            Date().timeIntervalSince(last) < minimumRefreshInterval {
+            return
+        }
+
+        // Skip entirely if universe is still fresh — startup just ran.
+        // runUniverseScan() has its own cache gate, but checking here avoids
+        // waking the AI + market pipeline unnecessarily right after startup.
+        guard !WealthDataAliveStore.shared.isUniverseAlive ||
+              !WealthDataAliveStore.shared.isAIScoresAlive else {
             WealthEventLogStore.shared.record(
                 title: "Background Refresh",
-                detail: "Skipped: last refresh was \(Int(Date().timeIntervalSince(last) / 60)) min ago.",
+                detail: "Skipped – all data layers are fresh.",
                 category: "refresh",
                 tintName: "blue",
                 timestamp: .now

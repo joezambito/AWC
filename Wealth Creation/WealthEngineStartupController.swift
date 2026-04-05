@@ -117,7 +117,9 @@ final class WealthEngineStartupController {
         }.value
 
         if hasCachedUniverse {
-            // Valid cache – mark the scan phase complete without re-downloading.
+            // Valid cache – arm the alive store so timer-based refreshes skip
+            // the universe download for the next 6 hours.
+            WealthDataAliveStore.shared.recordUniverseDownload()
             WealthEngineScanScheduler.shared.markPhaseComplete(.universeScan)
         } else {
             // Call reloadForStartupSequence() — the only path that writes the

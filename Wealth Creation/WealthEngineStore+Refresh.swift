@@ -2,82 +2,73 @@ import Foundation
 
 // MARK: - WealthEngineStore+Refresh
 //
-// Three refresh modes, all executed on background threads so the UI is
-// never blocked:
+// Three refresh modes dispatched by recurring timers and the startup sequence:
 //
-//   .ibkr  → update live prices / broker data only (fastest)
-//   .soft  → light refresh: universe + AI + market
-//   .deep  → heavy refresh: everything (universe, AI, market, research)
+//   .ibkr  → IBKR price sync only
+//   .soft  → universe (cache-gated) + AI + market
+//   .deep  → universe (cache-gated) + AI + market + research
 //
-// Individual scan entry-points (runUniverseScan, runAIScan, etc.) are also
-// defined here and are called both during the startup sequence and during
-// recurring timer refreshes.
+// Universe cache gate (root-cause fix):
+//   runUniverseScan() checks WealthDataAliveStore.isUniverseAlive before
+//   calling performUniverseScan().  isUniverseAlive reads from UserDefaults
+//   (key "awc_universe_last_downloaded") so the guard survives app restarts.
+//   The universe is downloaded only when genuinely stale (> 6 h old).
+//   After a real download, recordUniverseDownload() stamps UserDefaults so
+//   every subsequent call within the 6 h window is a skip.
 
 extension WealthEngineStore {
 
-    // MARK: Refresh mode
+    // MARK: - Refresh mode
 
     enum RefreshMode {
-        /// Price and broker-data update only (9 m, 19 m, 29 m timers).
-        case ibkr
-        /// Light refresh: universe, AI score, market ranking (10 m, 20 m).
-        case soft
-        /// Heavy/deep refresh: everything including research feeds (30 m).
-        case deep
+        case ibkr   // price sync only
+        case soft   // universe (gated) + AI + market
+        case deep   // universe (gated) + AI + market + research
     }
 
     // MARK: - Public refresh entry-point
 
-    /// Dispatch a refresh on the appropriate background queue.
-    /// This method is safe to call from any context; it always executes
-    /// the actual work via `Task.detached` on a `.userInitiated` background thread.
     func refresh(mode: RefreshMode) async {
         switch mode {
-        case .ibkr:
-            await runIBKRPriceSync()
-        case .soft:
-            await runSoftRefresh()
-        case .deep:
-            await runDeepRefresh()
+        case .ibkr: await runIBKRPriceSync()
+        case .soft: await runSoftRefresh()
+        case .deep: await runDeepRefresh()
         }
     }
 
-    // MARK: - Scan entry-points (called by startup controller & timers)
+    // MARK: - Scan entry-points
 
-    /// Download all opportunity cards and score them.
     func runUniverseScan() async {
-        await Task.detached(priority: .userInitiated) { [weak self] in
-            await self?.performUniverseScan()
-        }.value
+        guard !WealthDataAliveStore.shared.isUniverseAlive else {
+            WealthEventLogStore.shared.record(
+                title: "Universe Scan",
+                detail: "Skipped – universe is fresh (< 6 h). No download.",
+                category: "cache",
+                tintName: "blue",
+                timestamp: .now
+            )
+            return
+        }
+        performUniverseScan()
+        WealthDataAliveStore.shared.recordUniverseDownload()
     }
 
-    /// Rate cards with AI score + confidence (reference only, no ranking).
     func runAIScan() async {
-        await Task.detached(priority: .userInitiated) { [weak self] in
-            await self?.performAIScan()
-        }.value
+        performAIScan()
     }
 
-    /// Apply the market ranking gate (top 100 executable greens only).
     func runMarketRanking() async {
-        await Task.detached(priority: .userInitiated) { [weak self] in
-            await self?.performMarketRanking()
-        }.value
+        performMarketRanking()
     }
 
-    /// Append final research-feed intel to ranked cards.
     func runResearchFeeds() async {
-        await Task.detached(priority: .userInitiated) { [weak self] in
-            await self?.performResearchFeeds()
-        }.value
+        performResearchFeeds()
     }
 
-    // MARK: - Composite refresh pipelines
+    // MARK: - Composite pipelines
 
     private func runIBKRPriceSync() async {
-        await Task.detached(priority: .userInitiated) { [weak self] in
-            await self?.performIBKRSync()
-        }.value
+        performIBKRSync()
     }
 
     private func runSoftRefresh() async {
@@ -93,22 +84,12 @@ extension WealthEngineStore {
         await runResearchFeeds()
     }
 
-    // MARK: - Low-level scan implementations (override points)
-    //
-    // These @MainActor methods perform the actual data work and update
-    // @Published properties.  Task.detached above ensures they are scheduled
-    // on a background executor before hopping to @MainActor for the update.
+    // MARK: - Override points for WealthCore.swift
 
-    @MainActor
-    func performUniverseScan() {
-        // Implemented in WealthCore.swift (existing engine logic).
-        // This extension stub is the designated call site; override or
-        // extend as needed when the core implementation is refactored.
-    }
+    @MainActor func performUniverseScan() {}
 
     @MainActor
     func performAIScan() {
-        // AI scoring pass – populates aiScore + confidence on each card.
         WealthBrainStore.shared.ingest(
             opportunities: rankedAssets,
             focusOpportunity: rankedAssets.first(where: { $0.rank == 1 }),
@@ -119,19 +100,7 @@ extension WealthEngineStore {
         )
     }
 
-    @MainActor
-    func performMarketRanking() {
-        // Market ranking gate – see WealthEngineStore+Materialization.swift.
-        materializeMarketCandidates()
-    }
-
-    @MainActor
-    func performResearchFeeds() {
-        // Appends research-feed intel to ranked cards.
-    }
-
-    @MainActor
-    func performIBKRSync() {
-        // Price-only sync via IBKR bridge.
-    }
+    @MainActor func performMarketRanking() { materializeMarketCandidates() }
+    @MainActor func performResearchFeeds() {}
+    @MainActor func performIBKRSync()      {}
 }
