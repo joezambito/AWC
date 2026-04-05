@@ -58,9 +58,12 @@ final class WealthIBKRBridge {
     let negotiatedClientVersionRange = "v100..176"
 
     /// Client ID sent to TWS in START_API.
-    /// Each device connecting to TWS must use a unique client ID.
-    /// The iPhone uses 77 (matching the original WealthCore.swift value).
-    var clientID: Int = 77
+    ///
+    /// Issue 8 root-cause fix: previously hardcoded to 77 in source.
+    /// Now initialised from AWCSecretConfig (reads IBKR_CLIENT_ID from
+    /// Documents/awc.env) so it can be changed without recompiling.
+    /// Falls back to 77 when the key is absent from awc.env.
+    var clientID: Int
 
     private var connection: NWConnection?
     private var eventHandlers: [EventHandler] = []
@@ -70,7 +73,12 @@ final class WealthIBKRBridge {
 
     // MARK: - Init
 
-    private init() {}
+    private init() {
+        // Issue 8 root-cause fix: load clientID from AWCSecretConfig
+        // (Documents/awc.env) instead of using a hardcoded literal.
+        // AWCSecretConfig falls back to 77 when IBKR_CLIENT_ID is absent.
+        self.clientID = AWCSecretConfig.shared.ibkrClientID
+    }
 
     // MARK: - Event Subscription
 

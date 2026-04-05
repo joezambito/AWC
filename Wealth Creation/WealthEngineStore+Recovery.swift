@@ -69,7 +69,10 @@ extension WealthEngineStore {
     // MARK: - Private helpers
 
     private func clearPersistedCache() {
-        // Remove lightweight UserDefaults timestamps
+        // Remove the atomic state bundle (Issue 6 root-cause fix).
+        PersistenceManager.shared.clearBundle()
+
+        // Remove legacy UserDefaults timestamps (migration cleanup).
         let defaultsKeys = [
             "awc_engine_last_refresh",
             "awc_engine_last_heavy_refresh"
@@ -77,15 +80,15 @@ extension WealthEngineStore {
         let defaults = UserDefaults.standard
         defaultsKeys.forEach { defaults.removeObject(forKey: $0) }
 
-        // Remove file-backed large-array caches
+        // Remove legacy individual file-backed caches (migration cleanup).
         let fm       = FileManager.default
         let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
-        let fileNames = [
+        let legacyFileNames = [
             "awc_engine_ranked_assets.json",
             "awc_engine_scanned_signals.json",
             "awc_engine_holdings.json"
         ]
-        for name in fileNames {
+        for name in legacyFileNames {
             if let url = cacheDir?.appendingPathComponent(name) {
                 try? fm.removeItem(at: url)
             }

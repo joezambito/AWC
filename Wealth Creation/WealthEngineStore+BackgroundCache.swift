@@ -1,28 +1,30 @@
 import Foundation
+import OSLog
 
 // MARK: - WealthEngineStore+BackgroundCache
 //
-// NEW extension – does NOT modify any functions in WealthEngineStore+Cache.swift.
+// REPLACEMENT FILE – Issue 6 root-cause fix (background path).
 //
-// Problem addressed:
-//   `restoreCache()` (defined in WealthEngineStore+Cache.swift) performs
-//   JSON decoding on the main thread.  When the ranked-assets file contains
-//   128 k cards the decode takes several seconds, blocking tab navigation
-//   and causing the observed 5-second+ UI freeze on launch.
+// Problem addressed (original):
+//   `restoreCache()` decoded large JSON arrays on the main thread, causing
+//   multi-second UI freezes on launch.
 //
-// Solution (new code only):
-//   `restoreCacheInBackground(completion:)` performs all file I/O and JSON
-//   decoding on a detached background task so the main thread is free
-//   throughout.  Only the final @Published property assignments hop back
-//   to the @MainActor, keeping each hop as lightweight as possible.
+// Root-cause fix (Issue 6):
+//   The background save/restore paths now delegate to
+//   `PersistenceManager.shared.saveBundle(_:)` and
+//   `PersistenceManager.shared.loadBundle()` so that all engine state is
+//   written and read as a single atomic unit.  This removes the multi-file
+//   consistency window that existed when three separate files were written
+//   in sequence.
 //
-//   `saveInBackground()` encodes and writes large arrays on a background
-//   task, preventing encoding 128 k cards from blocking the UI during a
-//   save cycle.  Timestamps are written to UserDefaults synchronously on
-//   the same background task (they are tiny and thread-safe).
-//
-// Fixes:
-//   Error #7 – UI Thread Fix (heavy JSON decode / encode off main thread)
+//   • `restoreCacheInBackground(completion:)` — all file I/O and JSON
+//     decoding runs on a detached background task.  Only the final
+//     @Published property assignments hop back to the @MainActor.
+//   • `saveInBackground()` — encoding and the atomic write run on a
+//     background task so encoding 128 k cards never blocks the UI.
+
+private let wealthEngineBackgroundCacheLog =
+    Logger(subsystem: "com.awg.wealth", category: "EngineBackgroundCache")
 
 extension WealthEngineStore {
 
@@ -32,31 +34,57 @@ extension WealthEngineStore {
     /// @Published properties **without blocking the main thread**.
     ///
     /// All file I/O and JSON decoding runs on a detached background task.
-    /// Only the final property assignments hop back to the @MainActor.
+    /// The engine state is read as a single atomic bundle so there is no
+    /// risk of restoring a mix of old and new data (Issue 6 root-cause fix).
     ///
-    /// - Parameter completion: An optional closure called on the main actor
-    ///   once the restore is complete.  Use this to trigger downstream work
-    ///   (e.g. begin the startup sequence) so it starts only after the cache
-    ///   is present.
+    /// Falls back to the legacy three-file format when the bundle file does
+    /// not yet exist (migration path for existing installs).
+    ///
+    /// - Parameter completion: Called on the main actor once the restore
+    ///   completes.  Use this to trigger downstream work (e.g. begin the
+    ///   startup sequence).
     func restoreCacheInBackground(
         completion: @MainActor @Sendable @escaping () -> Void = {}
     ) {
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
 
-            let defaults = UserDefaults.standard
+            // Try the new atomic bundle first.
+            if let bundle = PersistenceManager.shared.loadBundle() {
+                await MainActor.run {
+                    self.rankedAssets     = bundle.rankedAssets
+                    self.scannedSignals   = bundle.scannedSignals
+                    self.holdings         = bundle.holdings
+                    self.lastRefresh      = bundle.lastRefresh
+                    self.lastHeavyRefresh = bundle.lastHeavyRefresh
 
-            // Restore lightweight scalars (still in UserDefaults)
-            let lastRefreshDate      = defaults.object(forKey: "awc_engine_last_refresh")      as? Date
-            let lastHeavyRefreshDate = defaults.object(forKey: "awc_engine_last_heavy_refresh") as? Date
+                    wealthEngineBackgroundCacheLog.info(
+                        "restoreCacheInBackground: restored \(bundle.rankedAssets.count) assets " +
+                        "from atomic bundle (off main thread)."
+                    )
+                    WealthEventLogStore.shared.record(
+                        title: "Background Cache Restore",
+                        detail: "Restored \(bundle.rankedAssets.count) ranked assets from atomic bundle (off main thread).",
+                        category: "cache",
+                        tintName: "blue",
+                        timestamp: .now
+                    )
+                    completion()
+                }
+                return
+            }
 
-            // Decode large arrays from file-backed cache (off main thread)
+            // Migration fallback: no bundle yet; read the three legacy files.
+            let fm       = FileManager.default
+            let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
+
+            let defaults              = UserDefaults.standard
+            let lastRefreshDate       = defaults.object(forKey: "awc_engine_last_refresh")      as? Date
+            let lastHeavyRefreshDate  = defaults.object(forKey: "awc_engine_last_heavy_refresh") as? Date
+
             var restoredAssets:   [Opportunity]?
             var restoredSignals:  [MarketSignal]?
             var restoredHoldings: [Holding]?
-
-            let fm = FileManager.default
-            let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
 
             if let url = cacheDir?.appendingPathComponent("awc_engine_ranked_assets.json"),
                let data = try? Data(contentsOf: url) {
@@ -71,7 +99,6 @@ extension WealthEngineStore {
                 restoredHoldings = try? JSONDecoder().decode([Holding].self, from: data)
             }
 
-            // Lightweight assignment on the main actor
             await MainActor.run {
                 if let date = lastRefreshDate      { self.lastRefresh      = date }
                 if let date = lastHeavyRefreshDate { self.lastHeavyRefresh = date }
@@ -79,14 +106,17 @@ extension WealthEngineStore {
                 if let signals  = restoredSignals  { self.scannedSignals  = signals  }
                 if let holdings = restoredHoldings { self.holdings        = holdings }
 
+                wealthEngineBackgroundCacheLog.info(
+                    "restoreCacheInBackground: restored \(restoredAssets?.count ?? 0) assets " +
+                    "from legacy files (migration path, off main thread)."
+                )
                 WealthEventLogStore.shared.record(
                     title: "Background Cache Restore",
-                    detail: "Restored \(restoredAssets?.count ?? 0) ranked assets off main thread",
+                    detail: "Restored \(restoredAssets?.count ?? 0) ranked assets via legacy path (off main thread).",
                     category: "cache",
                     tintName: "blue",
                     timestamp: .now
                 )
-
                 completion()
             }
         }
@@ -96,42 +126,27 @@ extension WealthEngineStore {
 
     /// Persist the current engine snapshot **without blocking the main thread**.
     ///
-    /// Timestamps are written to UserDefaults and large arrays are JSON-
-    /// encoded and written to file-backed storage – all on a background task.
+    /// All encoding and the atomic bundle write run on a background task.
+    /// Writing a single bundle instead of three separate files is the
+    /// Issue 6 root-cause fix: there is no window between writes in which
+    /// a partial state can be on disk.
     func saveInBackground() {
         // Capture value copies before leaving the main actor.
-        let capturedAssets        = rankedAssets
-        let capturedSignals       = scannedSignals
-        let capturedHoldings      = holdings
-        let capturedRefresh       = lastRefresh
-        let capturedHeavyRefresh  = lastHeavyRefresh
+        let capturedAssets       = rankedAssets
+        let capturedSignals      = scannedSignals
+        let capturedHoldings     = holdings
+        let capturedRefresh      = lastRefresh
+        let capturedHeavyRefresh = lastHeavyRefresh
 
         Task.detached(priority: .utility) {
-            let defaults = UserDefaults.standard
-            let fm       = FileManager.default
-            let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
-
-            // Lightweight timestamps → UserDefaults
-            if let date = capturedRefresh {
-                defaults.set(date, forKey: "awc_engine_last_refresh")
-            }
-            if let date = capturedHeavyRefresh {
-                defaults.set(date, forKey: "awc_engine_last_heavy_refresh")
-            }
-
-            // Large arrays → file-backed (atomic write)
-            if let url  = cacheDir?.appendingPathComponent("awc_engine_ranked_assets.json"),
-               let data = try? JSONEncoder().encode(capturedAssets) {
-                try? data.write(to: url, options: [.atomic])
-            }
-            if let url  = cacheDir?.appendingPathComponent("awc_engine_scanned_signals.json"),
-               let data = try? JSONEncoder().encode(capturedSignals) {
-                try? data.write(to: url, options: [.atomic])
-            }
-            if let url  = cacheDir?.appendingPathComponent("awc_engine_holdings.json"),
-               let data = try? JSONEncoder().encode(capturedHoldings) {
-                try? data.write(to: url, options: [.atomic])
-            }
+            let bundle = EngineStateBundle(
+                rankedAssets:     capturedAssets,
+                scannedSignals:   capturedSignals,
+                holdings:         capturedHoldings,
+                lastRefresh:      capturedRefresh,
+                lastHeavyRefresh: capturedHeavyRefresh
+            )
+            PersistenceManager.shared.saveBundle(bundle)
         }
     }
 }

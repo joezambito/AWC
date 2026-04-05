@@ -31,3 +31,7 @@ fastlane/test_output
 
 # GPG key (should not be version-controlled)
 gpg_key.txt
+
+# Secret configuration – never commit awc.env
+awc.env
+*.env
