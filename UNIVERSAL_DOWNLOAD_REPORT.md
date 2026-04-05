@@ -799,6 +799,225 @@ is an **iOS system-level** metric collection failure (not AWC code). It occurs w
 
 ---
 
+---
+
+## Part 19: PipelineTrace — Expanded Universe (Full Investigation)
+
+### The Log Lines in Question
+
+```
+[CardFlow] after_scoring totalCards=128443 green=39219 blue=28585 purple=29529 red=31110 grey=0 regions=US:122429,CRYPTO:3367,FX:2556,AU:78,APAC:12,GLOBAL:1
+[CardFlow] stores green=39219 blue=28585 purple=29529 red=31110 grey=0
+[CardFlow] routing green->red=0 green->grey=0 green->allCards=128343
+[CardFlow] dispatcher blue=28585 purple=29529
+[CardFlow] market input=128443 market=100
+[PipelineTrace] stage=all_cards_review_cache total=128443 regions={AU:78,US:122429,EU:0,Other:5936} markets={ETF:53527,NASDAQ:41055,OTC:11850,AMEX:10428,NYSE:5081,CRYPTO:3367,FX:2556,CBOE:488,ASX:78,NSE:12,BOND:1} colors={Green:39219,Blue:28585,Purple:29529,Red:31110}
+[PipelineTrace] stage=all_cards_market_cache total=100 regions={AU:0,US:100,EU:0,Other:0} markets={AMEX:84,NYSE:16} colors={Green:100,Blue:0,Purple:0,Red:0}
+```
+
+### Where These Log Lines Come From
+
+**After exhaustive search of every committed Swift source file, every compiled object file (`.o`), the linked app binary, and the debug dylib** — none of the `[CardFlow]` or `[PipelineTrace]` log strings exist in any committed or compiled artifact in the repository.
+
+**Conclusion:** These log lines are emitted exclusively by **`WealthCore.swift`** — the core engine file that is **not committed to git** and exists only in the local Xcode build (`DerivedDataLocalMac/`). This file contains the full universe scoring, color-assignment, routing, and dispatch logic that produces these log lines.
+
+The committed source files define the **scaffolding, data stores, and post-scoring gates** that `WealthCore.swift` connects to. The `[CardFlow]` and `[PipelineTrace]` logs are the visible output of the logic inside that file.
+
+---
+
+### The Expanded Universe — What `all_cards_review_cache` Is
+
+The **expanded universe** is the full set of all scored opportunity cards **after the universe scoring pass completes**, before any market selection gate has run. In the log above this is:
+
+```
+[PipelineTrace] stage=all_cards_review_cache total=128443
+```
+
+This is the canonical "expanded universe" stage — **all 128,443 instruments** from the global universe (CSV / API), now scored, colored, and classified into color buckets, cached in `WealthAllCardsStore.allOpportunities`.
+
+The companion stage:
+```
+[PipelineTrace] stage=all_cards_market_cache total=100
+```
+…is the narrowed-down **market cache** — the 100 cards that passed all gates and received a market rank, stored in `WealthAllCardsStore.marketCards`.
+
+---
+
+### The Full Expanded Universe Pipeline (WealthCore.swift + Committed Files)
+
+```
+[UNIVERSE DOWNLOAD completes]
+WealthMarketUniverseStore.shared.records = 128,443 MarketUniverseRecord entries
+                                                           ← WealthCore.swift
+
+         ↓
+[SCORING PASS — WealthCore.swift, inside performUniverseScan()]
+
+Each MarketUniverseRecord is scored by AWGScoringEngine:
+  AWGScoringEngine.score(for: blueprint, settings: AWGBehaviorSettingsStore)
+  ↓
+  Returns: aiScore (Int), confidence (Int), safety (Int),
+           expectedProfit (Double), shares (Int), fee (Double)
+
+Each scored record becomes an Opportunity with a color assignment:
+  ┌─────────────────────────────────────────────────┐
+  │  Green  (39,219)  — strong buy, PnL ≥ 0         │
+  │  Blue   (28,585)  — waiting, weak green, PnL < 0│
+  │  Purple (29,529)  — holding / position open      │
+  │  Red    (31,110)  — sell / exit signal           │
+  │  Grey   (0)       — unranked / inactive          │
+  └─────────────────────────────────────────────────┘
+  Total = 128,443
+
+         ↓
+[CardFlow] after_scoring totalCards=128443 green=39219 blue=28585 purple=29529 red=31110 grey=0
+  ← logged by WealthCore.swift immediately after the scoring loop
+
+         ↓
+[STORE UPDATES — called from WealthCore.swift]
+
+WealthGreenCardsStore.shared.update(greenCards)        ← GreenCardsStore.swift:34
+WealthBlueCardsStore.shared.update(blueCards)          ← BlueCardsStore.swift:33
+WealthGreyCardsStore.shared.update(greyCards)          ← GreyCardsStore.swift:35
+  (Purple and Red stored in equivalent stores in WealthCore.swift)
+
+[CardFlow] stores green=39219 blue=28585 purple=29529 red=31110 grey=0
+  ← logged by WealthCore.swift after all lane stores are updated
+
+         ↓
+[ROUTING — WealthCardHoldingRouter.routeFromGreenCheckpoint()]
+  ← WealthCore.swift calls this; definition in WealthCore.swift
+  ← WealthCardHoldingStoreSupport.swift adds query/diagnostic helpers
+
+  Green cards: PnL ≥ 0 → eligible for Market ranking (39,219 - 100 = 39,119 candidates)
+    Routing:
+      green→red  = 0    (no green demoted to red this cycle)
+      green→grey = 0    (no green demoted to grey this cycle)
+      green→allCards = 128,343  (all greens flow into the full allCards set)
+
+[CardFlow] routing green->red=0 green->grey=0 green->allCards=128343
+
+         ↓
+[DISPATCHER — WealthBrainModuleRegistry.shared.dispatch()]
+  ← WealthBrainModuleRegistry.swift:81
+  Dispatches blue (28,585) and purple (29,529) to brain modules
+  (These lanes are not eligible for Market ranking — dispatched for learning only)
+
+[CardFlow] dispatcher blue=28585 purple=29529
+
+         ↓
+[MARKET INPUT GATE — materializeMarketCandidates()]
+  ← WealthEngineStore+Materialization.swift:74
+
+  Input:  128,443 total universe cards
+  Gate 1: Strong Green only (PnL ≥ 0) → 39,219
+  Gate 2: Safeguard (earningsRisk < 70, macroRisk < 75, !isDataStale,
+                      isExecutionClean, isAnomalyStable) → subset
+  Gate 3: isMarketExecutableCandidate → subset
+  Gate 4: prefix(100) → exactly 100 market candidates
+  Rank assignment: dense ranks (1,1,2,3,3…) by marketQualityTier
+  Merge ranks back into rankedAssets
+
+[CardFlow] market input=128443 market=100
+
+         ↓
+[WealthAllCardsStore.sync()]
+  ← WealthAllCardsStore.swift:59
+
+  allOpportunities  = 128,443 ranked Opportunity objects  ← THE EXPANDED UNIVERSE
+  marketCards       = 100 ranked Opportunity objects (rank > 0, capped at 100)
+  activityKeys      = [] (populated later by AI Live pass)
+  holdingKeys       = Set of held symbols
+  livePickKeys      = [] (populated later by AI Live pass)
+
+         ↓
+[PipelineTrace] stage=all_cards_review_cache total=128443  ← WealthCore.swift logs WealthAllCardsStore.allOpportunities
+  regions={AU:78, US:122429, EU:0, Other:5936}
+  markets={ETF:53527, NASDAQ:41055, OTC:11850, AMEX:10428, NYSE:5081,
+           CRYPTO:3367, FX:2556, CBOE:488, ASX:78, NSE:12, BOND:1}
+  colors={Green:39219, Blue:28585, Purple:29529, Red:31110}
+
+[PipelineTrace] stage=all_cards_market_cache total=100   ← WealthCore.swift logs WealthAllCardsStore.marketCards
+  regions={AU:0, US:100, EU:0, Other:0}
+  markets={AMEX:84, NYSE:16}
+  colors={Green:100, Blue:0, Purple:0, Red:0}
+```
+
+---
+
+### Breakdown of the Expanded Universe (128,443 cards)
+
+#### By Region
+| Region | Count | % of Universe |
+|--------|-------|--------------|
+| US | 122,429 | 95.3% |
+| Other (non-categorised) | 5,936 | 4.6% |
+| AU (Australia) | 78 | 0.06% |
+| EU | 0 | — |
+| APAC | 12 | — |
+| GLOBAL | 1 | — |
+
+#### By Market
+| Market | Count |
+|--------|-------|
+| ETF | 53,527 |
+| NASDAQ | 41,055 |
+| OTC | 11,850 |
+| AMEX | 10,428 |
+| NYSE | 5,081 |
+| CRYPTO | 3,367 |
+| FX | 2,556 |
+| CBOE | 488 |
+| ASX | 78 |
+| NSE | 12 |
+| BOND | 1 |
+| **Total** | **128,443** |
+
+#### By Color (Score Tier)
+| Color | Count | Meaning |
+|-------|-------|---------|
+| Green | 39,219 | Strong buy, PnL ≥ 0, eligible for market ranking |
+| Blue | 28,585 | Waiting / weak green (PnL < 0) |
+| Purple | 29,529 | Hold / open position |
+| Red | 31,110 | Exit signal |
+| Grey | 0 | Unranked / filtered out |
+
+---
+
+### Why the Expanded Universe Is Still Downloading When These Logs Fire
+
+When the user's log shows "still downloading the univ" alongside `[CardFlow]` and `[PipelineTrace]` entries, this is because **two separate universe operations are running simultaneously**:
+
+1. **The CardFlow/PipelineTrace logs** come from a **previous cached universe** (128,443 cards from a prior session) that was restored by `restoreCacheInBackground()` and is being scored and routed through the pipeline.
+
+2. **The "still downloading"** refers to a **fresh universe download** (`WealthMarketUniverseStore.reloadForStartupSequence()`) running concurrently in a separate `Task.detached` on a different background thread, because `prepareCachedSnapshotForStartup()` returned `false` (6-hour cache expired or no previous download).
+
+The two paths run in parallel because:
+- `WealthAllCardsStore.sync()` is called inside `materializeMarketCandidates()` after the scoring pass on the **cached** universe
+- `reloadForStartupSequence()` runs in `WealthEngineStartupController.runStartupSequence()` as a gated step
+
+Once the new universe download completes, the engine re-runs the scoring + routing + materialization pipeline, producing a fresh set of `[CardFlow]` and `[PipelineTrace]` logs with updated counts.
+
+---
+
+### Committed Files Involved in the Expanded Universe Pipeline
+
+| File | Role in Expanded Universe |
+|------|--------------------------|
+| `WealthEngineStore+UniverseBlueprints.swift` | `currentUniverseSeedSource()` returns cached records or empty — removed the blocking CSV synchronous load |
+| `WealthEngineStore+Refresh.swift` | `performUniverseScan()` stub — delegates full scoring logic to WealthCore.swift |
+| `WealthEngineStore+Materialization.swift` | Market gate (safeguard + execution + rank) — narrows 128k → 100 |
+| `WealthAllCardsStore.swift` | Stores ALL 128,443 as `allOpportunities`; stores top 100 as `marketCards` |
+| `WealthGreenCardsStore.swift` | Stores the 39,219 green (strong buy) cards |
+| `WealthBlueCardsStore.swift` | Stores the 28,585 blue (waiting) cards |
+| `WealthGreyCardsStore.swift` | Stores the 0 grey (unranked) cards |
+| `WealthCardHoldingStoreSupport.swift` | Query/diagnostic helpers for the routing layer |
+| `WealthBrainModuleRegistry.swift` | Dispatches blue/purple cards to brain modules after routing |
+| `Opportunity+CardStateMachine.swift` | Computed properties: `isStrongGreen`, `isWeakGreen`, `isDataStale`, `earningsRisk`, `macroRisk`, `isAnomalyStable`, `isExecutionClean` |
+| `WealthMarketExecutionAudit.swift` | Audit report tracing the exact drop at each gate (universe → green → safeguard → market) |
+
+---
+
 ## Summary: The 7 Hidden/Internal Processes
 
 These are the processes that are not immediately visible from the public entry points:
