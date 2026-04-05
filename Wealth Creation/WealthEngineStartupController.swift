@@ -59,15 +59,15 @@ final class WealthEngineStartupController {
     /// Safe to call multiple times – subsequent calls are no-ops while a
     /// startup is already in progress or has already completed.
     ///
-    /// Both `bootstrap()` and `runActivationSequence()` now route through
-    /// `WealthAppSessionController.prepareLaunch()`, which calls this method
-    /// in the background-cache-restore completion handler.  The `startupTask`
-    /// and `isStartupComplete` guards ensure the sequence runs exactly once.
+    /// Uses `Task.detached` so the entire startup sequence (universe scan,
+    /// AI scan, market ranking, research feeds) runs on a background thread.
+    /// The main thread is never held — only the final property writes at
+    /// completion hop back to `@MainActor` via `await MainActor.run { }`.
     func beginStartupSequence() {
         guard startupTask == nil,
               !isStartupComplete else { return }
 
-        startupTask = Task { [weak self] in
+        startupTask = Task.detached(priority: .userInitiated) { [weak self] in
             await self?.runStartupSequence()
         }
     }
@@ -81,7 +81,7 @@ final class WealthEngineStartupController {
 
     // MARK: - Private startup sequence
 
-    private func runStartupSequence() async {
+    private nonisolated func runStartupSequence() async {
         let engine = WealthEngineStore.shared
 
         // ── Startup trace ─────────────────────────────────────────────────
@@ -90,7 +90,9 @@ final class WealthEngineStartupController {
         // ── Pre-flight: integrity check ───────────────────────────────────
         // Reset any stuck in-flight state from a previous interrupted session
         // before starting a new run.
-        WealthEngineRuntimeRecovery.shared.runStartupIntegrityCheck()
+        await MainActor.run {
+            WealthEngineRuntimeRecovery.shared.runStartupIntegrityCheck()
+        }
 
         // Mark cache restore complete (restoreCacheInBackground was already
         // called before beginStartupSequence; record it in the scheduler).
@@ -107,8 +109,7 @@ final class WealthEngineStartupController {
         // and can be reused without re-downloading.  If it returns false the
         // full universe scan runs as before (root-cause fix for Issue 4).
         //
-        // The call is wrapped in Task.detached to mirror the existing usage
-        // in WealthEngineStore+Activation.swift and keep any I/O off the
+        // The call is wrapped in Task.detached to keep any I/O off the
         // main thread.
         WealthStartupLagTracer.shared.trace("universeScan – start")
         let hasCachedUniverse = await Task.detached(priority: .userInitiated) {
@@ -164,16 +165,14 @@ final class WealthEngineStartupController {
         guard !Task.isCancelled else { return }
 
         // ── Done : start recurring timers ─────────────────────────────────
-        isStartupComplete = true
-        startupTask = nil
-
-        // Arm the trading lifecycle so Activity admission can proceed.
-        // This mirrors the equivalent assignment in runActivationSequence()
-        // (WealthEngineStore+Activation.swift) and ensures the flag is set
-        // regardless of which startup path runs first.
-        engine.tradingLifecycleArmed = true
-
-        engine.rescheduleTimers()
+        // All @MainActor property writes and method calls are batched into a
+        // single hop so the background task touches the main actor exactly once.
+        await MainActor.run {
+            isStartupComplete = true
+            startupTask = nil
+            engine.tradingLifecycleArmed = true
+            engine.rescheduleTimers()
+        }
 
         // ── Startup trace : final summary ──────────────────────────────────
         WealthStartupLagTracer.shared.trace("rescheduleTimers – done; startup complete")
@@ -192,7 +191,9 @@ final class WealthEngineStartupController {
         // WealthDownstreamCacheSanity) is permanently dormant on first launch —
         // producing a count mismatch where Xcode logs show market cards but the
         // simulator UI shows none.
-        WealthReadyStateGate.shared.markDownstreamRebuildComplete()
+        await MainActor.run {
+            WealthReadyStateGate.shared.markDownstreamRebuildComplete()
+        }
 
         WealthEventLogStore.shared.record(
             title: "Startup Controller",
