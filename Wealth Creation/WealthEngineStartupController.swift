@@ -58,8 +58,15 @@ final class WealthEngineStartupController {
     /// Begin the staggered startup sequence.
     /// Safe to call multiple times – subsequent calls are no-ops while a
     /// startup is already in progress or has already completed.
+    ///
+    /// Also guards against the legacy `runActivationSequence()` path in
+    /// WealthCore.swift: if that path has already created `activationTask`,
+    /// this controller yields to it to prevent both startup orchestrators
+    /// from running concurrently.
     func beginStartupSequence() {
-        guard startupTask == nil, !isStartupComplete else { return }
+        guard startupTask == nil,
+              !isStartupComplete,
+              WealthEngineStore.shared.activationTask == nil else { return }
 
         startupTask = Task { [weak self] in
             await self?.runStartupSequence()
@@ -149,6 +156,13 @@ final class WealthEngineStartupController {
         // ── Done : start recurring timers ─────────────────────────────────
         isStartupComplete = true
         startupTask = nil
+
+        // Arm the trading lifecycle so Activity admission can proceed.
+        // This mirrors the equivalent assignment in runActivationSequence()
+        // (WealthEngineStore+Activation.swift) and ensures the flag is set
+        // regardless of which startup path runs first.
+        engine.tradingLifecycleArmed = true
+
         engine.rescheduleTimers()
 
         // ── Startup trace : final summary ──────────────────────────────────

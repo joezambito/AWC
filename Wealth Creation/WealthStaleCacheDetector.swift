@@ -118,10 +118,10 @@ final class WealthStaleCacheDetector {
             }
             let reason = reasons.joined(separator: ", ")
             WealthDownstreamRebuildOrchestrator.shared.triggerRebuild(reason: reason)
-        } else {
-            // Cache is fresh; trigger a lightweight rebuild anyway so
-            // Activity always re-evaluates after unlock.
-            WealthDownstreamRebuildOrchestrator.shared.triggerRebuild(reason: "session-resume")
         }
+        // When the cache is fresh no rebuild is needed.  A session-resume
+        // rebuild was previously triggered unconditionally here, causing a
+        // full AI + Market scan on every foreground activation even when
+        // data was up-to-date.  That has been removed.
     }
 }

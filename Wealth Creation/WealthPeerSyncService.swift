@@ -67,6 +67,19 @@ final class WealthPeerSyncService {
     private var browser: NWBrowser?
     private let log = Logger(subsystem: "AWC", category: "PeerSync")
 
+    /// Dedicated dispatch queue for NWListener and NWBrowser callbacks.
+    ///
+    /// Using `.main` for Network framework objects delivers every TCP-level
+    /// event on the main thread, flooding the run loop with Bonjour packets
+    /// whenever multiple AWC peers are visible.  A private utility queue
+    /// keeps all network I/O off the main thread; any state mutation that
+    /// touches @Published properties is hopped back to @MainActor inside
+    /// the existing `Task { @MainActor in … }` handlers.
+    private static let peerSyncQueue = DispatchQueue(
+        label: "com.awc.wealth.peer-sync",
+        qos: .utility
+    )
+
     // MARK: - Init
 
     private init() {}
