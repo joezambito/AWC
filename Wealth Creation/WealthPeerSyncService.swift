@@ -60,7 +60,7 @@ final class WealthPeerSyncService {
     /// touches @Published properties is hopped back to @MainActor inside
     /// the existing `Task { @MainActor in … }` handlers.
     private static let peerSyncQueue = DispatchQueue(
-        label: "com.awg.wealth.peer-sync",
+        label: "com.awc.wealth.peer-sync",
         qos: .utility
     )
 
