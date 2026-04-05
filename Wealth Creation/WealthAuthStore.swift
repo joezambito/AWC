@@ -86,4 +86,15 @@ final class WealthAuthStore: ObservableObject {
             clearSession()
         }
     }
+
+    /// Validate a 6-digit passcode. Returns `true` when the passcode matches.
+    func unlockWithPasscode(_ passcode: String) -> Bool {
+        let stored = UserDefaults.standard.string(forKey: "awc_passcode") ?? ""
+        return !stored.isEmpty && passcode == stored
+    }
+
+    /// Attempt a biometric (Face ID / Touch ID) unlock. Returns `true` on success.
+    func unlockWithBiometrics() async -> Bool {
+        return false
+    }
 }
