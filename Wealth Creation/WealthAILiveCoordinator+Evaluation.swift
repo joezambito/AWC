@@ -93,10 +93,10 @@ extension WealthAILiveCoordinator {
         // is delegated to the Opportunity model (`aiScore > 0`).
         //
         // Thresholds mirror the safeguard gate in WealthEngineStore+Materialization:
-        //   earningsRisk < 70  (SafeguardThreshold.earningsRisk)
-        //   macroRisk    < 75  (SafeguardThreshold.macroRisk)
-        let earningsRiskLimit = 70
-        let macroRiskLimit    = 75
+        //   earningsRisk < SafeguardThreshold.earningsRisk (70)
+        //   macroRisk    < SafeguardThreshold.macroRisk    (75)
+        let earningsRiskLimit = SafeguardThreshold.earningsRisk
+        let macroRiskLimit    = SafeguardThreshold.macroRisk
 
         let eligible = marketCards.filter { card in
             card.aiScore > 0

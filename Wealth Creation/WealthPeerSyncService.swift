@@ -33,6 +33,20 @@ final class WealthPeerSyncService {
 
     static let shared = WealthPeerSyncService()
 
+    // MARK: - Network queue
+    //
+    // NWListener and NWBrowser callbacks are delivered on this private serial
+    // queue instead of `.main`, matching the pattern used by WealthIBKRBridge.
+    // Every callback immediately hops to @MainActor via
+    // `Task { @MainActor in ... }` (unchanged), so all state mutations still
+    // run on the main actor.  Delivering on a background queue keeps the main
+    // dispatch queue free during active Bonjour discovery.
+    // DispatchQueue conforms to Sendable so no isolation annotation is needed.
+    private static let peerSyncQueue = DispatchQueue(
+        label: "com.awc.peer-sync",
+        qos: .utility
+    )
+
     // MARK: - Constants
 
     private static let bonjourType = "_awc._tcp"
@@ -43,7 +57,9 @@ final class WealthPeerSyncService {
     ///
     /// Updated whenever the browser's result set changes.  Each entry
     /// corresponds to one remote device running AWC on the same LAN.
-    private(set) var discoveredPeers: [WealthPeerInfo] = []
+    /// @Published so SwiftUI views and Combine subscribers receive change
+    /// notifications when the peer list is updated or cleared.
+    @Published private(set) var discoveredPeers: [WealthPeerInfo] = []
 
     // MARK: - Private properties
 
@@ -90,7 +106,7 @@ final class WealthPeerSyncService {
         l.newConnectionHandler = { _ in
             // Peer connections are for discovery only; no data transfer.
         }
-        l.start(queue: .main)
+        l.start(queue: Self.peerSyncQueue)
         listener = l
     }
 
@@ -126,7 +142,7 @@ final class WealthPeerSyncService {
                 self.log.info("PeerSync: \(self.discoveredPeers.count) peer(s) visible")
             }
         }
-        b.start(queue: .main)
+        b.start(queue: Self.peerSyncQueue)
         browser = b
     }
 
