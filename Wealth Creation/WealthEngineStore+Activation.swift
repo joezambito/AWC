@@ -2,107 +2,61 @@ import Foundation
 
 // MARK: - WealthEngineStore+Activation
 //
-// Replaces the original synchronous `runActivationSequence()` stub in
-// WealthCore.swift with a version that moves all heavy I/O off the main
-// thread.
+// Bridges the original `runActivationSequence()` call site in WealthCore.swift
+// to the new LAYERED startup controller (`WealthEngineStartupController`).
 //
-// Problem addressed:
-//   The original implementation ran `WealthMarketUniverseStore.reloadForStartupSequence()`,
-//   `runStartupActivationScan()`, and `runStartupMarketWarmup()` synchronously
-//   on the @MainActor.  Downloading 128 k universe rows + AI brain scan +
-//   market data blocks every UI interaction (scrolling, tab navigation) for
-//   up to 5 minutes on app launch.
+// Timer audit (properties that existed in the original WealthCore.swift):
 //
-// Solution (threading-only change – NO logic removed):
-//   The heavy download/processing steps are wrapped in
-//   `Task.detached(priority: .userInitiated)` so they execute on a
-//   background executor.  All @Published property assignments that drive
-//   the UI hop back to the @MainActor via `MainActor.run { }` only when
-//   the background work is complete.
+//   REMOVED (legacy – no longer used):
+//     • preScanBurstTimer      – fired a rapid pre-scan burst; superseded by
+//                                the staggered startup sequence in the controller.
+//     • scheduledCheckpointTimer – checkpoint counter logic; superseded by the
+//                                  9 m / 19 m / 29 m IBKR timers + 10 m / 20 m
+//                                  soft timers + 30 m deep timer.
 //
-//   Pre-flight timer teardown, the startup-delay sleep, cancellation guards,
-//   and the defer cleanup block are all preserved exactly as before.
+//   KEPT (active, managed by WealthEngineStore+Timers.swift):
+//     • softTimer   – holds the 10-minute soft-refresh timer reference.
+//     • heavyTimer  – holds the 30-minute deep-refresh timer reference.
+//     • timerHolder.ibkrTimers       – IBKR price-only timers (9 m, 19 m, 29 m).
+//     • timerHolder.extraSoftTimers  – second soft-refresh timer (20 m).
+//
+// Startup sequence (LAYERED – one phase at a time, never parallel):
+//
+//   1. bootstrap() → WealthAppSessionController.prepareLaunch()
+//        ├─ WealthNewComponentsBootstrap.activate()   (pipeline singletons)
+//        └─ restoreCacheInBackground { beginStartupSequence() }
+//              ↓
+//   2. Universe scan  (runUniverseScanWithProgress)
+//              ↓  2 s gap
+//   3. AI scan        (runAIScanWithProgress)
+//              ↓  1 s gap
+//   4. Market ranking (runMarketRankingWithProgress)
+//              ↓  1 s gap
+//   5. Research feeds (runResearchFeedsWithProgress)
+//              ↓
+//   6. Timers start   (rescheduleTimers)
+//              ↓
+//   7. Recurring checkpoints fire (9 m IBKR → 10 m soft → … → 30 m deep)
 
 extension WealthEngineStore {
 
     // MARK: - Activation sequence
 
-    /// Begin the one-time startup activation sequence.
+    /// Bridge the legacy `runActivationSequence()` call site to the new
+    /// layered `WealthEngineStartupController`.
     ///
-    /// Heavy I/O (universe reload, AI brain scan, market warmup) runs on a
-    /// detached background task so the UI stays responsive.  Progress-state
-    /// and completion flags are always set on the @MainActor.
-    ///
-    /// Idempotent: subsequent calls while an activation is already in
-    /// progress are no-ops.
+    /// All existing timer properties are torn down via `invalidateTimers()`
+    /// before handing off, so no residual timers can fire during the
+    /// startup phases.  The startup controller's guard prevents a second
+    /// run if a sequence is already in progress.
     func runActivationSequence() {
-        guard activationTask == nil else { return }
+        // Tear down ALL current timers (softTimer, heavyTimer, IBKR timers,
+        // extra soft timers) so none can fire during the startup sequence.
+        invalidateTimers()
 
-        // Tear down any residual timers from a previous session so they
-        // cannot fire while the activation sequence is running.
-        scheduledCheckpointTimer?.invalidate()
-        softTimer?.invalidate()
-        heavyTimer?.invalidate()
-        preScanBurstTimer?.invalidate()
-        scheduledCheckpointTimer = nil
-        softTimer = nil
-        heavyTimer = nil
-        preScanBurstTimer = nil
-
-        downstreamRecoveryPending = true
-
-        activationTask = Task { @MainActor [self] in
-
-            // ── Cleanup on exit (cancellation or completion) ─────────────
-            defer {
-                if Task.isCancelled {
-                    pendingRefreshPayload = nil
-                    startupSequencePhase = .idle
-                    endDashboardRefreshFreeze()
-                }
-                activationTask = nil
-            }
-
-            // ── Pre-scan delay ────────────────────────────────────────────
-            startupSequencePhase = .waitingToScan
-            try? await Task.sleep(nanoseconds: phoneStartupScanDelayNanoseconds)
-            guard !Task.isCancelled else { return }
-
-            // ── Heavy work on background thread ───────────────────────────
-            // Universe reload, AI brain scan, and market warmup are moved
-            // off the @MainActor so the UI never freezes during downloads.
-            await Task.detached(priority: .userInitiated) { [weak self] in
-                guard let self else { return }
-
-                // Attempt to reuse a cached universe snapshot first.
-                // If no valid cache exists, perform a full network reload.
-                let reusedCachedUniverse =
-                    WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
-                guard !Task.isCancelled else { return }
-
-                if !reusedCachedUniverse {
-                    await WealthMarketUniverseStore.shared.reloadForStartupSequence()
-                    guard !Task.isCancelled else { return }
-                }
-
-                // AI brain scan (heavy – reads stored brain state + scores all cards)
-                await self.runStartupActivationScan()
-                guard !Task.isCancelled else { return }
-
-                // Market warmup (materialise ranked candidates, IBKR prices)
-                await self.runStartupMarketWarmup()
-                guard !Task.isCancelled else { return }
-
-                // ── UI state update on main thread ────────────────────────
-                await MainActor.run {
-                    self.activationStage = 0
-                    self.activationCycleComplete = true
-                    self.lockedCheckpointProgress = Self.lockedCheckpointCount
-                    self.tradingLifecycleArmed = true
-                    self.startupSequencePhase = .idle
-                    self.rescheduleTimers()
-                }
-            }.value
-        }
+        // Hand off to the single, authoritative layered startup path.
+        // WealthEngineStartupController.beginStartupSequence() is idempotent:
+        // a second call while a startup is already running is a no-op.
+        WealthEngineStartupController.shared.beginStartupSequence()
     }
 }
