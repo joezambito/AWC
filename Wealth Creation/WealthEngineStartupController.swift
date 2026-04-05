@@ -59,14 +59,13 @@ final class WealthEngineStartupController {
     /// Safe to call multiple times – subsequent calls are no-ops while a
     /// startup is already in progress or has already completed.
     ///
-    /// Also guards against the legacy `runActivationSequence()` path in
-    /// WealthCore.swift: if that path has already created `activationTask`,
-    /// this controller yields to it to prevent both startup orchestrators
-    /// from running concurrently.
+    /// Both `bootstrap()` and `runActivationSequence()` now route through
+    /// `WealthAppSessionController.prepareLaunch()`, which calls this method
+    /// in the background-cache-restore completion handler.  The `startupTask`
+    /// and `isStartupComplete` guards ensure the sequence runs exactly once.
     func beginStartupSequence() {
         guard startupTask == nil,
-              !isStartupComplete,
-              WealthEngineStore.shared.activationTask == nil else { return }
+              !isStartupComplete else { return }
 
         startupTask = Task { [weak self] in
             await self?.runStartupSequence()
