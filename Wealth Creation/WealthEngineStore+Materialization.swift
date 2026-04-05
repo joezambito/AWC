@@ -96,6 +96,7 @@ extension WealthEngineStore {
         }
 
         let ranked = assignMarketRanks(to: recheckPassed)
+        rankedAssets = ranked
 
         WealthAllCardsStore.shared.sync(
             opportunities: rankedAssets,
