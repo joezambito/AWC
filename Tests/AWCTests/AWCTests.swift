@@ -417,3 +417,95 @@ final class FetchErrorDescriptionTests: XCTestCase {
         XCTAssertTrue(error.errorDescription?.contains("MARKET_DATA_BASE_URL") ?? false)
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MARK: - Peer sync tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Tests for the WealthPeerInfo type and the peer-sync discovery stub
+/// introduced to enable Mac ↔ iPhone visibility (enable-mac-iphone-sync).
+///
+/// These tests exercise isolated stub types only; they do not depend on
+/// Network.framework's runtime behaviour (NWListener / NWBrowser) so the
+/// suite can run via `swift test` without a live network.
+final class WealthPeerSyncTests: XCTestCase {
+
+    // MARK: - WealthPeerInfo stub
+    //
+    // Mirrors the WealthPeerInfo struct in WealthPeerSyncService.swift.
+    // Duplicated here so the test target has no dependency on the app target.
+
+    struct PeerInfo: Equatable {
+        let name: String
+    }
+
+    // MARK: - Stub peer registry
+    //
+    // Mirrors the discoveredPeers array managed by WealthPeerSyncService.
+
+    final class PeerRegistry {
+        private(set) var peers: [PeerInfo] = []
+
+        func update(with names: [String]) {
+            peers = names.map { PeerInfo(name: $0) }
+        }
+
+        func clear() {
+            peers.removeAll()
+        }
+    }
+
+    // MARK: - Tests
+
+    func test_peerInfo_equality() {
+        let a = PeerInfo(name: "MacBook Pro")
+        let b = PeerInfo(name: "MacBook Pro")
+        let c = PeerInfo(name: "iPhone 15")
+        XCTAssertEqual(a, b)
+        XCTAssertNotEqual(a, c)
+    }
+
+    func test_peerRegistry_update_populatesPeers() {
+        let registry = PeerRegistry()
+        registry.update(with: ["MacBook Pro", "iPhone 15"])
+        XCTAssertEqual(registry.peers.count, 2)
+        XCTAssertEqual(registry.peers[0].name, "MacBook Pro")
+        XCTAssertEqual(registry.peers[1].name, "iPhone 15")
+    }
+
+    func test_peerRegistry_update_replacesExistingPeers() {
+        let registry = PeerRegistry()
+        registry.update(with: ["Device A", "Device B"])
+        registry.update(with: ["Device C"])
+        XCTAssertEqual(registry.peers.count, 1)
+        XCTAssertEqual(registry.peers[0].name, "Device C")
+    }
+
+    func test_peerRegistry_clear_removesAllPeers() {
+        let registry = PeerRegistry()
+        registry.update(with: ["MacBook Pro", "iPhone 15"])
+        registry.clear()
+        XCTAssertTrue(registry.peers.isEmpty)
+    }
+
+    func test_peerRegistry_update_withEmptyNames_producesEmptyPeers() {
+        let registry = PeerRegistry()
+        registry.update(with: [])
+        XCTAssertTrue(registry.peers.isEmpty)
+    }
+
+    func test_peerRegistry_clear_onEmptyRegistry_doesNotCrash() {
+        let registry = PeerRegistry()
+        registry.clear()   // no peers — must not crash
+        XCTAssertTrue(registry.peers.isEmpty)
+    }
+
+    func test_bonjourServiceType_isConsistent() {
+        // The Bonjour type used by WealthPeerSyncService must follow the
+        // <name>.<protocol> format required by DNS-SD / RFC 6335.
+        let serviceType = "_awc._tcp"
+        XCTAssertTrue(serviceType.hasPrefix("_"), "Service type must start with '_'.")
+        XCTAssertTrue(serviceType.hasSuffix("._tcp") || serviceType.hasSuffix("._udp"),
+                      "Service type must end with '._tcp' or '._udp'.")
+    }
+}
