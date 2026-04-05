@@ -59,11 +59,6 @@ extension WealthAILiveCoordinator {
     func intakeConditions(for opportunity: Opportunity) -> [WealthAILiveIntakeCondition] {
         [
             WealthAILiveIntakeCondition(
-                name:   "AI Score > 0",
-                passed: opportunity.aiScore > 0,
-                detail: "score=\(String(format: "%.2f", opportunity.aiScore))"
-            ),
-            WealthAILiveIntakeCondition(
                 name:   "Data not stale",
                 passed: !opportunity.isDataStale,
                 detail: opportunity.isDataStale ? "STALE" : "FRESH"
@@ -82,11 +77,6 @@ extension WealthAILiveCoordinator {
                 name:   "Macro risk < 75",
                 passed: opportunity.macroRisk < 75,
                 detail: "macroRisk=\(opportunity.macroRisk)"
-            ),
-            WealthAILiveIntakeCondition(
-                name:   "Top-tier rank",
-                passed: opportunity.rank <= WealthAILiveRejectionAudit.shared.topTierRankThreshold,
-                detail: "rank=\(opportunity.rank)"
             ),
         ]
     }

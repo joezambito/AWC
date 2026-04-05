@@ -40,9 +40,6 @@ struct WealthOrderRestrictionAuditReport {
     /// order submission (e.g. a holding was opened in between).
     let executionReadinessLostCount: Int
 
-    /// Cards with zero AI score after promotion (score reset between passes).
-    let scoreResetCount: Int
-
     // ── Runtime-dependent restrictions (cannot be evaluated from model) ─
 
     /// Cards whose admission depends on the market session being open
@@ -70,7 +67,6 @@ struct WealthOrderRestrictionAuditReport {
         Candidates in              : \(candidatesIn)
         Kill switch blocked        : \(killSwitchBlockedCount)
         Execution readiness lost   : \(executionReadinessLostCount)
-        Score reset                : \(scoreResetCount)
         Needs market-open check    : \(requiresMarketOpenCount)
         Needs cash check           : \(requiresCashCheckCount)
         Needs rebuy check          : \(requiresRebuyCheckCount)
@@ -105,7 +101,6 @@ final class WealthOrderRestrictionRules {
 
         var killSwitchBlocked      = 0
         var executionReadinessLost = 0
-        var scoreReset             = 0
         var requiresMarketOpen     = 0
         var requiresCash           = 0
         var requiresRebuy          = 0
@@ -130,12 +125,6 @@ final class WealthOrderRestrictionRules {
                 cardBlocked = true
             }
 
-            // Score reset: AI score dropped to zero since promotion
-            if card.aiScore == 0 {
-                scoreReset += 1
-                cardBlocked = true
-            }
-
             // Runtime gates that cannot be evaluated from the model alone
             if !cardBlocked {
                 requiresMarketOpen += 1
@@ -149,7 +138,6 @@ final class WealthOrderRestrictionRules {
             candidatesIn:              promotedCards.count,
             killSwitchBlockedCount:    killSwitchBlocked,
             executionReadinessLostCount: executionReadinessLost,
-            scoreResetCount:           scoreReset,
             requiresMarketOpenCount:   requiresMarketOpen,
             requiresCashCheckCount:    requiresCash,
             requiresRebuyCheckCount:   requiresRebuy,

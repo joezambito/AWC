@@ -87,10 +87,11 @@ extension WealthAILiveCoordinator {
         // ── Run the rejection audit (measurement only, no logic changes) ──
         WealthAILiveRejectionAudit.shared.runAudit(on: marketCards)
 
-        // ── Promotion filter ──────────────────────────────────────────────
-        // A card is eligible for AI Live promotion when it passes all
-        // observable intake conditions.  The actual score-threshold check
-        // is delegated to the Opportunity model (`aiScore > 0`).
+        // ── Promotion filter (75 % re-validation of Market ranking) ─────
+        // AI Live does NOT promote cards — that is Market's exclusive job.
+        // AI Live only validates that Market-ranked cards are still good
+        // against the 75 % risk thresholds.  aiScore and topTierRank are
+        // not checked here; rank is assigned solely by the Market file.
         //
         // Thresholds mirror the safeguard gate in WealthEngineStore+Materialization:
         //   earningsRisk < SafeguardThreshold.earningsRisk (70)
@@ -99,12 +100,10 @@ extension WealthAILiveCoordinator {
         let macroRiskLimit    = SafeguardThreshold.macroRisk
 
         let eligible = marketCards.filter { card in
-            card.aiScore > 0
-            && !card.isDataStale
+            !card.isDataStale
             && card.isAnomalyStable
             && card.earningsRisk < earningsRiskLimit
             && card.macroRisk < macroRiskLimit
-            && card.rank <= WealthAILiveRejectionAudit.shared.topTierRankThreshold
         }
 
         promotedCards      = eligible

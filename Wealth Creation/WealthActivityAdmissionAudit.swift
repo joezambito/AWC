@@ -41,10 +41,6 @@ struct WealthActivityAdmissionAuditReport {
     /// any cash or timing check is evaluated.
     let executionReadinessFailures: Int
 
-    /// Cards with `aiScore == 0` or below the minimum score threshold
-    /// required for Activity submission.
-    let aiScoreBelowMinimumCount: Int
-
     /// Cards whose data is stale (`isDataStale == true`).  Activity
     /// applies a freshness check before admitting cards to the queue.
     let staleDataFailures: Int
@@ -78,7 +74,6 @@ struct WealthActivityAdmissionAuditReport {
         Activity Admission Audit
         AI Live cards in            : \(aiLiveCardsIn)
         Execution not ready         : \(executionReadinessFailures)
-        AI score below minimum      : \(aiScoreBelowMinimumCount)
         Stale data                  : \(staleDataFailures)
         Anomaly blocked             : \(anomalyBlockedCount)
         Needs broker state (cash/rebuy): \(requiresBrokerStateCount)
@@ -98,12 +93,6 @@ final class WealthActivityAdmissionAudit {
     static let shared = WealthActivityAdmissionAudit()
     private init() {}
 
-    // MARK: Configuration
-
-    /// Minimum `aiScore` required for Activity admission.
-    /// Adjust to match the actual threshold used in WealthCore.swift.
-    var minimumAIScore: Int = 1
-
     // MARK: State
 
     private(set) var lastReport: WealthActivityAdmissionAuditReport?
@@ -119,7 +108,6 @@ final class WealthActivityAdmissionAudit {
     func runAudit(on promotedCards: [Opportunity]) -> WealthActivityAdmissionAuditReport {
 
         var executionNotReady     = 0
-        var aiScoreTooLow         = 0
         var staleData             = 0
         var anomalyBlocked        = 0
         var needsBrokerState      = 0
@@ -132,12 +120,6 @@ final class WealthActivityAdmissionAudit {
             // Execution-readiness gate (permission / shares / cost)
             if !card.isMarketExecutableCandidate {
                 executionNotReady += 1
-                cardRejected = true
-            }
-
-            // Minimum AI score gate
-            if card.aiScore < minimumAIScore {
-                aiScoreTooLow += 1
                 cardRejected = true
             }
 
@@ -177,7 +159,6 @@ final class WealthActivityAdmissionAudit {
         let report = WealthActivityAdmissionAuditReport(
             aiLiveCardsIn:             promotedCards.count,
             executionReadinessFailures: executionNotReady,
-            aiScoreBelowMinimumCount:  aiScoreTooLow,
             staleDataFailures:         staleData,
             anomalyBlockedCount:       anomalyBlocked,
             requiresBrokerStateCount:  needsBrokerState,
