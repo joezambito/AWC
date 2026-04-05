@@ -124,7 +124,7 @@ enum WealthNewComponentsBootstrap {
         // Already saved inside WealthAILiveCoordinator.evaluateCandidates().
         // Save the Activity state for freshness tracking.
         let admissibleSymbols = promotedCards
-            .filter { $0.isMarketExecutableCandidate && $0.aiScore > 0 }
+            .filter { $0.isMarketExecutableCandidate }
             .map(\.symbol)
         WealthDownstreamCacheSanity.shared.saveActivityState(admissibleSymbols)
     }

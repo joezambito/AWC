@@ -30,18 +30,9 @@ struct WealthAILiveRejectionAuditReport {
 
     // ── Per-reason rejection counts ────────────────────────────────────
 
-    /// Cards with `aiScore == 0` – never evaluated or score lost after
-    /// restart.  These cards have no basis for AI Live promotion.
-    let zeroAIScoreCount: Int
-
     /// Cards whose `dataQualityLabel` is flagged as stale, making their
     /// promotion scores unreliable (stale-promotion-freshness rejection).
     let stalePromotionFreshnessCount: Int
-
-    /// Cards not at the top quality tier (`rank > topTierRankThreshold`).
-    /// AI Live uses a top-tier-only intake filter to avoid flooding the
-    /// live queue with lower-confidence candidates.
-    let lowTierIntakeCount: Int
 
     /// Cards with an unstable anomaly signal (`aiRiskStance` contains
     /// "unstable") – these are excluded by the anomaly/event-risk gate.
@@ -60,20 +51,13 @@ struct WealthAILiveRejectionAuditReport {
     /// for AI Live promotion.
     let estimatedEligibleCount: Int
 
-    // ── Thresholds (informational) ─────────────────────────────────────
-
-    /// Rank threshold above which a card is considered non-top-tier.
-    let topTierRankThreshold: Int
-
     // ── Derived summaries ──────────────────────────────────────────────
 
     var dropSummary: String {
         """
         AI Live Rejection Audit
         Market cards in         : \(marketCardsIn)
-        Zero AI score           : \(zeroAIScoreCount)
         Stale promotion data    : \(stalePromotionFreshnessCount)
-        Low tier (rank > \(topTierRankThreshold))    : \(lowTierIntakeCount)
         Anomaly unstable        : \(anomalyRejectionCount)
         High earnings risk ≥70  : \(highEarningsRiskCount)
         High macro risk ≥75     : \(highMacroRiskCount)
@@ -92,15 +76,6 @@ final class WealthAILiveRejectionAudit {
     static let shared = WealthAILiveRejectionAudit()
     private init() {}
 
-    // MARK: Configuration
-
-    /// Cards with `rank` strictly greater than this value are treated as
-    /// non-top-tier and counted in `lowTierIntakeCount`.
-    ///
-    /// Adjust this value to match the actual AI Live top-tier cutoff in
-    /// WealthCore.swift when that implementation is available.
-    var topTierRankThreshold: Int = 3
-
     // MARK: State
 
     private(set) var lastReport: WealthAILiveRejectionAuditReport?
@@ -116,9 +91,7 @@ final class WealthAILiveRejectionAudit {
     @discardableResult
     func runAudit(on marketCards: [Opportunity]) -> WealthAILiveRejectionAuditReport {
 
-        var zeroAIScore           = 0
         var stalePromotion        = 0
-        var lowTier               = 0
         var anomalyRejected       = 0
         var highEarningsRisk      = 0
         var highMacroRisk         = 0
@@ -127,21 +100,9 @@ final class WealthAILiveRejectionAudit {
         for card in marketCards {
             var cardRejected = false
 
-            // Zero AI score → promotion score unavailable
-            if card.aiScore == 0 {
-                zeroAIScore += 1
-                cardRejected = true
-            }
-
             // Stale data → promotion freshness gate
             if card.isDataStale {
                 stalePromotion += 1
-                cardRejected = true
-            }
-
-            // Low tier → top-tier-only intake filter
-            if card.rank > topTierRankThreshold {
-                lowTier += 1
                 cardRejected = true
             }
 
@@ -170,14 +131,11 @@ final class WealthAILiveRejectionAudit {
 
         let report = WealthAILiveRejectionAuditReport(
             marketCardsIn:               marketCards.count,
-            zeroAIScoreCount:            zeroAIScore,
             stalePromotionFreshnessCount: stalePromotion,
-            lowTierIntakeCount:          lowTier,
             anomalyRejectionCount:       anomalyRejected,
             highEarningsRiskCount:       highEarningsRisk,
             highMacroRiskCount:          highMacroRisk,
-            estimatedEligibleCount:      eligible,
-            topTierRankThreshold:        topTierRankThreshold
+            estimatedEligibleCount:      eligible
         )
 
         lastReport = report
