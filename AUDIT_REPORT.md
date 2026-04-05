@@ -269,6 +269,7 @@ The comment style `// NOTE: This method extends (replaces) the stub ... in Wealt
 - `try?` silently discards all errors. If a JSON file exists but contains corrupt or schema-mismatched data (e.g. from a partial write during a previous crash, or after a model migration), `restoredAssets` is set to `nil` with no log, no error, and no indication to the user or developer.
 - A previously successful cache write could silently become unreadable after a model update, causing the UI to appear empty on relaunch without any diagnostic information about why.
 - The `WealthEventLogStore` record posted on completion (line 82–87) reports the count of assets but does not distinguish between "file absent" (expected at first launch) and "file present but undecodable" (silent corruption).
+- **Remediation note:** The misleading documentation comment on `restoreCache()` (lines 62–66) should be corrected to accurately state that the function decodes large arrays synchronously. This prevents future maintainers from calling it on the main thread under the false assumption it is safe to do so.
 
 ---
 
