@@ -120,14 +120,13 @@ final class WealthEngineStartupController {
             // Valid cache – mark the scan phase complete without re-downloading.
             WealthEngineScanScheduler.shared.markPhaseComplete(.universeScan)
         } else {
-            // Call reloadForStartupSequence() directly, mirroring
-            // WealthEngineStore+Activation.swift.  This is the only path
-            // that writes the UserDefaults cache keys
-            // (awc_universe_signature / awc_universe_last_downloaded) that
-            // prepareCachedSnapshotForStartup() reads on the next launch.
-            // runUniverseScanWithProgress() → performUniverseScan() does NOT
-            // call reloadForStartupSequence(), so those keys were never
-            // written and the universe was re-downloaded on every launch.
+            // Call reloadForStartupSequence() — the only path that writes the
+            // UserDefaults cache keys (awc_universe_signature /
+            // awc_universe_last_downloaded) that prepareCachedSnapshotForStartup()
+            // reads on the next launch.  runUniverseScanWithProgress() →
+            // performUniverseScan() does NOT call reloadForStartupSequence(),
+            // so those keys were never written and the universe was
+            // re-downloaded on every launch.
             await Task.detached(priority: .userInitiated) {
                 await WealthMarketUniverseStore.shared.reloadForStartupSequence()
             }.value
