@@ -77,7 +77,29 @@ final class WealthEngineStartupController {
         WealthEngineScanScheduler.shared.markPhaseComplete(.cacheRestore)
 
         // ── Step 1 : Universe scan ────────────────────────────────────────
-        await engine.runUniverseScanWithProgress()
+        // Check for a valid cached universe snapshot before triggering a
+        // full network download.  The same prepareCachedSnapshotForStartup()
+        // pattern is used here as in WealthEngineStore+Activation.swift so
+        // the behaviour is consistent across both startup paths.
+        //
+        // prepareCachedSnapshotForStartup() returns true when a fresh,
+        // valid universe snapshot is already loaded into WealthMarketUniverseStore
+        // and can be reused without re-downloading.  If it returns false the
+        // full universe scan runs as before (root-cause fix for Issue 4).
+        //
+        // The call is wrapped in Task.detached to mirror the existing usage
+        // in WealthEngineStore+Activation.swift and keep any I/O off the
+        // main thread.
+        let hasCachedUniverse = await Task.detached(priority: .userInitiated) {
+            WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
+        }.value
+
+        if hasCachedUniverse {
+            // Valid cache – mark the scan phase complete without re-downloading.
+            WealthEngineScanScheduler.shared.markPhaseComplete(.universeScan)
+        } else {
+            await engine.runUniverseScanWithProgress()
+        }
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterUniverse)
