@@ -29,8 +29,11 @@ import Foundation
 //                                                    to AI Live Evaluation → Activity
 
 // MARK: - Safeguard thresholds
+//
+// Internal (not private) so WealthAILiveCoordinator and WealthAILiveRejectionAudit
+// can reference the same values instead of duplicating magic numbers.
 
-private enum SafeguardThreshold {
+enum SafeguardThreshold {
     static let earningsRisk: Int = 70
     static let macroRisk:    Int = 75
 }

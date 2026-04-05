@@ -152,13 +152,13 @@ final class WealthAILiveRejectionAudit {
             }
 
             // High earnings risk → event-risk gate (threshold mirrors safeguard)
-            if card.earningsRisk >= 70 {
+            if card.earningsRisk >= SafeguardThreshold.earningsRisk {
                 highEarningsRisk += 1
                 cardRejected = true
             }
 
             // High macro risk → event-risk gate
-            if card.macroRisk >= 75 {
+            if card.macroRisk >= SafeguardThreshold.macroRisk {
                 highMacroRisk += 1
                 cardRejected = true
             }

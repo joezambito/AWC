@@ -63,9 +63,9 @@ extension WealthEngineStore {
                     pendingRefreshPayload = nil
                     startupSequencePhase = .idle
                 }
-                // Always clear the dashboard loading state so the UI
-                // spinner is released on both the success path and the
-                // cancellation path.
+                // Always clear the dashboard-refresh flag so the UI spinner
+                // is never stuck — regardless of whether the task completed
+                // normally or was cancelled.
                 endDashboardRefreshFreeze()
                 activationTask = nil
             }

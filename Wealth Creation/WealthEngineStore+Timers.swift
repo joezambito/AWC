@@ -21,6 +21,11 @@ import Foundation
 // kept in this file-private holder.  Since WealthEngineStore is a
 // MainActor-isolated singleton, access is always serialised.
 
+// Adding @MainActor to WealthTimerHolder lets the Swift concurrency checker
+// verify that all access happens on the main actor instead of suppressing the
+// check with nonisolated(unsafe).  All callers live inside the @MainActor-
+// isolated WealthEngineStore extension, so no access pattern changes.
+@MainActor
 private final class WealthTimerHolder {
     /// IBKR price-only timers (9 m, 19 m, 29 m).
     var ibkrTimers: [Timer] = []
@@ -28,7 +33,8 @@ private final class WealthTimerHolder {
     var extraSoftTimers: [Timer] = []
 }
 
-private nonisolated(unsafe) let timerHolder = WealthTimerHolder()
+@MainActor
+private let timerHolder = WealthTimerHolder()
 
 extension WealthEngineStore {
 
@@ -94,7 +100,11 @@ extension WealthEngineStore {
     }
 
     private func makeIBKRTimer(at interval: TimeInterval, stage: Int) -> Timer {
-        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        // Use Timer(timeInterval:) + RunLoop.main.add(forMode:.common) so the
+        // timer continues to fire while the main RunLoop is in .tracking mode
+        // (e.g. during a scroll gesture).  Timer.scheduledTimer uses .default
+        // mode and pauses during UI interaction.
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -104,10 +114,12 @@ extension WealthEngineStore {
                 }
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
     }
 
     private func makeSoftTimer(at interval: TimeInterval, stage: Int) -> Timer {
-        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -117,10 +129,12 @@ extension WealthEngineStore {
                 }
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
     }
 
     private func makeDeepTimer(at interval: TimeInterval, stage: Int) -> Timer {
-        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -130,5 +144,7 @@ extension WealthEngineStore {
                 }
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
     }
 }
