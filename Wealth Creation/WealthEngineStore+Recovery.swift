@@ -28,8 +28,10 @@ extension WealthEngineStore {
         pendingRefreshPayload = nil
         pendingPublishTask = nil
 
-        // Restore last persisted state so the UI is not blank
-        restoreCache()
+        // Restore last persisted state so the UI is not blank.
+        // Use the background path so the main thread is never blocked
+        // decoding large JSON arrays during a recovery event.
+        restoreCacheInBackground()
 
         WealthEventLogStore.shared.record(
             title: "Recovery",

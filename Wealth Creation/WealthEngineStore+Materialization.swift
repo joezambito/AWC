@@ -96,6 +96,16 @@ extension WealthEngineStore {
 
         let ranked = assignMarketRanks(to: recheckPassed)
 
+        // Merge the assigned ranks back into the full universe array.
+        // Downstream consumers gate on `rank > 0` (e.g. AI Live:
+        // `rankedAssets.filter { $0.rank > 0 }`).  Without this merge
+        // the computed ranks are silently discarded and every card appears
+        // unranked, so AI Live always receives an empty candidate set.
+        // Cards that did not make it through the market gate are reset to
+        // rank 0 so stale ranks from a previous cycle cannot leak through.
+        let rankLookup = Dictionary(uniqueKeysWithValues: ranked.map { ($0.symbol, $0) })
+        self.rankedAssets = rankedAssets.map { rankLookup[$0.symbol] ?? $0.withRank(0) }
+
         WealthAllCardsStore.shared.sync(
             opportunities: rankedAssets,
             activityKeys: [],

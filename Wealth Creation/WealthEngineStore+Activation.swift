@@ -36,7 +36,11 @@ extension WealthEngineStore {
     /// Idempotent: subsequent calls while an activation is already in
     /// progress are no-ops.
     func runActivationSequence() {
-        guard activationTask == nil else { return }
+        // Also guard against the new startup controller path: if
+        // beginStartupSequence() has already completed, yield to it so
+        // both orchestrators cannot run the full pipeline concurrently.
+        guard activationTask == nil,
+              !WealthEngineStartupController.shared.isStartupComplete else { return }
 
         // Tear down any residual timers from a previous session so they
         // cannot fire while the activation sequence is running.
@@ -58,8 +62,11 @@ extension WealthEngineStore {
                 if Task.isCancelled {
                     pendingRefreshPayload = nil
                     startupSequencePhase = .idle
-                    endDashboardRefreshFreeze()
                 }
+                // Always clear the dashboard loading state so the UI
+                // spinner is released on both the success path and the
+                // cancellation path.
+                endDashboardRefreshFreeze()
                 activationTask = nil
             }
 
