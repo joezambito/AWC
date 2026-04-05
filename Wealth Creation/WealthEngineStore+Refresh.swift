@@ -119,7 +119,63 @@ extension WealthEngineStore {
 
     @MainActor
     func performResearchFeeds() {
-        // Appends research-feed intel to ranked cards.
+        // ── 1. Collect ranked cards ───────────────────────────────────────
+        let ranked = rankedAssets.filter { $0.rank > 0 }
+        guard !ranked.isEmpty else {
+            WealthEventLogStore.shared.record(
+                title: "Research Feeds",
+                detail: "Skipped: no ranked market cards to evaluate.",
+                category: "research",
+                tintName: "orange",
+                timestamp: .now
+            )
+            return
+        }
+
+        // ── 2. Build live broker-quote lookup ─────────────────────────────
+        //
+        // WealthBrokerQuote objects are delivered as stream events (not
+        // cached in the bridge).  Subscribe to .quote events elsewhere and
+        // store them in a future quote-cache store.  For now the engine
+        // evaluates cards without a live quote so that research feeds never
+        // block on broker connectivity.
+        let liveQuoteCache: [String: WealthBrokerQuote] = [:]
+
+        // ── 3. Evaluate each ranked card ──────────────────────────────────
+        var refreshedCards: [WealthResearchCard] = []
+        refreshedCards.reserveCapacity(ranked.count)
+
+        for opportunity in ranked {
+            let quote = liveQuoteCache[opportunity.symbol]
+            let card  = WealthResearchFeedEngine.evaluate(opportunity, quote: quote)
+            refreshedCards.append(card)
+        }
+
+        // ── 4. Prune symbols that are no longer ranked, then batch-update ─
+        let activeSymbols = Set(ranked.map(\.symbol))
+        WealthResearchIntelStore.shared.pruneSymbolsNotIn(activeSymbols)
+        WealthResearchIntelStore.shared.updateBatch(refreshedCards)
+
+        // ── 5. Persist to file-backed cache ───────────────────────────────
+        WealthResearchIntelStore.shared.persist()
+
+        // ── 6. Update deep-refresh timestamp ─────────────────────────────
+        lastHeavyRefresh = .now
+
+        // ── 7. Audit log ─────────────────────────────────────────────────
+        let spikingSymbols = refreshedCards.filter(\.priceSpike).map(\.symbol).joined(separator: ", ")
+        let elevatedVol    = refreshedCards.filter { $0.volumeSignal == "Elevated" }.count
+        WealthEventLogStore.shared.record(
+            title: "Research Feeds",
+            detail: """
+                Deep refresh complete: \(refreshedCards.count) cards evaluated. \
+                Elevated volume: \(elevatedVol). \
+                Price spikes: \(spikingSymbols.isEmpty ? "none" : spikingSymbols).
+                """,
+            category: "research",
+            tintName: "green",
+            timestamp: .now
+        )
     }
 
     @MainActor

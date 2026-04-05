@@ -93,5 +93,8 @@ extension WealthEngineStore {
 
         // Remove downstream file-backed caches
         WealthDownstreamCacheSanity.shared.invalidateAllFileCaches()
+
+        // Remove research intel cache
+        WealthResearchIntelStore.shared.invalidate()
     }
 }
