@@ -18,10 +18,19 @@
 		B7246943794F87A2FFFAD5C3 /* MarketDataFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = E76FE6A5E6DAE4793494A658 /* MarketDataFetcher.swift */; };
 		1DFF804B06FF1B7B516364F9 /* Opportunity+CardStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FBDACF55A6947CCFD9ED89 /* Opportunity+CardStateMachine.swift */; };
 		316312F3D42480F0011B2088 /* PersistenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 095A3BC200999F1731BA09A1 /* PersistenceManager.swift */; };
+		DAA37F6FC2C5B4B0239D0FD8 /* WealthAILiveCompactCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A68293CB741C89AA9140D5AB /* WealthAILiveCompactCard.swift */; };
 		EE2A18CA3235AC54BDE179C8 /* WealthAILiveCoordinator+Evaluation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2637F7905D772949E8E9B841 /* WealthAILiveCoordinator+Evaluation.swift */; };
+		3DF3EC27201FB3A3BEAD2CA6 /* WealthAILiveCoordinator+Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53538F9FF21B100908E61C02 /* WealthAILiveCoordinator+Models.swift */; };
+		A8948D2808C2C4EC1540C1A9 /* WealthAILiveCoordinator+Selection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F5E4C425E349BC9CE46631 /* WealthAILiveCoordinator+Selection.swift */; };
+		8C7C5FA107EB66700CA1618E /* WealthAILiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B18969825093DDC266DF83 /* WealthAILiveCoordinator.swift */; };
 		39AC716D7BCCB2F1AEFDCC50 /* WealthAILiveRejectionAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB007EA6C8C4E14876869A4A /* WealthAILiveRejectionAudit.swift */; };
+		4556D5B7FE33EA2E645DF7FA /* WealthAIScoreStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC3C55DE55F934DA7135AFB /* WealthAIScoreStore.swift */; };
 		923B069D388FECDA31873281 /* WealthActivityAdmissionAudit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15916004C950781B1F9A5BB1 /* WealthActivityAdmissionAudit.swift */; };
+		7BE99AE4819AE867561F541B /* WealthAllCardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DCE9C0D0EC77FDE4492623B /* WealthAllCardsStore.swift */; };
 		7643D1787137A7CA7EAB3E2D /* WealthAppSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60B8DCF0AD31C5F893CFBA9 /* WealthAppSessionController.swift */; };
+		1EE07CE6C3C0562E2E62A3EE /* WealthAuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD8C503D3DDC09CB0A30B174 /* WealthAuthStore.swift */; };
+		D261A372FFB48C659DE2973C /* WealthBackgroundRefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1F4BBAD9CF9359396A52B /* WealthBackgroundRefreshCoordinator.swift */; };
+		F4DAE8801CA97C69DD35CE22 /* WealthBlueCardsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D167BAB0D53048717B0015A /* WealthBlueCardsStore.swift */; };
 		C2CC3AB92DA69D1D65CD7A29 /* WealthBrainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB41543A2F3E1ACB612193E /* WealthBrainStore.swift */; };
 		322CA3534D53D8BC4C4B6450 /* WealthDownstreamCacheSanity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49784060FEFB664022B631E /* WealthDownstreamCacheSanity.swift */; };
 		7237B18FEA0D32EED5A400B8 /* WealthDownstreamRebuildOrchestrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09D0DBDE7040334B009C5237 /* WealthDownstreamRebuildOrchestrator.swift */; };
@@ -74,10 +83,19 @@
 		E76FE6A5E6DAE4793494A658 /* MarketDataFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MarketDataFetcher.swift"; sourceTree = "<group>"; };
 		75FBDACF55A6947CCFD9ED89 /* Opportunity+CardStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Opportunity+CardStateMachine.swift"; sourceTree = "<group>"; };
 		095A3BC200999F1731BA09A1 /* PersistenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PersistenceManager.swift"; sourceTree = "<group>"; };
+		A68293CB741C89AA9140D5AB /* WealthAILiveCompactCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAILiveCompactCard.swift"; sourceTree = "<group>"; };
 		2637F7905D772949E8E9B841 /* WealthAILiveCoordinator+Evaluation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAILiveCoordinator+Evaluation.swift"; sourceTree = "<group>"; };
+		53538F9FF21B100908E61C02 /* WealthAILiveCoordinator+Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAILiveCoordinator+Models.swift"; sourceTree = "<group>"; };
+		33F5E4C425E349BC9CE46631 /* WealthAILiveCoordinator+Selection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAILiveCoordinator+Selection.swift"; sourceTree = "<group>"; };
+		18B18969825093DDC266DF83 /* WealthAILiveCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAILiveCoordinator.swift"; sourceTree = "<group>"; };
 		EB007EA6C8C4E14876869A4A /* WealthAILiveRejectionAudit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAILiveRejectionAudit.swift"; sourceTree = "<group>"; };
+		EFC3C55DE55F934DA7135AFB /* WealthAIScoreStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAIScoreStore.swift"; sourceTree = "<group>"; };
 		15916004C950781B1F9A5BB1 /* WealthActivityAdmissionAudit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthActivityAdmissionAudit.swift"; sourceTree = "<group>"; };
+		3DCE9C0D0EC77FDE4492623B /* WealthAllCardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAllCardsStore.swift"; sourceTree = "<group>"; };
 		D60B8DCF0AD31C5F893CFBA9 /* WealthAppSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAppSessionController.swift"; sourceTree = "<group>"; };
+		AD8C503D3DDC09CB0A30B174 /* WealthAuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthAuthStore.swift"; sourceTree = "<group>"; };
+		C7A1F4BBAD9CF9359396A52B /* WealthBackgroundRefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthBackgroundRefreshCoordinator.swift"; sourceTree = "<group>"; };
+		8D167BAB0D53048717B0015A /* WealthBlueCardsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthBlueCardsStore.swift"; sourceTree = "<group>"; };
 		7EB41543A2F3E1ACB612193E /* WealthBrainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthBrainStore.swift"; sourceTree = "<group>"; };
 		C49784060FEFB664022B631E /* WealthDownstreamCacheSanity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthDownstreamCacheSanity.swift"; sourceTree = "<group>"; };
 		09D0DBDE7040334B009C5237 /* WealthDownstreamRebuildOrchestrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WealthDownstreamRebuildOrchestrator.swift"; sourceTree = "<group>"; };
@@ -164,10 +182,19 @@
 				E76FE6A5E6DAE4793494A658 /* MarketDataFetcher.swift */,
 				75FBDACF55A6947CCFD9ED89 /* Opportunity+CardStateMachine.swift */,
 				095A3BC200999F1731BA09A1 /* PersistenceManager.swift */,
+				A68293CB741C89AA9140D5AB /* WealthAILiveCompactCard.swift */,
 				2637F7905D772949E8E9B841 /* WealthAILiveCoordinator+Evaluation.swift */,
+				53538F9FF21B100908E61C02 /* WealthAILiveCoordinator+Models.swift */,
+				33F5E4C425E349BC9CE46631 /* WealthAILiveCoordinator+Selection.swift */,
+				18B18969825093DDC266DF83 /* WealthAILiveCoordinator.swift */,
 				EB007EA6C8C4E14876869A4A /* WealthAILiveRejectionAudit.swift */,
+				EFC3C55DE55F934DA7135AFB /* WealthAIScoreStore.swift */,
 				15916004C950781B1F9A5BB1 /* WealthActivityAdmissionAudit.swift */,
+				3DCE9C0D0EC77FDE4492623B /* WealthAllCardsStore.swift */,
 				D60B8DCF0AD31C5F893CFBA9 /* WealthAppSessionController.swift */,
+				AD8C503D3DDC09CB0A30B174 /* WealthAuthStore.swift */,
+				C7A1F4BBAD9CF9359396A52B /* WealthBackgroundRefreshCoordinator.swift */,
+				8D167BAB0D53048717B0015A /* WealthBlueCardsStore.swift */,
 				7EB41543A2F3E1ACB612193E /* WealthBrainStore.swift */,
 				C49784060FEFB664022B631E /* WealthDownstreamCacheSanity.swift */,
 				09D0DBDE7040334B009C5237 /* WealthDownstreamRebuildOrchestrator.swift */,
@@ -288,10 +315,19 @@
 				B7246943794F87A2FFFAD5C3 /* MarketDataFetcher.swift in Sources */,
 				1DFF804B06FF1B7B516364F9 /* Opportunity+CardStateMachine.swift in Sources */,
 				316312F3D42480F0011B2088 /* PersistenceManager.swift in Sources */,
+				DAA37F6FC2C5B4B0239D0FD8 /* WealthAILiveCompactCard.swift in Sources */,
 				EE2A18CA3235AC54BDE179C8 /* WealthAILiveCoordinator+Evaluation.swift in Sources */,
+				3DF3EC27201FB3A3BEAD2CA6 /* WealthAILiveCoordinator+Models.swift in Sources */,
+				A8948D2808C2C4EC1540C1A9 /* WealthAILiveCoordinator+Selection.swift in Sources */,
+				8C7C5FA107EB66700CA1618E /* WealthAILiveCoordinator.swift in Sources */,
 				39AC716D7BCCB2F1AEFDCC50 /* WealthAILiveRejectionAudit.swift in Sources */,
+				4556D5B7FE33EA2E645DF7FA /* WealthAIScoreStore.swift in Sources */,
 				923B069D388FECDA31873281 /* WealthActivityAdmissionAudit.swift in Sources */,
+				7BE99AE4819AE867561F541B /* WealthAllCardsStore.swift in Sources */,
 				7643D1787137A7CA7EAB3E2D /* WealthAppSessionController.swift in Sources */,
+				1EE07CE6C3C0562E2E62A3EE /* WealthAuthStore.swift in Sources */,
+				D261A372FFB48C659DE2973C /* WealthBackgroundRefreshCoordinator.swift in Sources */,
+				F4DAE8801CA97C69DD35CE22 /* WealthBlueCardsStore.swift in Sources */,
 				C2CC3AB92DA69D1D65CD7A29 /* WealthBrainStore.swift in Sources */,
 				322CA3534D53D8BC4C4B6450 /* WealthDownstreamCacheSanity.swift in Sources */,
 				7237B18FEA0D32EED5A400B8 /* WealthDownstreamRebuildOrchestrator.swift in Sources */,
@@ -334,35 +370,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSET_CATALOG_COMPILER_OPTIMIZATION = space;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -375,12 +386,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -396,8 +401,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSET_CATALOG_COMPILER_OPTIMIZATION = space;
-				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -408,12 +411,6 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -427,7 +424,6 @@
 		36F7B61E0BB35F5EE850C3BE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSTEPATH = "";
 				CODE_SIGN_ENTITLEMENTS = "Wealth Creation/Wealth Creation.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -441,7 +437,6 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LE_SWIFT_BUILD_TOOL = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Zulugames.Wealth-Creation";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -457,7 +452,6 @@
 		C961A2B6F28F76EF702C6931 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSTEPATH = "";
 				CODE_SIGN_ENTITLEMENTS = "Wealth Creation/Wealth Creation.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -471,7 +465,6 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LE_SWIFT_BUILD_TOOL = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Zulugames.Wealth-Creation";
 				PRODUCT_NAME = "$(TARGET_NAME)";
