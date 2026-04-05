@@ -1,6 +1,6 @@
 # AWC Deep Audit Report
 **Generated:** 2026-04-05  
-**Scope:** All committed Swift source files in `Wealth Creation/` (43 files, 5 412 lines), `Tests/AWCTests/AWCTests.swift`, `Package.swift`  
+**Scope:** All committed Swift source files in `Wealth Creation/` (43 files, 5,412 lines), `Tests/AWCTests/AWCTests.swift`, `Package.swift`  
 **Basis:** Direct file-by-file reading of the current `main` branch. No findings are carried from prior sessions.
 
 ---
@@ -98,7 +98,7 @@ func bias() {
 
 **Impact on performance and reliability:**
 - AI scores on `Opportunity` objects are never updated by the brain. `aiScore` remains at its initialised value (0 or whatever the previous persist contained).
-- Cards with `aiScore == 0` fail the AI Live promotion filter in `WealthAILiveCoordinator+Evaluation.swift` (line 101), so promoted card count is always zero regardless of universe size.
+- Cards with `aiScore == 0` fail the AI Live promotion filter in `WealthAILiveCoordinator+Evaluation.swift` (line 101), so promoted card count is always zero regardless of universe size. (`aiScore` starts at its initialized value of 0 unless WealthCore.swift sets it.)
 - Activity remains empty. Live-trading decision logic has no learned signal to act on.
 
 ---
