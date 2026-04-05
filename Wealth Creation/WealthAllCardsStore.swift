@@ -81,4 +81,21 @@ final class WealthAllCardsStore: ObservableObject {
             timestamp: .now
         )
     }
+
+    /// Update only the AI Live pick keys after an evaluation pass.
+    ///
+    /// Called by `WealthAILiveCoordinator.evaluateCandidates()` once promoted
+    /// cards are known.  Using a targeted update avoids a full re-sync (which
+    /// would require re-passing all opportunities/holdings) while still
+    /// ensuring `livePickKeys` reflects the current AI Live set.
+    func updateLivePickKeys(_ keys: [String]) {
+        livePickKeys = keys
+        WealthEventLogStore.shared.record(
+            title: "All Cards Store",
+            detail: "Live pick keys updated: \(keys.count) promoted symbol(s).",
+            category: "cards",
+            tintName: keys.isEmpty ? "orange" : "green",
+            timestamp: .now
+        )
+    }
 }
