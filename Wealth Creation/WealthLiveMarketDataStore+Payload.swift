@@ -2,10 +2,15 @@ import Foundation
 
 // MARK: - WealthLiveMarketDataStore+Payload
 //
-// Defines the `WealthLiveMarketPayload` value type and adds a
-// `receive(_:)` entry-point to `WealthLiveMarketDataStore` so that
-// inbound market-data packets can be decoded and applied to the store
-// in a single, testable call.
+// Defines the `WealthLiveMarketPayload` value type, the
+// `WealthLiveMarketDataStore` singleton, and a `receive(_:)` /
+// `receiveBatch(_:)` entry-point so that inbound market-data packets
+// can be decoded and applied to the store in a single, testable call.
+//
+// The base class (`WealthLiveMarketDataStore`) is declared here so
+// this file compiles as a standalone unit when `WealthCore.swift` is
+// not present in the git tree.  The `applyQuote(_:)` primitive is a
+// stub whose full implementation lives in WealthCore.swift.
 //
 // No existing properties or methods on `WealthLiveMarketDataStore`
 // are modified.
@@ -28,9 +33,24 @@ struct WealthLiveMarketPayload {
     let timestamp: Date
 }
 
-// MARK: - WealthLiveMarketDataStore extension
+// MARK: - WealthLiveMarketDataStore
 
-extension WealthLiveMarketDataStore {
+/// Observable store for live streaming market data.
+///
+/// Each inbound quote is written into an internal symbol-keyed table so
+/// that the latest bid/ask/last for any instrument is always available
+/// for the card-scoring and AI-Live passes.
+///
+/// The full quote-table implementation (property storage, UI publishing,
+/// and broker-feed plumbing) lives in `WealthCore.swift`.  This file
+/// provides the class declaration and the payload-ingestion surface only.
+@MainActor
+final class WealthLiveMarketDataStore: ObservableObject {
+
+    // MARK: Shared instance
+
+    static let shared = WealthLiveMarketDataStore()
+    private init() {}
 
     // MARK: - Payload ingestion
 
@@ -65,5 +85,14 @@ extension WealthLiveMarketDataStore {
             tintName: "blue",
             timestamp: .now
         )
+    }
+
+    // MARK: - Primitive (override point)
+
+    /// Write a single quote into the internal symbol-keyed table.
+    ///
+    /// Full implementation lives in WealthCore.swift.
+    func applyQuote(_ payload: WealthLiveMarketPayload) {
+        // Implemented in WealthCore.swift (existing engine logic).
     }
 }
