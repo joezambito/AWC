@@ -4,7 +4,7 @@ import Combine
 // MARK: - WealthEngineStore
 //
 // Core AWC engine singleton.  Declared @MainActor so that every extension
-// method – and therefore every @Published property mutation – is guaranteed
+// method - and therefore every @Published property mutation - is guaranteed
 // to run on the main thread.
 //
 // Root-cause threading fix:
@@ -14,20 +14,20 @@ import Combine
 //   the main actor, making every @Published assignment thread-safe without
 //   requiring per-site DispatchQueue.main.async wrappers.
 //
-// Engine logic is distributed across focused extension files (~200–300 lines
+// Engine logic is distributed across focused extension files (~200-300 lines
 // each) to keep each unit of responsibility small and reviewable:
 //
-//   WealthEngineStore+Bootstrap.swift           – app launch / foreground hooks
-//   WealthEngineStore+Activation.swift          – one-time startup activation
-//   WealthEngineStore+Timers.swift              – recurring timer scheduling
-//   WealthEngineStore+Refresh.swift             – refresh-mode dispatch
-//   WealthEngineRefresh+LifecyclePublishing     – scan-progress notifications
-//   WealthEngineStore+Materialization.swift     – market ranking / safeguard gate
-//   WealthEngineStore+Cache.swift               – synchronous persistence
-//   WealthEngineStore+BackgroundCache.swift     – off-thread persistence
-//   WealthEngineStore+UniverseBlueprints.swift  – universe seed source
-//   WealthEngineStore+Dashboard.swift           – snapshot helpers
-//   WealthEngineStore+Recovery.swift            – error recovery / factory reset
+//   WealthEngineStore+Bootstrap.swift           - app launch / foreground hooks
+//   WealthEngineStore+Activation.swift          - one-time startup activation
+//   WealthEngineStore+Timers.swift              - recurring timer scheduling
+//   WealthEngineStore+Refresh.swift             - refresh-mode dispatch
+//   WealthEngineRefresh+LifecyclePublishing.swift - scan-progress notifications
+//   WealthEngineStore+Materialization.swift     - market ranking / safeguard gate
+//   WealthEngineStore+Cache.swift               - synchronous persistence
+//   WealthEngineStore+BackgroundCache.swift     - off-thread persistence
+//   WealthEngineStore+UniverseBlueprints.swift  - universe seed source
+//   WealthEngineStore+Dashboard.swift           - snapshot helpers
+//   WealthEngineStore+Recovery.swift            - error recovery / factory reset
 
 // MARK: - StartupPhase
 
@@ -54,11 +54,11 @@ enum StartupPhase {
 @MainActor
 final class WealthEngineStore: ObservableObject {
 
-    // MARK: – Shared instance
+    // MARK: - Shared instance
 
     static let shared = WealthEngineStore()
 
-    // MARK: – @Published properties
+    // MARK: - @Published properties
     //
     // Every property below is mutated only through @MainActor-isolated
     // methods (class methods or extension methods on this @MainActor type).
@@ -101,7 +101,7 @@ final class WealthEngineStore: ObservableObject {
     /// is halted regardless of AI Live scores or card state.
     @Published var killSwitch: Bool = false
 
-    /// Index (0–5) of the current timer-cycle activation stage.
+    /// Index (0-5) of the current timer-cycle activation stage.
     ///
     /// Stage map: 0 = IBKR-1, 1 = Soft-1, 2 = IBKR-2, 3 = Soft-2,
     ///            4 = IBKR-3, 5 = Deep
@@ -117,7 +117,7 @@ final class WealthEngineStore: ObservableObject {
     /// permitted.  Set by `runActivationSequence()` on completion.
     @Published var tradingLifecycleArmed: Bool = false
 
-    // MARK: – Non-published stored properties
+    // MARK: - Non-published stored properties
 
     /// Handle for the current startup activation `Task`.
     ///
@@ -159,7 +159,7 @@ final class WealthEngineStore: ObservableObject {
     /// to determine when to arm `tradingLifecycleArmed`.
     var lockedCheckpointProgress: Int = 0
 
-    // MARK: – Constants
+    // MARK: - Constants
 
     /// Nanosecond delay applied before the startup scan begins (3 seconds).
     ///
@@ -170,11 +170,11 @@ final class WealthEngineStore: ObservableObject {
     /// Number of locked-checkpoint intervals required per activation cycle.
     static let lockedCheckpointCount: Int = 3
 
-    // MARK: – Init
+    // MARK: - Init
 
     private init() {}
 
-    // MARK: – Startup scan implementation points
+    // MARK: - Startup scan implementation points
     //
     // These async methods are the designated call sites for the heavy AI-brain
     // and market-warmup logic that lives in WealthCore.swift.
@@ -203,7 +203,7 @@ final class WealthEngineStore: ObservableObject {
         // Delegates to the market-warmup pipeline in WealthCore.swift.
     }
 
-    // MARK: – Dashboard freeze helpers
+    // MARK: - Dashboard freeze helpers
 
     /// End a dashboard-loading freeze that was started by the activation
     /// sequence.  Delegates to `endDashboardRefresh()` which is defined in
