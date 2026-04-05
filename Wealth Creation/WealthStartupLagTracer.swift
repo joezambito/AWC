@@ -83,7 +83,7 @@ final class WealthStartupLagTracer {
     /// Also forwards the event to `WealthEventLogStore` so it appears in the
     /// in-app event log.
     func trace(_ label: String) {
-        let now = Date.now
+        let now: Date = .now
         let elapsed = now.timeIntervalSince(launchDate)
         let event = WealthStartupTraceEvent(
             label: label,

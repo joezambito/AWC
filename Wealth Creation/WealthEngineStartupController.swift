@@ -79,9 +79,7 @@ final class WealthEngineStartupController {
         let engine = WealthEngineStore.shared
 
         // ── Startup trace ─────────────────────────────────────────────────
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("runStartupSequence – start")
-        }
+        WealthStartupLagTracer.shared.trace("runStartupSequence – start")
 
         // ── Pre-flight: integrity check ───────────────────────────────────
         // Reset any stuck in-flight state from a previous interrupted session
@@ -106,9 +104,7 @@ final class WealthEngineStartupController {
         // The call is wrapped in Task.detached to mirror the existing usage
         // in WealthEngineStore+Activation.swift and keep any I/O off the
         // main thread.
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("universeScan – start")
-        }
+        WealthStartupLagTracer.shared.trace("universeScan – start")
         let hasCachedUniverse = await Task.detached(priority: .userInitiated) {
             WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
         }.value
@@ -119,48 +115,34 @@ final class WealthEngineStartupController {
         } else {
             await engine.runUniverseScanWithProgress()
         }
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("universeScan – done")
-        }
+        WealthStartupLagTracer.shared.trace("universeScan – done")
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterUniverse)
         guard !Task.isCancelled else { return }
 
         // ── Step 2 : AI scan ─────────────────────────────────────────────
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("aiScan – start")
-        }
+        WealthStartupLagTracer.shared.trace("aiScan – start")
         await engine.runAIScanWithProgress()
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("aiScan – done")
-        }
+        WealthStartupLagTracer.shared.trace("aiScan – done")
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterAI)
         guard !Task.isCancelled else { return }
 
         // ── Step 3 : Market ranking ───────────────────────────────────────
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("marketRanking – start")
-        }
+        WealthStartupLagTracer.shared.trace("marketRanking – start")
         await engine.runMarketRankingWithProgress()
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("marketRanking – done")
-        }
+        WealthStartupLagTracer.shared.trace("marketRanking – done")
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterMarket)
         guard !Task.isCancelled else { return }
 
         // ── Step 4 : Research feeds ───────────────────────────────────────
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("researchFeeds – start")
-        }
+        WealthStartupLagTracer.shared.trace("researchFeeds – start")
         await engine.runResearchFeedsWithProgress()
-        await MainActor.run {
-            WealthStartupLagTracer.shared.trace("researchFeeds – done")
-        }
+        WealthStartupLagTracer.shared.trace("researchFeeds – done")
 
         guard !Task.isCancelled else { return }
 
