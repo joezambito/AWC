@@ -31,10 +31,53 @@ struct WealthIBKRContract: Equatable {
 }
 
 // MARK: - Bridge
+//
+// REPLACEMENT FILE — two targeted changes; no logic altered:
+//
+//   1. ibkrNetworkQueue (NEW)
+//      `conn.start(queue: .main)` has been changed to
+//      `conn.start(queue: Self.ibkrNetworkQueue)`.
+//
+//      Root cause of UI freeze + scan-stall:
+//        Using `queue: .main` caused NWConnection to deliver every TCP-level
+//        callback (stateUpdateHandler, receive-loop completions) on the main
+//        dispatch queue.  When IBKR connects simultaneously with the universe
+//        download on startup, the main queue is flooded with raw network-packet
+//        events, starving the UI event loop (bottom tabs unresponsive) and
+//        preventing startup async tasks from getting main-actor time (scan
+//        stalls / does not complete).
+//
+//        The existing code already wraps every callback in
+//        `Task { @MainActor in ... }`, so all actual state mutations continue
+//        to run on @MainActor exactly as before.  Moving the NWConnection
+//        delivery queue off `.main` means TCP-level framework work happens on
+//        a background thread; only the explicit @MainActor hops bring work to
+//        the main thread, as intended.
+//
+//   2. WealthStartupLagTracer (NEW trace calls — observe only)
+//      `trace(_:)` calls added at `connect()` entry and on `.connecting` /
+//      `.connected` events so the startup trace log shows exactly when IBKR
+//      fires relative to the universe scan.  No logic changed.
 
 @MainActor
 final class WealthIBKRBridge {
     static let shared = WealthIBKRBridge()
+
+    // MARK: - Network queue
+    //
+    // All NWConnection callbacks (stateUpdateHandler, receive completions)
+    // are delivered on this private serial queue instead of `.main`.
+    // Every callback immediately hops to @MainActor via
+    // `Task { @MainActor in ... }` (unchanged from the original code),
+    // so all bridge logic still runs on the main actor.
+    //
+    // Using a named serial queue keeps the main dispatch queue free for
+    // UI rendering and startup async tasks during the period when IBKR is
+    // connecting alongside the universe download.
+    private nonisolated(unsafe) static let ibkrNetworkQueue = DispatchQueue(
+        label: "com.awc.ibkr-bridge",
+        qos: .userInitiated
+    )
 
     typealias EventHandler = @MainActor (WealthIBKRBridgeEvent) -> Void
 
@@ -87,6 +130,15 @@ final class WealthIBKRBridge {
     }
 
     func emit(_ event: WealthIBKRBridgeEvent) {
+        // ── Startup trace (observe only) ──────────────────────────────────
+        switch event {
+        case .connecting:
+            WealthStartupLagTracer.shared.trace("IBKRBridge.emit – .connecting (TCP dial started)")
+        case .connected:
+            WealthStartupLagTracer.shared.trace("IBKRBridge.emit – .connected (handshake complete)")
+        default:
+            break
+        }
         for handler in eventHandlers { handler(event) }
     }
 
@@ -103,6 +155,9 @@ final class WealthIBKRBridge {
             return
         }
 
+        // ── Startup trace (observe only) ──────────────────────────────────
+        WealthStartupLagTracer.shared.trace("IBKRBridge.connect – called host=\(host):\(port)")
+
         let endpoint = NWEndpoint.hostPort(
             host: NWEndpoint.Host(host),
             port: NWEndpoint.Port(integerLiteral: port)
@@ -116,7 +171,11 @@ final class WealthIBKRBridge {
             }
         }
 
-        conn.start(queue: .main)
+        // Root-cause fix: use a private background queue instead of .main.
+        // All callbacks hop to @MainActor via Task { @MainActor in ... }
+        // (unchanged), so bridge logic still runs on the main actor.
+        // See ibkrNetworkQueue declaration above for full explanation.
+        conn.start(queue: Self.ibkrNetworkQueue)
         emit(.connecting)
         startReceiving()
     }

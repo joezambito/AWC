@@ -2,6 +2,17 @@ import Foundation
 
 // MARK: - WealthEngineStartupController
 //
+// REPLACEMENT FILE — Startup Audit & Lag Tracing added.
+//
+// Tracing additions (observe only – no logic change):
+//   `WealthStartupLagTracer.shared.trace(_:)` calls inserted before and after
+//   each startup phase so the console and in-app event log show exactly which
+//   subsystems fire and how long each phase takes.  A full summary is printed
+//   to the console when startup completes.
+//   No existing logic, branch, or return path has been altered.
+//
+// Original documentation preserved below.
+//
 // Orchestrates the one-time startup sequence on first app launch.
 // Replaces the previous parallel "fire everything at once" approach in
 // WealthEngineStore.bootstrap() with a staggered background sequence:
@@ -67,6 +78,9 @@ final class WealthEngineStartupController {
     private func runStartupSequence() async {
         let engine = WealthEngineStore.shared
 
+        // ── Startup trace ─────────────────────────────────────────────────
+        WealthStartupLagTracer.shared.trace("runStartupSequence – start")
+
         // ── Pre-flight: integrity check ───────────────────────────────────
         // Reset any stuck in-flight state from a previous interrupted session
         // before starting a new run.
@@ -90,6 +104,7 @@ final class WealthEngineStartupController {
         // The call is wrapped in Task.detached to mirror the existing usage
         // in WealthEngineStore+Activation.swift and keep any I/O off the
         // main thread.
+        WealthStartupLagTracer.shared.trace("universeScan – start")
         let hasCachedUniverse = await Task.detached(priority: .userInitiated) {
             WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
         }.value
@@ -100,27 +115,34 @@ final class WealthEngineStartupController {
         } else {
             await engine.runUniverseScanWithProgress()
         }
+        WealthStartupLagTracer.shared.trace("universeScan – done")
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterUniverse)
         guard !Task.isCancelled else { return }
 
         // ── Step 2 : AI scan ─────────────────────────────────────────────
+        WealthStartupLagTracer.shared.trace("aiScan – start")
         await engine.runAIScanWithProgress()
+        WealthStartupLagTracer.shared.trace("aiScan – done")
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterAI)
         guard !Task.isCancelled else { return }
 
         // ── Step 3 : Market ranking ───────────────────────────────────────
+        WealthStartupLagTracer.shared.trace("marketRanking – start")
         await engine.runMarketRankingWithProgress()
+        WealthStartupLagTracer.shared.trace("marketRanking – done")
 
         guard !Task.isCancelled else { return }
         try? await Task.sleep(nanoseconds: Delay.afterMarket)
         guard !Task.isCancelled else { return }
 
         // ── Step 4 : Research feeds ───────────────────────────────────────
+        WealthStartupLagTracer.shared.trace("researchFeeds – start")
         await engine.runResearchFeedsWithProgress()
+        WealthStartupLagTracer.shared.trace("researchFeeds – done")
 
         guard !Task.isCancelled else { return }
 
@@ -128,6 +150,10 @@ final class WealthEngineStartupController {
         isStartupComplete = true
         startupTask = nil
         engine.rescheduleTimers()
+
+        // ── Startup trace : final summary ──────────────────────────────────
+        WealthStartupLagTracer.shared.trace("rescheduleTimers – done; startup complete")
+        WealthStartupLagTracer.shared.printSummary()
 
         // Signal that startup is complete so the ready-state gate can be
         // armed by the first downstream rebuild (triggered via the
