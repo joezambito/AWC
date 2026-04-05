@@ -76,6 +76,15 @@ extension WealthEngineStore {
         softTimer = nil
         heavyTimer?.invalidate()
         heavyTimer = nil
+
+        // Invalidate legacy timers that WealthCore.swift may have scheduled.
+        // These are NOT managed by the holder above and must be cleared here
+        // to prevent them from firing the full scan cycle independently of
+        // the six-timer schedule defined in this file.
+        scheduledCheckpointTimer?.invalidate()
+        scheduledCheckpointTimer = nil
+        preScanBurstTimer?.invalidate()
+        preScanBurstTimer = nil
     }
 
     // MARK: - Private scheduling
