@@ -1,100 +1,118 @@
-import Foundation
-
-// MARK: - WealthAuthStore
-//
-// Manages authentication and session state.
-// Tracks whether the user has an active authenticated session and
-// surfaces the session token / expiry to downstream consumers.
+import SwiftUI
+import Combine
+import LocalAuthentication
 
 @MainActor
 final class WealthAuthStore: ObservableObject {
-
-    // MARK: Shared instance
-
     static let shared = WealthAuthStore()
+
+    @Published private(set) var isUnlocked = false
+
+    private let passcodeKey = "awc_root_passcode"
+
     private init() {}
 
-    // MARK: - UserDefaults keys
-
-    private enum Keys {
-        static let sessionToken  = "awc_session_token"
-        static let sessionExpiry = "awc_session_expiry"
-    }
-
-    // MARK: - Published state
-
-    /// `true` when a valid, non-expired session token is present.
-    @Published private(set) var isAuthenticated: Bool = false
-
-    /// The current session token, or `nil` if not authenticated.
-    @Published private(set) var sessionToken: String?
-
-    /// Expiry date of the current session, or `nil` if not authenticated.
-    @Published private(set) var sessionExpiry: Date?
-
-    // MARK: - Public API
-
-    /// Store a new session token and mark the user as authenticated.
-    func setSession(token: String, expiry: Date) {
-        sessionToken      = token
-        sessionExpiry     = expiry
-        isAuthenticated   = true
-        UserDefaults.standard.set(token,                             forKey: Keys.sessionToken)
-        UserDefaults.standard.set(expiry.timeIntervalSince1970,      forKey: Keys.sessionExpiry)
-
-        WealthEventLogStore.shared.record(
-            title: "Auth Store",
-            detail: "Session authenticated. Expires: \(expiry).",
-            category: "auth",
-            tintName: "green",
-            timestamp: .now
-        )
-    }
-
-    /// Clear the stored session and mark the user as unauthenticated.
-    func clearSession() {
-        sessionToken    = nil
-        sessionExpiry   = nil
-        isAuthenticated = false
-        UserDefaults.standard.removeObject(forKey: Keys.sessionToken)
-        UserDefaults.standard.removeObject(forKey: Keys.sessionExpiry)
-
-        WealthEventLogStore.shared.record(
-            title: "Auth Store",
-            detail: "Session cleared.",
-            category: "auth",
-            tintName: "orange",
-            timestamp: .now
-        )
-    }
-
-    /// Restore a previously saved session from UserDefaults (call at launch).
-    func restoreSession() {
-        guard
-            let token  = UserDefaults.standard.string(forKey: Keys.sessionToken),
-            let expiryTs = UserDefaults.standard.object(forKey: Keys.sessionExpiry) as? Double
-        else {
-            isAuthenticated = false
-            return
-        }
-        let expiry = Date(timeIntervalSince1970: expiryTs)
-        if expiry > Date() {
-            sessionToken    = token
-            sessionExpiry   = expiry
-            isAuthenticated = true
-        } else {
-            clearSession()
-        }
-    }
-
-    /// Validate a 6-digit passcode. Returns `true` when the passcode matches.
-    func unlockWithPasscode(_ passcode: String) -> Bool {
-        let stored = UserDefaults.standard.string(forKey: "awc_passcode") ?? ""
-        return !stored.isEmpty && passcode == stored
-    }
-
-    /// Attempt a biometric (Face ID / Touch ID) unlock. Returns `true` on success.
     func unlockWithBiometrics() async -> Bool {
+        let context = LAContext()
+        var error: NSError?
+        let reason = "Unlock Wealth Creation to access your trading dashboard."
+
+        do {
+            if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+                let success = try await context.evaluatePolicy(
+                    .deviceOwnerAuthenticationWithBiometrics,
+                    localizedReason: reason
+                )
+                if success {
+                    isUnlocked = true
+                }
+                return success
+            }
+
+            if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
+                let success = try await context.evaluatePolicy(
+                    .deviceOwnerAuthentication,
+                    localizedReason: reason
+                )
+                if success {
+                    isUnlocked = true
+                }
+                return success
+            }
+        } catch {
+            return false
+        }
+
         return false
+    }
+
+    func authenticateForReset() async -> Bool {
+        let context = LAContext()
+        var error: NSError?
+
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            return false
+        }
+
+        do {
+            return try await context.evaluatePolicy(
+                .deviceOwnerAuthentication,
+                localizedReason: "Verify your identity to reset your Wealth Creation passcode."
+            )
+        } catch {
+            return false
+        }
+    }
+
+    func verify(passcode: String) -> Bool {
+        normalized(passcode) == storedPasscode
+    }
+
+    func unlockWithPasscode(_ passcode: String) -> Bool {
+        let cleanPasscode = normalized(passcode)
+        guard cleanPasscode.count == 6 else { return false }
+
+        if storedPasscode == nil {
+            UserDefaults.standard.set(cleanPasscode, forKey: passcodeKey)
+            isUnlocked = true
+            return true
+        }
+
+        let success = cleanPasscode == storedPasscode
+        if success {
+            isUnlocked = true
+        }
+        return success
+    }
+
+    func changePasscode(current: String, new: String) -> Bool {
+        let cleanCurrent = normalized(current)
+        let cleanNew = normalized(new)
+
+        guard verify(passcode: cleanCurrent), cleanNew.count == 6 else {
+            return false
+        }
+
+        UserDefaults.standard.set(cleanNew, forKey: passcodeKey)
+        return true
+    }
+
+    func resetPasscode(_ new: String) {
+        let cleanNew = normalized(new)
+        guard cleanNew.count == 6 else { return }
+        UserDefaults.standard.set(cleanNew, forKey: passcodeKey)
+    }
+
+    func lock() {
+        isUnlocked = false
+    }
+
+    private var storedPasscode: String? {
+        let saved = normalized(UserDefaults.standard.string(forKey: passcodeKey) ?? "")
+        return saved.count == 6 ? saved : nil
+    }
+
+    private func normalized(_ passcode: String) -> String {
+        String(passcode.filter(\.isNumber).prefix(6))
     }
 }
