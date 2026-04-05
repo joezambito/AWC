@@ -175,7 +175,7 @@ extension WealthIBKRBridge {
                 )
             } else if reason.contains("timed out") || reason.contains("timeout") {
                 Self.validLog.error(
-                    "IBKRBridge diagnosis: connection timed out — check LAN route to TWS host (192.168.1.21)"
+                    "IBKRBridge diagnosis: connection timed out — check LAN route to TWS host (\(AWCSecretConfig.shared.ibkrHost))"
                 )
             } else if reason.contains("Send error") {
                 Self.validLog.error(

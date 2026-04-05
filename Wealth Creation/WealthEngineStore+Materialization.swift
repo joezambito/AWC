@@ -91,7 +91,6 @@ extension WealthEngineStore {
 #if DEBUG
             assertionFailure("Non-executable card leaked into Market during materialization")
 #endif
-            isMarketMaterializationInFlight = false
             return
         }
 

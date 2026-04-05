@@ -43,7 +43,9 @@ final class WealthStaleCacheDetector {
 
     /// Background freshness threshold: matches the deep-refresh timer (30 min)
     /// used for background validation by `WealthDownstreamCacheSanity`.
-    let backgroundFreshnessThreshold: TimeInterval = 30 * 60    // MARK: - Public API
+    let backgroundFreshnessThreshold: TimeInterval = 30 * 60
+
+    // MARK: - Public API
 
     /// Returns `true` when `rankedAssets` is non-empty (Market cache
     /// restored) but every ranked asset has an AI score of zero, meaning
