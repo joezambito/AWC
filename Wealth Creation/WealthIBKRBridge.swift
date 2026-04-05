@@ -57,6 +57,11 @@ final class WealthIBKRBridge {
 
     let negotiatedClientVersionRange = "v100..176"
 
+    /// Client ID sent to TWS in START_API.
+    /// Each device connecting to TWS must use a unique client ID.
+    /// The iPhone uses 77 (matching the original WealthCore.swift value).
+    var clientID: Int = 77
+
     private var connection: NWConnection?
     private var eventHandlers: [EventHandler] = []
     private(set) var subscriptions: [Int: Subscription] = [:]
@@ -80,6 +85,16 @@ final class WealthIBKRBridge {
     // MARK: - Connection
 
     func connect(host: String, port: UInt16) {
+        // Issue 9: validate broker connection inputs before establishing the connection.
+        guard !host.trimmingCharacters(in: .whitespaces).isEmpty else {
+            emit(.failed("IBKRBridge: connect() called with empty host — check TWS host configuration."))
+            return
+        }
+        guard port > 0 else {
+            emit(.failed("IBKRBridge: connect() called with port 0 — check TWS port configuration."))
+            return
+        }
+
         let endpoint = NWEndpoint.hostPort(
             host: NWEndpoint.Host(host),
             port: NWEndpoint.Port(integerLiteral: port)
