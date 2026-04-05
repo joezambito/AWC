@@ -1,50 +1,57 @@
 import Foundation
+import OSLog
 
 // MARK: - WealthEngineStore+Cache
 //
-// Handles persisting the engine's current snapshot so that on the next
-// app launch the UI can be populated immediately from cache (before the
-// background startup sequence delivers fresh data).
+// REPLACEMENT FILE – Issue 6 root-cause fix.
 //
-// ── Persistence strategy ──────────────────────────────────────────────────
-// Large payloads (ranked assets, scanned signals, holdings) are stored as
-// JSON files in the app's Caches directory.  Only lightweight scalar values
-// (timestamps) are kept in UserDefaults.
+// Root cause: the previous implementation wrote rankedAssets, scannedSignals,
+// and holdings as three separate files in sequence.  If the process was
+// interrupted between any two writes the on-disk snapshot could contain a mix
+// of old and new data.  Using `.atomic` on each individual write fixed
+// single-file corruption but did NOT fix the multi-file consistency window.
 //
-// Rationale:
-//   • UserDefaults is synchronous at app launch – decoding 128 k ranked
-//     assets on the main thread caused multi-second UI freezes.
-//   • UserDefaults has practical limits (~4 MB) before reliability degrades.
-//   • File-backed storage allows atomic writes, file-modification timestamps
-//     for freshness checking, and off-main-thread reads.
+// Fix: all engine state is now persisted as a single `EngineStateBundle`
+// through `PersistenceManager.shared.saveBundle(_:)`, which performs ONE
+// atomic write.  Either the full snapshot is committed or the original file
+// is left intact — there is no partial-state window.
+//
+// Behaviour change: three separate cache files are replaced by one bundle
+// file (`awc_engine_state_bundle.json`).  A legacy-fallback path reads the
+// old files if the bundle is absent so existing installs are not data-wiped
+// on the first upgrade.
 
-// Module-level constant: resolved once at startup, never changes for the
-// lifetime of the process.  Using a module-level let avoids the need for a
-// stored property (which extensions cannot add) while preventing repeated
-// FileManager filesystem lookups on every property access.
+private let wealthEngineCacheLog = Logger(subsystem: "com.awg.wealth", category: "EngineCache")
+
+// MARK: - Legacy file URLs (migration fallback only)
+//
+// These URLs are used exclusively inside `restoreCache()` when the new bundle
+// file does not yet exist.  Once the bundle file is written on the first
+// `save()` call the legacy files are no longer consulted.
+
 private let wealthEngineCacheDir: URL? =
     FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
 
 extension WealthEngineStore {
 
-    // MARK: - UserDefaults keys (lightweight scalars ONLY)
+    // MARK: - Legacy UserDefaults keys (migration fallback only)
 
-    private enum DefaultsKey {
+    private enum LegacyDefaultsKey {
         static let lastRefresh      = "awc_engine_last_refresh"
         static let lastHeavyRefresh = "awc_engine_last_heavy_refresh"
     }
 
-    // MARK: - File-backed cache URLs
+    // MARK: - Legacy file URLs (migration fallback only)
 
-    var rankedAssetsFileURL: URL? {
+    private var legacyRankedAssetsURL: URL? {
         wealthEngineCacheDir?.appendingPathComponent("awc_engine_ranked_assets.json")
     }
 
-    var scannedSignalsFileURL: URL? {
+    private var legacyScannedSignalsURL: URL? {
         wealthEngineCacheDir?.appendingPathComponent("awc_engine_scanned_signals.json")
     }
 
-    var holdingsFileURL: URL? {
+    private var legacyHoldingsURL: URL? {
         wealthEngineCacheDir?.appendingPathComponent("awc_engine_holdings.json")
     }
 
@@ -54,90 +61,79 @@ extension WealthEngineStore {
     /// @Published properties so the UI shows stale (but non-empty) data
     /// while the background startup sequence runs.
     ///
-    /// Called as the very first step of `bootstrap()` – before any network
-    /// or scan work begins.
+    /// Reads from the atomic bundle file (Issue 6 root-cause fix).
+    /// Falls back to legacy individual files if the bundle does not yet
+    /// exist (migration path for existing installs).
     ///
-    /// Large array decoding is **not** performed here – call
-    /// `restoreCacheInBackground(completion:)` (from
-    /// `WealthEngineStore+BackgroundCache.swift`) to avoid blocking the
-    /// main thread.  This synchronous variant restores timestamps only and
-    /// is kept for compatibility with any call site that cannot be made async.
+    /// Prefer `restoreCacheInBackground(completion:)` (BackgroundCache
+    /// extension) to avoid decoding large arrays on the main thread.
     func restoreCache() {
+        if let bundle = PersistenceManager.shared.loadBundle() {
+            applyBundle(bundle)
+            wealthEngineCacheLog.info("restoreCache: restored from atomic bundle.")
+        } else {
+            restoreFromLegacyFiles()
+        }
+    }
+
+    /// Persist the current engine snapshot as a single atomic bundle.
+    ///
+    /// The bundle write is the Issue 6 root-cause fix: all arrays and
+    /// timestamps are encoded together and written in one atomic operation
+    /// so there is no window in which a partial state can be on disk.
+    ///
+    /// Prefer `saveInBackground()` (BackgroundCache extension) to avoid
+    /// encoding large arrays on the main thread.
+    func save() {
+        let bundle = EngineStateBundle(
+            rankedAssets:     rankedAssets,
+            scannedSignals:   scannedSignals,
+            holdings:         holdings,
+            lastRefresh:      lastRefresh,
+            lastHeavyRefresh: lastHeavyRefresh
+        )
+        PersistenceManager.shared.saveBundle(bundle)
+    }
+
+    // MARK: - Private helpers
+
+    /// Apply a decoded bundle to the engine's @Published properties.
+    private func applyBundle(_ bundle: EngineStateBundle) {
+        rankedAssets    = bundle.rankedAssets
+        scannedSignals  = bundle.scannedSignals
+        holdings        = bundle.holdings
+        lastRefresh     = bundle.lastRefresh
+        lastHeavyRefresh = bundle.lastHeavyRefresh
+    }
+
+    /// Legacy restore path: read the three separate files that existed
+    /// before the atomic-bundle migration.  Also reads timestamps from
+    /// UserDefaults (the old storage location).
+    ///
+    /// Called only when `PersistenceManager.shared.loadBundle()` returns nil.
+    private func restoreFromLegacyFiles() {
         let defaults = UserDefaults.standard
-        if let stored = defaults.object(forKey: DefaultsKey.lastRefresh) as? Date {
+        if let stored = defaults.object(forKey: LegacyDefaultsKey.lastRefresh) as? Date {
             lastRefresh = stored
         }
-        if let stored = defaults.object(forKey: DefaultsKey.lastHeavyRefresh) as? Date {
+        if let stored = defaults.object(forKey: LegacyDefaultsKey.lastHeavyRefresh) as? Date {
             lastHeavyRefresh = stored
         }
-        restoreRankedAssetsFromFile()
-        restoreScannedSignalsFromFile()
-        restoreHoldingsFromFile()
-    }
-
-    /// Persist the current engine snapshot.
-    ///   • Timestamps → UserDefaults (tiny, read synchronously at launch)
-    ///   • Large arrays → Caches directory JSON files (atomic, off-thread-safe)
-    ///
-    /// Prefer `saveInBackground()` (from `WealthEngineStore+BackgroundCache.swift`)
-    /// to avoid encoding 128 k cards on the main thread.
-    func save() {
-        let defaults = UserDefaults.standard
-        if let date = lastRefresh {
-            defaults.set(date, forKey: DefaultsKey.lastRefresh)
+        if let url = legacyRankedAssetsURL,
+           let data = try? Data(contentsOf: url),
+           let decoded = try? JSONDecoder().decode([Opportunity].self, from: data) {
+            rankedAssets = decoded
         }
-        if let date = lastHeavyRefresh {
-            defaults.set(date, forKey: DefaultsKey.lastHeavyRefresh)
+        if let url = legacyScannedSignalsURL,
+           let data = try? Data(contentsOf: url),
+           let decoded = try? JSONDecoder().decode([MarketSignal].self, from: data) {
+            scannedSignals = decoded
         }
-        persistRankedAssetsToFile()
-        persistScannedSignalsToFile()
-        persistHoldingsToFile()
-    }
-
-    // MARK: - Private file I/O helpers
-
-    private func restoreRankedAssetsFromFile() {
-        guard let url = rankedAssetsFileURL,
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([Opportunity].self, from: data)
-        else { return }
-        rankedAssets = decoded
-    }
-
-    private func persistRankedAssetsToFile() {
-        guard let url = rankedAssetsFileURL,
-              let data = try? JSONEncoder().encode(rankedAssets)
-        else { return }
-        try? data.write(to: url, options: [.atomic])
-    }
-
-    private func restoreScannedSignalsFromFile() {
-        guard let url = scannedSignalsFileURL,
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([MarketSignal].self, from: data)
-        else { return }
-        scannedSignals = decoded
-    }
-
-    private func persistScannedSignalsToFile() {
-        guard let url = scannedSignalsFileURL,
-              let data = try? JSONEncoder().encode(scannedSignals)
-        else { return }
-        try? data.write(to: url, options: [.atomic])
-    }
-
-    private func restoreHoldingsFromFile() {
-        guard let url = holdingsFileURL,
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([Holding].self, from: data)
-        else { return }
-        holdings = decoded
-    }
-
-    private func persistHoldingsToFile() {
-        guard let url = holdingsFileURL,
-              let data = try? JSONEncoder().encode(holdings)
-        else { return }
-        try? data.write(to: url, options: [.atomic])
+        if let url = legacyHoldingsURL,
+           let data = try? Data(contentsOf: url),
+           let decoded = try? JSONDecoder().decode([Holding].self, from: data) {
+            holdings = decoded
+        }
+        wealthEngineCacheLog.info("restoreCache: restored from legacy individual files (migration path).")
     }
 }
