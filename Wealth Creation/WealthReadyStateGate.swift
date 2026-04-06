@@ -5,57 +5,90 @@ import Foundation
 // Gates the engine's "fully ready" state so that it is declared only
 // after the downstream rebuild pipeline has completed.
 //
-// Problem addressed:
-//   The app previously declared itself ready immediately after the startup
-//   sequence finished (or even after the cache was restored), before the
-//   AI Live and Activity downstream passes had run.  This caused the UI to
-//   show stale data as if it were live.
+// ── Problem it solves ────────────────────────────────────────────────────
 //
-// Solution (new code only – no existing functions modified):
-//   `isFullyReady` returns `true` only when BOTH conditions are met:
-//     1. `WealthEngineStartupController.isStartupComplete` is `true`.
-//     2. `WealthDownstreamRebuildOrchestrator` has called
-//        `markDownstreamRebuildComplete()` at least once.
+//   Without this gate, the app declared itself "ready" immediately after
+//   `WealthEngineStartupController.isStartupComplete` became `true` — which
+//   happens after the research feeds phase, before the downstream AI Live
+//   and Activity passes have run.  Views subscribed to readiness would show
+//   stale data as if it were live.
 //
-//   Subscribe to `Notification.Name.wealthEngineDidBecomeReady` to react
-//   to the transition without polling.
+// ── Two-condition readiness ───────────────────────────────────────────────
 //
-// Fixes:
-//   Error #6 – Ready-State Timing (app declares ready before rebuild is done)
+//   `isFullyReady` returns `true` only when BOTH of the following hold:
+//
+//   1. `WealthEngineStartupController.shared.isStartupComplete == true`
+//      — the universe scan, AI scan, market ranking, and research feeds
+//        have all completed.
+//
+//   2. `markDownstreamRebuildComplete()` has been called at least once
+//      — `WealthDownstreamRebuildOrchestrator` has finished its AI + Market
+//        rebuild after the startup sequence, confirming that live AI scores
+//        and Activity state are available.
+//
+// ── Notification ─────────────────────────────────────────────────────────
+//
+//   When `isFullyReady` transitions from `false` to `true`,
+//   `Notification.Name.wealthEngineDidBecomeReady` is posted on the main
+//   thread.  Observers include:
+//
+//   • `WealthPortfolioLifecycleHelper` — triggers Activity reconciliation
+//   • `WealthBackgroundRefreshCoordinator` — schedules the first background
+//     refresh
+//   • `WealthNewComponentsBootstrap` — runs the post-ready pipeline
+//     (market audit, AI Live evaluation, order-restriction audit)
+//
+//   The notification is posted exactly once per gate reset cycle.
+//   Subsequent calls to `markDownstreamRebuildComplete()` are no-ops
+//   if `isFullyReady` is already `true`.
+//
+// ── Reset ─────────────────────────────────────────────────────────────────
+//
+//   `reset()` is called by `WealthEngineRuntimeRecovery.runStartupIntegrityCheck()`
+//   at the beginning of each startup integrity check.  After a reset the gate
+//   must be re-armed by a subsequent `markDownstreamRebuildComplete()` call.
+//
+// ── Threading ─────────────────────────────────────────────────────────────
+//
+//   `@MainActor` — all state mutations and notification posts happen on the
+//   main thread.  No external synchronisation is needed.
 
 @MainActor
 final class WealthReadyStateGate {
 
-    // MARK: Shared instance
+    // MARK: - Shared instance
 
     static let shared = WealthReadyStateGate()
     private init() {}
 
     // MARK: - State
 
-    /// `true` once `WealthDownstreamRebuildOrchestrator` has completed at
-    /// least one successful downstream rebuild.
+    /// `true` once `markDownstreamRebuildComplete()` has been called at least once
+    /// since the last `reset()`.
     private(set) var isDownstreamRebuildComplete: Bool = false
 
-    /// `true` when both the startup sequence and the downstream rebuild
-    /// have completed.  This is the authoritative "engine fully ready" flag.
+    /// The authoritative "engine fully ready" flag.
     ///
-    /// Use this instead of `WealthEngineStartupController.isStartupComplete`
-    /// whenever you need to know that live AI scores and Activity data are
-    /// also available (not just the initial cache restore + scan sequence).
+    /// `true` when both the startup sequence and the first downstream
+    /// rebuild have completed.
+    ///
+    /// Use this — not `WealthEngineStartupController.isStartupComplete` — when
+    /// you need to confirm that live AI scores and Activity data are available.
     var isFullyReady: Bool {
         WealthEngineStartupController.shared.isStartupComplete && isDownstreamRebuildComplete
     }
 
     // MARK: - Public API
 
-    /// Called by `WealthDownstreamRebuildOrchestrator` when a rebuild
-    /// finishes.  Posts `wealthEngineDidBecomeReady` the first time.
+    /// Mark the downstream rebuild as complete.
+    ///
+    /// Called by `WealthDownstreamRebuildOrchestrator` after each successful
+    /// rebuild.  Posts `.wealthEngineDidBecomeReady` the first time
+    /// `isFullyReady` transitions to `true`.
     func markDownstreamRebuildComplete() {
         let wasReady = isFullyReady
         isDownstreamRebuildComplete = true
 
-        // Post the notification only on the first transition to fully-ready.
         if !wasReady && isFullyReady {
             NotificationCenter.default.post(
                 name: .wealthEngineDidBecomeReady,
@@ -65,7 +98,9 @@ final class WealthReadyStateGate {
     }
 
     /// Reset the gate (e.g. after factory reset or sign-out).
-    /// The gate must be re-armed by a subsequent downstream rebuild.
+    ///
+    /// The gate must be re-armed by a subsequent `markDownstreamRebuildComplete()`
+    /// call before `isFullyReady` can return `true` again.
     func reset() {
         isDownstreamRebuildComplete = false
     }
@@ -76,5 +111,8 @@ final class WealthReadyStateGate {
 extension Notification.Name {
     /// Posted on the main thread by `WealthReadyStateGate` the first time
     /// the engine transitions to `isFullyReady == true`.
+    ///
+    /// `userInfo` is `nil`.  Observers that need data should read from the
+    /// engine stores directly in response to this notification.
     static let wealthEngineDidBecomeReady = Notification.Name("WealthEngineDidBecomeReady")
 }

@@ -2,59 +2,80 @@ import Foundation
 
 // MARK: - WealthEngineRuntimeCoordinator
 //
-// NEW code only.  Does NOT modify any existing functions.
+// Receives lifecycle signals from `WealthAppSessionController` and
+// orchestrates immediate stale-cache checks on active-session resumes.
 //
-// Problem addressed:
-//   When the app returns from background while still unlocked (active session
-//   resume), the AI Live pipeline does not re-evaluate.  The engine waits for
-//   the next heartbeat timer (up to 10 minutes) instead of triggering an
-//   immediate stale-cache check and rebuild.
+// ── Problem it solves ────────────────────────────────────────────────────
 //
-// Solution (new code only):
-//   `WealthEngineRuntimeCoordinator` receives lifecycle signals from
-//   `WealthAppSessionController` and immediately checks whether a downstream
-//   rebuild is needed rather than waiting for the next timer tick.
+//   Without this coordinator, when the app returned from background while
+//   still unlocked (active session resume) the AI Live pipeline did not
+//   re-evaluate.  The engine waited for the next heartbeat timer — up to
+//   10 minutes — instead of triggering an immediate stale-cache check.
 //
-//   On `handleBecameActive()`:
-//     a. If startup is not yet complete → no-op (startup sequence already running).
-//     b. If startup is complete but app was backgrounded → call
-//        `WealthSessionUnlockController.handleSessionResume()` which then
-//        calls `WealthStaleCacheDetector.checkAndRebuildIfNeeded()`.
-//     c. If a rebuild is already in flight → no-op (deduplicated internally
-//        by `WealthDownstreamRebuildOrchestrator`).
+// ── Routing ──────────────────────────────────────────────────────────────
 //
-// Fixes:
-//   Blocker #2 – Active-session resumes not forcing recovery
-//   Problem #9 – Make resume recovery immediate
+//   handleBecameActive()
+//     │
+//     ├─ [debounce < 2 s] → no-op (return)
+//     │
+//     ├─ [startup not complete] → no-op (startup sequence is running)
+//     │
+//     └─ [startup complete]
+//          └─ WealthSessionUnlockController.shared.handleSessionResume()
+//               └─ WealthStaleCacheDetector.shared.checkAndRebuildIfNeeded()
+//                    └─ [if stale]
+//                         └─ WealthDownstreamRebuildOrchestrator
+//                              .shared.triggerRebuild(reason:)
+//
+// ── Debouncing ────────────────────────────────────────────────────────────
+//
+//   Rapid foreground/background transitions (e.g. biometric lock, control
+//   centre swipe) can fire `applicationDidBecomeActive` multiple times in
+//   quick succession.  The 2-second debounce window prevents a rebuild
+//   storm in those cases.
+//
+// ── Startup guard ────────────────────────────────────────────────────────
+//
+//   If `WealthEngineStartupController.isStartupComplete` is `false`, the
+//   startup sequence is already running the full pipeline — there is
+//   nothing for the coordinator to do.  It returns immediately and logs
+//   the skip so the event log is complete.
+//
+// ── Threading ─────────────────────────────────────────────────────────────
+//
+//   `@MainActor`.  `handleBecameActive()` is called on the main thread
+//   from `WealthAppSessionController.applicationDidBecomeActive()`.
+//   All downstream calls (`WealthSessionUnlockController`,
+//   `WealthStaleCacheDetector`) are also `@MainActor`.
 
 @MainActor
 final class WealthEngineRuntimeCoordinator {
 
-    // MARK: Shared instance
+    // MARK: - Shared instance
 
     static let shared = WealthEngineRuntimeCoordinator()
     private init() {}
 
-    // MARK: - Private state
-
-    /// Timestamp of the most-recent `applicationDidBecomeActive` event.
-    /// Used to debounce rapid foreground/background transitions.
-    private var lastBecameActiveDate: Date?
+    // MARK: - Constants
 
     /// Minimum interval between consecutive active-resume checks.
-    /// Prevents a rapid background → foreground cycle from spamming rebuilds.
     private let minimumResumeDebounceSecs: TimeInterval = 2
+
+    // MARK: - Private state
+
+    /// Timestamp of the most-recent `handleBecameActive` call.
+    private var lastBecameActiveDate: Date?
 
     // MARK: - Public API
 
     /// Called by `WealthAppSessionController.applicationDidBecomeActive()`.
     ///
-    /// Triggers an immediate stale-cache check and rebuild if warranted,
-    /// rather than waiting for the next scheduled heartbeat timer.
+    /// Debounces rapid calls, guards against mid-startup invocations,
+    /// then delegates to `WealthSessionUnlockController.handleSessionResume()`
+    /// for an immediate stale-cache check.
     func handleBecameActive() {
         let now = Date()
 
-        // Debounce: ignore calls within the minimum interval.
         if let last = lastBecameActiveDate,
            now.timeIntervalSince(last) < minimumResumeDebounceSecs {
             return
@@ -69,12 +90,10 @@ final class WealthEngineRuntimeCoordinator {
             timestamp: now
         )
 
-        // If startup has not yet completed, the startup sequence is
-        // running the full pipeline.  No additional action is needed.
         guard WealthEngineStartupController.shared.isStartupComplete else {
             WealthEventLogStore.shared.record(
                 title: "Runtime Coordinator",
-                detail: "handleBecameActive: startup in progress – deferring to startup.",
+                detail: "handleBecameActive: startup in progress — deferring to startup.",
                 category: "lifecycle",
                 tintName: "blue",
                 timestamp: .now
@@ -82,9 +101,6 @@ final class WealthEngineRuntimeCoordinator {
             return
         }
 
-        // Startup is complete.  The session is live (still unlocked) or
-        // has just been unlocked/resumed.  Trigger an immediate session
-        // resume check which will detect stale state and rebuild if needed.
         WealthSessionUnlockController.shared.handleSessionResume()
     }
 }
