@@ -82,6 +82,33 @@ extension WealthIBKRBridge {
         // Message ID 2 = CANCEL_MKT_DATA, version 1
         send(["2", "1", "\(requestID)"])
     }
+
+    // MARK: - Low-Level Send
+
+    func sendRaw(_ data: Data) {
+        connection?.send(content: data, completion: .contentProcessed({ [weak self] error in
+            if let error = error {
+                Task { @MainActor in
+                    self?.emit(.failed("Send error: \(error.localizedDescription)"))
+                }
+            }
+        }))
+    }
+
+    func prefixed(_ data: Data) -> Data {
+        var length = UInt32(data.count).bigEndian
+        return Data(bytes: &length, count: 4) + data
+    }
+
+    func send(_ fields: [String]) {
+        let body = fields.joined(separator: "\0").appending("\0")
+        sendRaw(prefixed(Data(body.utf8)))
+    }
+
+    func nextReqID() -> Int {
+        defer { nextRequestID += 1 }
+        return nextRequestID
+    }
 }
 
 // MARK: - Diagnostic Helpers (NEW — no logic changes)
