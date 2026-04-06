@@ -16,10 +16,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Swift version
-        uses: swiftlang/setup-swift@v1
-        with:
-          swift-version: "5.9"
-
       - name: Run tests
         run: swift test
