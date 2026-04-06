@@ -93,6 +93,6 @@ extension Opportunity {
     /// Lower rank = higher priority for re-promotion to Green.
     var blueRankPriority: Int {
         // Rank by AI score descending; ties broken by symbol (stable sort).
-        aiScore
+        Int(aiScore)
     }
 }
