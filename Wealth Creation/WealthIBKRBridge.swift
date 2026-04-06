@@ -16,65 +16,32 @@ enum WealthIBKRBridgeEvent: Equatable {
 
 struct WealthBrokerQuote: Equatable {
     let symbol: String
-    let bid: Double
-    let ask: Double
-    let last: Double
+    let bid:    Double
+    let ask:    Double
+    let last:   Double
     let volume: Int
 }
 
 struct WealthIBKRContract: Equatable {
-    let symbol: String
-    let secType: String
+    let symbol:   String
+    let secType:  String
     let exchange: String
     let currency: String
-    let conId: Int?
+    let conId:    Int?
 }
 
-// MARK: - Bridge
-//
-// REPLACEMENT FILE — two targeted changes; no logic altered:
-//
-//   1. ibkrNetworkQueue (NEW)
-//      `conn.start(queue: .main)` has been changed to
-//      `conn.start(queue: Self.ibkrNetworkQueue)`.
-//
-//      Root cause of UI freeze + scan-stall:
-//        Using `queue: .main` caused NWConnection to deliver every TCP-level
-//        callback (stateUpdateHandler, receive-loop completions) on the main
-//        dispatch queue.  When IBKR connects simultaneously with the universe
-//        download on startup, the main queue is flooded with raw network-packet
-//        events, starving the UI event loop (bottom tabs unresponsive) and
-//        preventing startup async tasks from getting main-actor time (scan
-//        stalls / does not complete).
-//
-//        The existing code already wraps every callback in
-//        `Task { @MainActor in ... }`, so all actual state mutations continue
-//        to run on @MainActor exactly as before.  Moving the NWConnection
-//        delivery queue off `.main` means TCP-level framework work happens on
-//        a background thread; only the explicit @MainActor hops bring work to
-//        the main thread, as intended.
-//
-//   2. WealthStartupLagTracer (NEW trace calls — observe only)
-//      `trace(_:)` calls added at `connect()` entry and on `.connecting` /
-//      `.connected` events so the startup trace log shows exactly when IBKR
-//      fires relative to the universe scan.  No logic changed.
+// MARK: - WealthIBKRBridge
 
 @MainActor
 final class WealthIBKRBridge {
+
     static let shared = WealthIBKRBridge()
 
     // MARK: - Network queue
     //
-    // All NWConnection callbacks (stateUpdateHandler, receive completions)
-    // are delivered on this private serial queue instead of `.main`.
-    // Every callback immediately hops to @MainActor via
-    // `Task { @MainActor in ... }` (unchanged from the original code),
-    // so all bridge logic still runs on the main actor.
-    //
-    // Using a named serial queue keeps the main dispatch queue free for
-    // UI rendering and startup async tasks during the period when IBKR is
-    // connecting alongside the universe download.
-    // DispatchQueue conforms to Sendable so nonisolated(unsafe) is not needed.
+    // NWConnection callbacks are delivered on this private serial queue,
+    // not on .main. Every callback hops to @MainActor via
+    // Task { @MainActor in ... } so bridge logic runs on the main actor.
     private static let ibkrNetworkQueue = DispatchQueue(
         label: "com.awc.ibkr-bridge",
         qos: .userInitiated
@@ -83,13 +50,13 @@ final class WealthIBKRBridge {
     typealias EventHandler = @MainActor (WealthIBKRBridgeEvent) -> Void
 
     struct Subscription {
-        let contract: WealthIBKRContract
+        let contract:  WealthIBKRContract
         let requestID: Int
     }
 
     struct ContractValidationRequest {
         let candidate: WealthIBKRContract
-        var matches: [WealthIBKRContract] = []
+        var matches:   [WealthIBKRContract] = []
         var continuation: CheckedContinuation<[WealthIBKRContract], Never>?
     }
 
@@ -101,12 +68,6 @@ final class WealthIBKRBridge {
 
     let negotiatedClientVersionRange = "v100..176"
 
-    /// Client ID sent to TWS in START_API.
-    ///
-    /// Issue 8 root-cause fix: previously hardcoded to 77 in source.
-    /// Now initialised from AWCSecretConfig (reads IBKR_CLIENT_ID from
-    /// Documents/awc.env) so it can be changed without recompiling.
-    /// Falls back to 77 when the key is absent from awc.env.
     var clientID: Int
 
     private var connection: NWConnection?
@@ -115,13 +76,34 @@ final class WealthIBKRBridge {
     private var nextRequestID = 1
     var receiveBuffer = Data()
 
+    // MARK: - Startup connection gate
+    //
+    // IBKR must not connect until the universe scan has completed.
+    // Callers (WealthCore.swift) may invoke connect() at any time; if the
+    // universe is still loading the request is stored and fired automatically
+    // once permitConnectionAfterStartup() is called by the startup controller.
+
+    private(set) var startupConnectionPermitted: Bool = false
+    private var pendingConnect: (host: String, port: UInt16)?
+
     // MARK: - Init
 
     private init() {
-        // Issue 8 root-cause fix: load clientID from AWCSecretConfig
-        // (Documents/awc.env) instead of using a hardcoded literal.
-        // AWCSecretConfig falls back to 77 when IBKR_CLIENT_ID is absent.
         self.clientID = AWCSecretConfig.shared.ibkrClientID
+    }
+
+    // MARK: - Startup gate
+
+    /// Called by WealthEngineStartupController after the universe scan
+    /// finishes. Fires any deferred connect() request immediately.
+    func permitConnectionAfterStartup() {
+        guard !startupConnectionPermitted else { return }
+        startupConnectionPermitted = true
+
+        if let pending = pendingConnect {
+            pendingConnect = nil
+            connect(host: pending.host, port: pending.port)
+        }
     }
 
     // MARK: - Event Subscription
@@ -131,7 +113,6 @@ final class WealthIBKRBridge {
     }
 
     func emit(_ event: WealthIBKRBridgeEvent) {
-        // ── Startup trace (observe only) ──────────────────────────────────
         switch event {
         case .connecting:
             WealthStartupLagTracer.shared.trace("IBKRBridge.emit – .connecting (TCP dial started)")
@@ -146,7 +127,6 @@ final class WealthIBKRBridge {
     // MARK: - Connection
 
     func connect(host: String, port: UInt16) {
-        // Issue 9: validate broker connection inputs before establishing the connection.
         guard !host.trimmingCharacters(in: .whitespaces).isEmpty else {
             emit(.failed("IBKRBridge: connect() called with empty host — check TWS host configuration."))
             return
@@ -156,7 +136,12 @@ final class WealthIBKRBridge {
             return
         }
 
-        // ── Startup trace (observe only) ──────────────────────────────────
+        guard startupConnectionPermitted else {
+            pendingConnect = (host, port)
+            WealthStartupLagTracer.shared.trace("IBKRBridge.connect – deferred (universe not yet loaded) host=\(host):\(port)")
+            return
+        }
+
         WealthStartupLagTracer.shared.trace("IBKRBridge.connect – called host=\(host):\(port)")
 
         let endpoint = NWEndpoint.hostPort(
@@ -172,10 +157,6 @@ final class WealthIBKRBridge {
             }
         }
 
-        // Root-cause fix: use a private background queue instead of .main.
-        // All callbacks hop to @MainActor via Task { @MainActor in ... }
-        // (unchanged), so bridge logic still runs on the main actor.
-        // See ibkrNetworkQueue declaration above for full explanation.
         conn.start(queue: Self.ibkrNetworkQueue)
         emit(.connecting)
         startReceiving()
@@ -229,11 +210,8 @@ final class WealthIBKRBridge {
 
     func processReceiveBuffer() {
         if !apiReady {
-            // Before handshake, TWS sends server version as a raw null-delimited message
-            // (not length-prefixed). Parse it directly.
             handleHandshakeBuffer()
         } else {
-            // After handshake all messages are length-prefixed (4-byte big-endian)
             while receiveBuffer.count >= 4 {
                 let length = Int(receiveBuffer[0]) << 24
                            | Int(receiveBuffer[1]) << 16
@@ -248,14 +226,12 @@ final class WealthIBKRBridge {
     }
 
     private func handleHandshakeBuffer() {
-        // TWS sends serverVersion\0connectionTime\0 as the handshake response
         guard let firstNull = receiveBuffer.firstIndex(of: 0) else { return }
         let versionString = String(bytes: receiveBuffer.prefix(firstNull), encoding: .utf8) ?? ""
         let rest = receiveBuffer.dropFirst(firstNull + 1)
         guard let secondNull = rest.firstIndex(of: 0) else { return }
         let timeString = String(bytes: rest.prefix(secondNull - rest.startIndex), encoding: .utf8) ?? ""
 
-        // Consume the two null-terminated fields
         receiveBuffer.removeFirst(secondNull - receiveBuffer.startIndex + 1)
 
         validateField(versionString, name: "serverVersion")
@@ -274,11 +250,9 @@ final class WealthIBKRBridge {
         }
     }
 
-    private func handleApiMessage(data: Data) {
-        // Market data ticks, account updates, etc. parsed here in future extensions
-    }
+    private func handleApiMessage(data: Data) {}
 
-    // MARK: - Low-Level Send (existing — do not modify)
+    // MARK: - Low-Level Send
 
     func sendRaw(_ data: Data) {
         connection?.send(content: data, completion: .contentProcessed({ [weak self] error in

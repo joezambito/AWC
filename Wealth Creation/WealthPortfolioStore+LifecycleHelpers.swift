@@ -1,37 +1,15 @@
 import Foundation
 
-// MARK: - WealthPortfolioLifecycleHelper
-//
-// NEW code only.  Does NOT modify any existing functions.
-//
-// Problem addressed:
-//   `WealthPortfolioStore.rerunActivityAdmissionAfterStartup()` needs to be
-//   called at the right moment: after BOTH startup is complete AND
-//   `tradingLifecycleArmed` has transitioned to `true`.  Without a
-//   coordinator, neither condition is reliably observed together.
-//
-// Solution (new code only):
-//   `WealthPortfolioLifecycleHelper` observes the `wealthEngineDidBecomeReady`
-//   notification and checks `tradingLifecycleArmed` at that moment.  If armed,
-//   it calls `rerunActivityAdmissionAfterStartup()` immediately.  If not yet
-//   armed, it schedules a one-time retry poll so the call is not lost.
-//
-// Integration:
-//   Touch `WealthPortfolioLifecycleHelper.shared` during app bootstrap
-//   (e.g. add `_ = WealthPortfolioLifecycleHelper.shared` to
-//   `WealthNewComponentsBootstrap.activate()`) so the observer registers.
-
 @MainActor
 final class WealthPortfolioLifecycleHelper {
 
-    // MARK: Shared instance
+    // MARK: - Shared instance
 
     static let shared = WealthPortfolioLifecycleHelper()
 
-    // MARK: - Init / observer registration
+    // MARK: - Init
 
     private init() {
-        // Observe the engine-ready notification.
         NotificationCenter.default.addObserver(
             forName: .wealthEngineDidBecomeReady,
             object: nil,
@@ -43,21 +21,17 @@ final class WealthPortfolioLifecycleHelper {
         }
     }
 
-    // MARK: - Private
+    // MARK: - Private state
 
     private var retryTask: Task<Void, Never>?
-
-    /// Maximum number of one-second retry attempts while waiting for
-    /// `tradingLifecycleArmed` to become `true` after startup.
     private let maxRetryAttempts = 30
 
+    // MARK: - Private
+
     private func handleEngineReady() {
-        if WealthPortfolioStore.shared.tradingLifecycleArmed {
+        if WealthEngineStore.shared.tradingLifecycleArmed {
             triggerAdmissionRerun()
         } else {
-            // Trading lifecycle is not yet armed.  Poll once per second for
-            // up to `maxRetryAttempts` seconds, then give up (the heartbeat
-            // timer will retry).
             scheduleArmedRetry(attemptsRemaining: maxRetryAttempts)
         }
     }
@@ -80,13 +54,11 @@ final class WealthPortfolioLifecycleHelper {
             return
         }
 
-        // Cancel the previous retry task before creating a new one so the old
-        // Task.sleep does not outlive its purpose and accumulate in the pool.
         retryTask?.cancel()
         retryTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard !Task.isCancelled, let self else { return }
-            if WealthPortfolioStore.shared.tradingLifecycleArmed {
+            if WealthEngineStore.shared.tradingLifecycleArmed {
                 self.triggerAdmissionRerun()
             } else {
                 self.scheduleArmedRetry(attemptsRemaining: attemptsRemaining - 1)
