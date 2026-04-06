@@ -8,17 +8,31 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var authStore = WealthAuthStore.shared
+    @AppStorage("awc_root_is_unlocked") private var isUnlocked = false
+    @State private var launchPrepared = false
 
-#Preview {
-    ContentView()
+    var body: some View {
+        Group {
+            if isUnlocked {
+                WealthUnlockedRootHost()
+                    .environmentObject(authStore)
+            } else {
+                WealthLockView()
+                    .environmentObject(authStore)
+            }
+        }
+        .task {
+            guard !launchPrepared else { return }
+            launchPrepared = true
+            WealthAppSessionController.shared.prepareLaunch(isUnlocked: $isUnlocked)
+        }
+        .onChange(of: isUnlocked) { _, unlocked in
+            WealthAppSessionController.shared.syncSession(unlocked: unlocked, phase: scenePhase)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            WealthAppSessionController.shared.handlePhaseChange(newPhase, isUnlocked: $isUnlocked)
+        }
+    }
 }
