@@ -1,0 +1,37 @@
+# Xcode build artifacts
+DerivedData/
+DerivedDataLocalMac/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+build/
+*.o
+*.d
+*.dia
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# GPG key (should not be version-controlled)
+gpg_key.txt
+
+# Secret configuration – never commit awc.env
+awc.env
+*.env

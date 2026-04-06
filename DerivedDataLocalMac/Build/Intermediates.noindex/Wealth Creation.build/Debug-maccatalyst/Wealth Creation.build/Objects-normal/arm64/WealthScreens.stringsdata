@@ -1,0 +1,264 @@
+{
+  "source": "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/WealthScreens.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "ZULUGAMES",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 319
+        }
+      },
+      {
+        "comment": "",
+        "key": "Autonomous Wealth Creation",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 322
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI ONLINE",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 325
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last Refresh",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 333
+        }
+      },
+      {
+        "comment": "",
+        "key": "AWG now reads your IBKR balance directly, keeps the floor untouched, and only treats the remainder as free trading capital.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 374
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 427
+        }
+      },
+      {
+        "comment": "",
+        "key": "MAC EXECUTION",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 615
+        }
+      },
+      {
+        "comment": "",
+        "key": "DESKTOP NOTES",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 724
+        }
+      },
+      {
+        "comment": "",
+        "key": "NO ACTIVE ORDERS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 969
+        }
+      },
+      {
+        "comment": "",
+        "key": "New buys and sells will appear here until IBKR confirms them.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 972
+        }
+      },
+      {
+        "comment": "",
+        "key": "CURRENT HOLDINGS",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1004
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open positions, AI review and signal status",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1007
+        }
+      },
+      {
+        "comment": "",
+        "key": "PENDING BUYS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1042
+        }
+      },
+      {
+        "comment": "",
+        "key": "Waiting for broker buy confirmation",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1045
+        }
+      },
+      {
+        "comment": "",
+        "key": "PENDING SELLS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1079
+        }
+      },
+      {
+        "comment": "",
+        "key": "Waiting for broker sell confirmation",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1082
+        }
+      },
+      {
+        "comment": "",
+        "key": "RECENT COMPLETED",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1116
+        }
+      },
+      {
+        "comment": "",
+        "key": "Latest fills and completed broker actions",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1119
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI REVIEW",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1196
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sell stays in Activity until IBKR confirms it. Capital does not increase until the net sale completes.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1261
+        }
+      },
+      {
+        "comment": "",
+        "key": "Filled @ %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1293
+        }
+      },
+      {
+        "comment": "",
+        "key": "Net %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1296
+        }
+      },
+      {
+        "comment": "",
+        "key": "LIVE AI ACTIONS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1337
+        }
+      },
+      {
+        "comment": "",
+        "key": "Autonomous trading feed",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1340
+        }
+      },
+      {
+        "comment": "",
+        "key": "#%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1453
+        }
+      },
+      {
+        "comment": "",
+        "key": "PRIORITY",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1451
+        }
+      },
+      {
+        "comment": "",
+        "key": "RANK",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 1451
+        }
+      },
+      {
+        "comment": "",
+        "key": "Data age: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1465
+        }
+      },
+      {
+        "comment": "",
+        "key": "Score %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1476
+        }
+      },
+      {
+        "comment": "",
+        "key": "BROKER",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1502
+        }
+      },
+      {
+        "comment": "",
+        "key": "LOW COST",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1509
+        }
+      },
+      {
+        "comment": "",
+        "key": "Fee %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1512
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,89 @@
+{
+  "" : {
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth Creation-primary.dia",
+    "emit-module-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth Creation-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth Creation-primary-emit-module.dia",
+    "pch" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth Creation-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth Creation-primary.swiftdeps"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/ContentView.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/WealthCore.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthCore~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/WealthPanelsAndDetails.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthPanelsAndDetails~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/WealthScreens.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthScreens~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/WealthSystemAndDetailViews.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthSystemAndDetailViews~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/WealthUIComponents.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/WealthUIComponents~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation /Wealth Creation/Wealth Creation/Wealth_CreationApp.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/Wealth_CreationApp~partial.swiftmodule"
+  },
+  "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/joezambito/LocalProjects/Wealth Creation/DerivedDataLocalMac/Build/Intermediates.noindex/Wealth Creation.build/Debug-maccatalyst/Wealth Creation.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}
