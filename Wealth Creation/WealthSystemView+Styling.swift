@@ -31,8 +31,6 @@ extension SystemView {
             return "Brain"
         case .events:
             return "Event Log"
-        case .ai:
-            return "Brain Control"
         case .brokers:
             return "Brokers"
         case .help:
@@ -48,8 +46,6 @@ extension SystemView {
             return WealthTheme.purple
         case .events:
             return WealthTheme.orange
-        case .ai:
-            return WealthTheme.cyan
         case .brokers:
             return WealthTheme.green
         case .help:
@@ -65,8 +61,6 @@ extension SystemView {
             return WealthTheme.purple
         case .events:
             return WealthTheme.orange
-        case .ai:
-            return WealthTheme.cyan
         case .brokers:
             return WealthTheme.cyan.opacity(0.78)
         case .help:

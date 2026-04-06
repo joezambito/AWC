@@ -38,18 +38,13 @@ final class WealthIBKRContractValidationStore: ObservableObject {
     }
 
     func cleanWorldMarketRecords(_ records: [MarketUniverseRecord]) -> [MarketUniverseRecord] {
-        let rows = WealthIBKRInstrumentResolver.reportRows(for: records)
-        reportRows = rows
         let knownInvalidKeySet = Set(invalidSymbols)
-        let obviousFallbackInvalid = Set(
-            rows
-                .filter {
-                    [.nonStandardInstrument, .invalidSymbol].contains($0.status)
-                }
-                .map(\.key)
-        )
-        let excluded = knownInvalidKeySet.union(obviousFallbackInvalid)
-        return records.filter { !excluded.contains(WealthBrokerQuoteKey(symbol: $0.symbol, market: $0.market)) }
+        guard !knownInvalidKeySet.isEmpty else { return records }
+        return records.filter { !knownInvalidKeySet.contains(WealthBrokerQuoteKey(symbol: $0.symbol, market: $0.market)) }
+    }
+
+    func refreshReportRows(from records: [MarketUniverseRecord]) {
+        reportRows = WealthIBKRInstrumentResolver.reportRows(for: records)
     }
 
     func shouldRetry(_ key: WealthBrokerQuoteKey) -> Bool {

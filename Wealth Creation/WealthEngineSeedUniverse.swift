@@ -1,9 +1,14 @@
 import Foundation
 
 extension WealthEngineStore {
+    @MainActor
     static func seededBlueprints() -> [OpportunityBlueprint] {
-        let imported = universeDrivenBlueprintCatalog
-        return imported.isEmpty ? legacySeededBlueprintCatalog + expandedSeededBlueprintCatalog : imported
+        let imported = universeDrivenBlueprintCatalog()
+        if !imported.isEmpty {
+            return imported
+        }
+
+        return legacySeededBlueprintCatalog + expandedSeededBlueprintCatalog
     }
 
     static func seededSignals() -> [MarketSignal] {

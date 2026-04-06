@@ -8,7 +8,6 @@ struct SystemView: View {
         case parameters = "System Parameters"
         case brain = "Brain"
         case events = "Event Log"
-        case ai = "Brain Control"
         case brokers = "Brokers"
         case help = "Help / Guide"
 
@@ -34,7 +33,7 @@ struct SystemView: View {
             }
         }
         .toolbar {
-#if !targetEnvironment(macCatalyst)
+#if canImport(UIKit) && !targetEnvironment(macCatalyst)
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done", action: dismissSystemKeyboard)

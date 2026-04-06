@@ -1,27 +1,95 @@
 import SwiftUI
 
 extension MarketsView {
+    // MARK: Subscription Tuning
+    private var desktopSeededRegionCount: Int { 3 }
+    private var desktopSeededRegionSliceSize: Int { 48 }
+    private var desktopExpandedRegionSliceSize: Int { 160 }
+    private var desktopFallbackSubscriptionCount: Int { 120 }
+    private var desktopExpandedBucketBufferCount: Int { 20 }
+    private var desktopExpandedBucketMinimumCount: Int { 80 }
+
+    // MARK: Lifecycle
     func handleAppear() {
-        let stale = engine.lastRefresh.map { Date().timeIntervalSince($0) > 75 } ?? true
-        if stale || engine.rankedAssets.isEmpty {
-            engine.refresh(mode: .soft)
+        expandedMarketRegion = nil
+        expandedMarketBucket = nil
+        visibleMarketBucketCount = 50
+        persistedExpandedMarketRegion = ""
+        persistedExpandedMarketBucket = ""
+        persistedVisibleMarketBucketCount = 50
+
+        if hasDesktopLayout {
+            prepareSharedMarketFeedInputs()
+            prepareMarketBoardContent()
+            syncMarketViewCycleSelection()
+            syncVisibleMarketQuoteScope()
+        } else {
+            guard engine.startupPostSequenceReady else {
+                quoteStore.setVisibleQuoteKeys([])
+                return
+            }
+            syncMarketViewCycleSelection()
+            syncVisibleMarketQuoteScope()
         }
 
-        startPhoneMarketCycle()
-        universeStore.loadIfNeeded()
-        subscribeImportedUniverseIfNeeded()
+        guard hasDesktopLayout else { return }
+
+        let stale = engine.lastRefresh.map { Date().timeIntervalSince($0) > 75 } ?? true
+        deferredMarketsStartupTask?.cancel()
+        deferredMarketsStartupTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            guard engine.startupPostSequenceReady else { return }
+
+            if stale || engine.rankedAssets.isEmpty {
+                await engine.refreshAsync(mode: .soft)
+                guard !Task.isCancelled else { return }
+            }
+
+            prepareSharedMarketFeedInputs()
+            prepareMarketBoardContent()
+            syncMarketViewCycleSelection()
+            syncVisibleMarketQuoteScope()
+            universeStore.loadIfNeeded()
+            subscribeImportedUniverseIfNeeded()
+        }
     }
 
     func subscribeImportedUniverseIfNeeded() {
-        let importedUniverse = prioritizedImportedUniverseRecords
-        guard !importedUniverse.isEmpty else { return }
+        guard hasDesktopLayout else {
+            lastPreparedImportedUniverseIDs = []
+            lastPreparedImportedUniverseBrokerConnected = false
+            lastPreparedImportedUniverseDelayedQuotes = true
+            return
+        }
+        guard engine.startupPostSequenceReady else { return }
+        let importedUniverse = prioritizedImportedUniverseSubscriptionRecords
+        let brokerConnected = syncStore.isTWSConnectedForQuotes
+        let delayedQuotes = WealthProtectionSettingsStore.shared.demoMode || !syncStore.liveMode
+        guard !importedUniverse.isEmpty else {
+            lastPreparedImportedUniverseIDs = []
+            lastPreparedImportedUniverseBrokerConnected = brokerConnected
+            lastPreparedImportedUniverseDelayedQuotes = delayedQuotes
+            return
+        }
+        let preparedIDs = importedUniverse.map(\.id)
+        guard
+            preparedIDs != lastPreparedImportedUniverseIDs ||
+            brokerConnected != lastPreparedImportedUniverseBrokerConnected ||
+            delayedQuotes != lastPreparedImportedUniverseDelayedQuotes
+        else { return }
+        lastPreparedImportedUniverseIDs = preparedIDs
+        lastPreparedImportedUniverseBrokerConnected = brokerConnected
+        lastPreparedImportedUniverseDelayedQuotes = delayedQuotes
         quoteStore.prepareSubscriptions(for: importedUniverse)
     }
 
+    // MARK: Phone Cycle
     func startPhoneMarketCycle() {
         guard !hasDesktopLayout else {
             phoneMarketCycleTask?.cancel()
             phoneMarketCycleStage = 2
+            syncVisibleMarketQuoteScope()
             return
         }
 
@@ -30,11 +98,11 @@ extension MarketsView {
             phoneMarketCycleStage = 0
             marketFeedScanBatchIndex = 0
 
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await Task.yield()
             guard !Task.isCancelled else { return }
             phoneMarketCycleStage = 1
 
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            await Task.yield()
             guard !Task.isCancelled else { return }
             phoneMarketCycleStage = 2
         }
@@ -53,63 +121,36 @@ extension MarketsView {
         }
     }
 
-    private var prioritizedImportedUniverseRecords: [MarketUniverseRecord] {
-        guard !hasDesktopLayout else { return quoteableWorldShareRecords }
+    // MARK: Subscription Selection
+    private var prioritizedImportedUniverseSubscriptionRecords: [MarketUniverseRecord] {
+        guard hasDesktopLayout else { return quoteableWorldShareRecords }
 
-        let visibleKeys = Set(importedMarketRecordsForCurrentBatch.map(\.id))
-        let deferredRecords = quoteableWorldShareRecords.filter { !visibleKeys.contains($0.id) }
-        return importedMarketRecordsForCurrentBatch + deferredRecords
+        let seededRecords = desktopSeededSubscriptionRecords
+
+        if !seededRecords.isEmpty {
+            return Array(seededRecords)
+        }
+
+        return Array(quoteableWorldShareRecords.prefix(desktopFallbackSubscriptionCount))
+    }
+
+    private var desktopSeededSubscriptionRecords: [MarketUniverseRecord] {
+        let seededRegions = Array(preparedSnapshot.marketsBoardSummaries.prefix(desktopSeededRegionCount).map(\.region))
+        return seededRegions.flatMap { region in
+            importedMarketRecords(for: region)
+                .sorted(by: MarketUniverseRecord.browserOrder)
+                .prefix(desktopSeededRegionSliceSize)
+        }
     }
 
     var phoneBody: some View {
         VStack(spacing: 8) {
-            marketTogglePanel(title: "MARKET UNIVERSE", toggles: marketToggles)
-            marketTogglePanel(title: "MARKET THEMES", toggles: themeToggles)
-            capitalRoutingPanel
-            regionalCalendarPanel
-            worldMarketsPanel
+            phoneTop100MarketsPanel
         }
     }
 
     func desktopBody(isWide: Bool) -> some View {
-        VStack(spacing: 10) {
-            sectionShell(title: "MARKETS", subtitle: "Live world feed and routing", trailing: universeStore.sourceLabel)
-
-            if isWide {
-                HStack(alignment: .top, spacing: 10) {
-                    marketTogglePanel(title: "MARKET UNIVERSE", toggles: marketToggles)
-                    marketTogglePanel(title: "MARKET THEMES", toggles: themeToggles)
-                }
-            } else {
-                marketTogglePanel(title: "MARKET UNIVERSE", toggles: marketToggles)
-                marketTogglePanel(title: "MARKET THEMES", toggles: themeToggles)
-            }
-
-            if isWide {
-                HStack(alignment: .top, spacing: 10) {
-                    capitalRoutingPanel
-                        .frame(maxWidth: .infinity, alignment: .top)
-                    marketDesktopRail
-                        .frame(maxWidth: 300, alignment: .top)
-                }
-            } else {
-                capitalRoutingPanel
-            }
-
-            regionalCalendarPanel
-
-            if isWide {
-                HStack(alignment: .top, spacing: 10) {
-                    worldMarketsPanel
-                    snapshotPanel
-                }
-            } else {
-                worldMarketsPanel
-                snapshotPanel
-            }
-
-            instrumentBrowserPanel
-        }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        worldMarketsPanel
+            .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }

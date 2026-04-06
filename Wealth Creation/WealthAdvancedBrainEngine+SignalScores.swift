@@ -1,16 +1,14 @@
 import Foundation
 
 extension WealthAdvancedBrainEngine {
-    static func smartMoneyScore(for blueprint: OpportunityBlueprint) -> Int {
+    static func smartMoneyScore(for blueprint: OpportunityBlueprint, textBundle: WealthAdvancedBrainTextBundle) -> Int {
         var score = 0
         score += Int(round(blueprint.optionsFlowStrength / 16))
         score += Int(round(blueprint.darkPoolStrength / 15))
         score += Int(round(blueprint.insiderStrength / 18))
         score += Int(round(blueprint.filingStrength / 20))
 
-        let text = ([blueprint.sourceTrigger] + blueprint.intelligenceDrivers + blueprint.intelligenceChannels)
-            .joined(separator: " ")
-            .uppercased()
+        let text = textBundle.combinedUpper
 
         if text.contains("DARK POOL") { score += 2 }
         if text.contains("OPTIONS") { score += 2 }
@@ -20,10 +18,8 @@ extension WealthAdvancedBrainEngine {
         return score
     }
 
-    static func eventScore(for blueprint: OpportunityBlueprint) -> Int {
-        let text = [blueprint.sourceTrigger, blueprint.reviewSummary, blueprint.catalystBucket]
-            .joined(separator: " ")
-            .uppercased()
+    static func eventScore(for blueprint: OpportunityBlueprint, textBundle: WealthAdvancedBrainTextBundle) -> Int {
+        let text = textBundle.sourceUpper
 
         var score = 0
         if blueprint.catalyst >= 72 {
@@ -40,6 +36,7 @@ extension WealthAdvancedBrainEngine {
         return score
     }
 
+    @MainActor
     static func anomalyScore(for blueprint: OpportunityBlueprint, regime: WealthMarketRegime) -> Int {
         var score = 0
 
@@ -49,7 +46,36 @@ extension WealthAdvancedBrainEngine {
         if blueprint.risk >= 60 { score += 4 }
         if blueprint.capitalFitLabel.uppercased().contains("POOR") { score += 3 }
         if regime == .defensive && blueprint.timeWindow == "HOURS" { score += 2 }
+        if WealthBrainToggleStore.shared.isEnabled(title: "Volatility Regime Math") {
+            score += Int(round(volatilityPenalty(
+                risk: blueprint.risk,
+                priceChangePercent: blueprint.priceChangePercent,
+                timeWindow: blueprint.timeWindow
+            )))
+        }
+        if WealthBrainModuleRegistry.isEnabled(title: "Risk Management System") {
+            score += riskManagementIntelPenalty(for: blueprint, regime: regime)
+        }
 
         return score
+    }
+
+    static func riskManagementIntelPenalty(
+        for blueprint: OpportunityBlueprint,
+        regime: WealthMarketRegime
+    ) -> Int {
+        var penalty = 0
+        if blueprint.risk >= 60 {
+            penalty += 2
+        } else if blueprint.risk >= 45 {
+            penalty += 1
+        }
+        if blueprint.spreadBps >= 32 { penalty += 1 }
+        if blueprint.slippageRisk >= 40 { penalty += 1 }
+        if blueprint.earningsEventRisk >= 55 || blueprint.macroEventRisk >= 60 { penalty += 1 }
+        if blueprint.capitalFitLabel.uppercased().contains("HEAVY") { penalty += 1 }
+        if regime == .defensive && blueprint.timeWindow == "HOURS" { penalty += 1 }
+        if blueprint.dataQualityLabel.uppercased() == "FRESH" && blueprint.risk <= 20 { penalty -= 1 }
+        return max(-1, min(4, penalty))
     }
 }

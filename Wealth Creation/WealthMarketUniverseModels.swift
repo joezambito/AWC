@@ -37,18 +37,24 @@ struct MarketUniverseEntry: Identifiable, Hashable {
     let hasQuoteData: Bool
     let isDelayed: Bool
     let priceText: String
+    let aiScoreText: String
     let changeText: String
     let confidenceText: String
+    let backingOpportunityKey: String?
     let statusText: String
     let dataAgeText: String
     let nextTradeText: String
     let whyText: String
     let tint: Color
+    let backgroundTint: Color
+    let borderTint: Color
+    let hasFreshData: Bool
     let aiLabelBand: MarketUniverseLabelBand?
     let shieldExitPrice: Double?
     let surgeExitPrice: Double?
     let shieldTriggerPercent: Double?
     let surgeTriggerPercent: Double?
+    let hasBackingOpportunity: Bool
 }
 
 struct MarketUniverseRecord: Codable, Identifiable, Hashable {
@@ -92,7 +98,13 @@ struct MarketUniverseRecord: Codable, Identifiable, Hashable {
     }
 
     var normalizedAssetType: String {
-        assetType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalized = assetType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "indices":
+            return "index"
+        default:
+            return normalized
+        }
     }
 
     var isWorldShareInstrument: Bool {

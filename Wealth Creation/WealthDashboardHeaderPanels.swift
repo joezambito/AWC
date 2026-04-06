@@ -80,14 +80,14 @@ struct WealthPhoneSafeHeaderView: View {
             largeCapitalCard(title: "Capital", value: cashBalanceText, accent: .white)
 
             HStack(spacing: 6) {
-                compactSummaryCard(title: "Holdings", value: holdingsValueText, tint: WealthTheme.cyan)
-                compactSummaryCard(title: "Account Value", value: accountValueText, tint: accountValueTint)
+                compactSummaryCard(title: "Capital Invested", value: holdingsValueText, tint: WealthTheme.cyan)
+                compactSummaryCard(title: "Portfolio", value: accountValueText, tint: accountValueTint)
                 compactSummaryCard(title: "P / L", value: totalPnLText, tint: totalPnLTint)
             }
 
             HStack(spacing: 6) {
                 compactSummaryCard(title: "Buy Reserve", value: buyReservedText, tint: WealthTheme.blue)
-                compactSummaryCard(title: "Sell Returning", value: sellReturningText, tint: WealthTheme.purple)
+                compactSummaryCard(title: "Sell Pending", value: sellReturningText, tint: WealthTheme.purple)
             }
         }
         .padding(7)

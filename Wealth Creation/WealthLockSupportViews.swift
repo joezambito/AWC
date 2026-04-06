@@ -19,6 +19,7 @@ extension WealthLockView {
             .resizable()
             .scaledToFit()
             .frame(width: 160)
+            .background(Color.red)
     }
 
     var titleBlock: some View {

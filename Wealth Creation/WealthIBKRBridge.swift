@@ -48,19 +48,22 @@ final class WealthIBKRBridge {
     var silentCancel = false
     var cancelReason = "Disconnected from TWS."
     var receiveBuffer = Data()
+    var receivedServerHandshakeBytes = false
     var hasValidRequestID = false
     var hasManagedAccounts = false
     var apiReady = false
     var clientID = 77
     var nextRequestID = 90_000
     var delayedQuotesEnabled = true
+    var desiredSubscriptions: [WealthBrokerQuoteKey: WealthIBKRContract] = [:]
+    var pendingSnapshotContracts: [WealthIBKRContract] = []
     var subscriptions: [WealthBrokerQuoteKey: Subscription] = [:]
     var requestIDToKey: [Int: WealthBrokerQuoteKey] = [:]
     var requestIDToContract: [Int: WealthIBKRContract] = [:]
     var partialQuotes: [Int: PartialQuote] = [:]
     var snapshotRequestIDs: Set<Int> = []
     var snapshotCleanupTasks: [Int: Task<Void, Never>] = [:]
-    var desiredHost = "127.0.0.1"
+    var desiredHost = "192.168.1.21"
     var desiredPort = 7497
     var shouldMaintainConnection = false
     var reconnectTask: Task<Void, Never>?
@@ -68,10 +71,45 @@ final class WealthIBKRBridge {
     var fallbackToDelayedSent = false
     var contractValidationRequests: [Int: ContractValidationRequest] = [:]
     var validatingKeys: Set<WealthBrokerQuoteKey> = []
+    var scanBurstActive = false
+    var clientIDRetryAttempts = 0
+    var overrideClientIDForNextConnect: Int?
+
+    var hasOpenConnection: Bool {
+        connection != nil
+    }
+
+    var canReuseForQuotes: Bool {
+        connection != nil && apiReady
+    }
 
     private init() {}
 
-    func connect(host: String, port: Int, handler: @escaping EventHandler) {
+    func connect(
+        host: String,
+        port: Int,
+        maintainConnection: Bool = true,
+        scanBurst: Bool = false,
+        handler: @escaping EventHandler
+    ) {
+        beginConnection(
+            host: host,
+            port: port,
+            maintainConnection: maintainConnection,
+            scanBurst: scanBurst,
+            handler: handler,
+            resetClientIDRetryAttempts: true
+        )
+    }
+
+    private func beginConnection(
+        host: String,
+        port: Int,
+        maintainConnection: Bool,
+        scanBurst: Bool,
+        handler: @escaping EventHandler,
+        resetClientIDRetryAttempts: Bool
+    ) {
         let trimmedHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedHost.isEmpty else {
             emit(.failed("Broker host is empty."))
@@ -87,11 +125,16 @@ final class WealthIBKRBridge {
         self.handler = handler
         desiredHost = trimmedHost
         desiredPort = port
-        shouldMaintainConnection = true
+        shouldMaintainConnection = maintainConnection
+        scanBurstActive = scanBurst
         reconnectTask?.cancel()
         reconnectTask = nil
         reconnectAttempt = 0
-        clientID = nextClientID()
+        if resetClientIDRetryAttempts {
+            clientIDRetryAttempts = 0
+        }
+        clientID = overrideClientIDForNextConnect ?? resolvedClientID()
+        overrideClientIDForNextConnect = nil
         logger.log("Connecting to TWS at \(trimmedHost, privacy: .public):\(port, privacy: .public) with clientId \(self.clientID, privacy: .public)")
         WealthLiveMarketDataStore.shared.noteConnectionAttempt(
             host: trimmedHost,
@@ -101,33 +144,47 @@ final class WealthIBKRBridge {
         emit(.connecting)
 
         let connection = NWConnection(host: .init(trimmedHost), port: endpointPort, using: .tcp)
-        self.connection = connection
+        let activeConnection = connection
+        self.connection = activeConnection
         resetSessionState()
 
-        connection.stateUpdateHandler = { [weak self, weak connection] state in
+        activeConnection.stateUpdateHandler = { [weak self, activeConnection] state in
             guard let bridge = self else { return }
+            let trackedConnection = activeConnection
             Task { @MainActor in
-                guard let trackedConnection = connection else { return }
                 bridge.handle(state, from: trackedConnection)
             }
         }
 
-        connection.start(queue: queue)
+        activeConnection.start(queue: queue)
     }
 
     func disconnect() {
         disconnect(silent: false, maintainConnection: false)
     }
 
+    func stopScanBurst() {
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        scanBurstActive = false
+        desiredSubscriptions.removeAll()
+        pendingSnapshotContracts.removeAll()
+        disconnect(silent: true, maintainConnection: false)
+    }
+
     func subscribe(to contracts: [WealthIBKRContract], delayedQuotes: Bool) {
         delayedQuotesEnabled = delayedQuotes
+        for contract in contracts {
+            desiredSubscriptions[contract.key] = contract
+        }
+
         guard connection != nil, apiReady else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let validatedContracts = await self.validatedContracts(from: contracts)
+            let validatedContracts = await self.validatedContracts(from: Array(self.desiredSubscriptions.values))
             guard self.connection != nil, self.apiReady else { return }
 
-            self.sendMarketDataType(self.fallbackToDelayedSent ? 3 : 1)
+            self.sendMarketDataType((self.delayedQuotesEnabled || self.fallbackToDelayedSent) ? 3 : 1)
 
             for contract in validatedContracts where self.subscriptions[contract.key] == nil {
                 let requestID = self.nextRequestID
@@ -143,13 +200,16 @@ final class WealthIBKRBridge {
 
     func requestSnapshots(for contracts: [WealthIBKRContract], delayedQuotes: Bool) {
         delayedQuotesEnabled = delayedQuotes
+        pendingSnapshotContracts.append(contentsOf: contracts)
         guard connection != nil, apiReady else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let validatedContracts = await self.validatedContracts(from: contracts)
+            let requestedContracts = self.pendingSnapshotContracts
+            self.pendingSnapshotContracts.removeAll()
+            let validatedContracts = await self.validatedContracts(from: requestedContracts)
             guard self.connection != nil, self.apiReady else { return }
 
-            self.sendMarketDataType(self.fallbackToDelayedSent ? 3 : 1)
+            self.sendMarketDataType((self.delayedQuotesEnabled || self.fallbackToDelayedSent) ? 3 : 1)
 
             for contract in validatedContracts {
                 let requestID = self.nextRequestID
@@ -184,6 +244,7 @@ final class WealthIBKRBridge {
 
     private func resetSessionState() {
         receiveBuffer = Data()
+        receivedServerHandshakeBytes = false
         hasValidRequestID = false
         hasManagedAccounts = false
         apiReady = false
@@ -215,15 +276,29 @@ final class WealthIBKRBridge {
         reconnectTask?.cancel()
         reconnectAttempt += 1
         let attempt = reconnectAttempt
-        let delay = min(UInt64(max(2, attempt * 2)), 15)
+        let delay = reconnectDelaySeconds(for: attempt, reason: reason)
         logger.log("Scheduling TWS reconnect attempt \(attempt, privacy: .public) in \(delay, privacy: .public)s: \(reason, privacy: .public)")
-        WealthLiveMarketDataStore.shared.noteFailed("Reconnect in \(delay)s: \(reason)")
+        if attempt == 1 || attempt % 3 == 0 {
+            WealthLiveMarketDataStore.shared.noteFailed("Reconnect in \(delay)s: \(reason)")
+        }
         reconnectTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
             guard let self, self.shouldMaintainConnection else { return }
             guard let handler = self.handler else { return }
             self.connect(host: self.desiredHost, port: self.desiredPort, handler: handler)
         }
+    }
+
+    private func reconnectDelaySeconds(for attempt: Int, reason: String) -> UInt64 {
+        let normalizedHost = desiredHost.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let normalizedReason = reason.lowercased()
+        let localhostRefused = (normalizedHost == "127.0.0.1" || normalizedHost == "localhost") && normalizedReason.contains("connection refused")
+
+        if localhostRefused {
+            return min(UInt64(max(30, attempt * 15)), 180)
+        }
+
+        return min(UInt64(max(2, attempt * 2)), 15)
     }
 
     func useDelayedFallback(reason: String) {
@@ -236,12 +311,55 @@ final class WealthIBKRBridge {
         resubscribeAllContracts()
     }
 
+    func retryWithFreshClientIDIfNeeded(reason: String) -> Bool {
+        guard clientIDRetryAttempts < 2 else { return false }
+        guard let handler else { return false }
+
+        clientIDRetryAttempts += 1
+        let nextClientID = nextClientID()
+        overrideClientIDForNextConnect = nextClientID
+        logger.log("Retrying TWS with fresh clientId \(nextClientID, privacy: .public): \(reason, privacy: .public)")
+        WealthLiveMarketDataStore.shared.noteFailed("Client ID retry #\(nextClientID): \(reason)")
+        beginConnection(
+            host: desiredHost,
+            port: desiredPort,
+            maintainConnection: shouldMaintainConnection,
+            scanBurst: scanBurstActive,
+            handler: handler,
+            resetClientIDRetryAttempts: false
+        )
+        return true
+    }
+
+    private func resolvedClientID() -> Int {
+#if targetEnvironment(macCatalyst)
+        return preferredClientID()
+#else
+        return nextClientID()
+#endif
+    }
+
+    private func preferredClientID() -> Int {
+        let defaults = UserDefaults.standard
+        let fixedKey = "awc_ibkr_client_id"
+        let legacySeedKey = "awc_ibkr_client_id_seed"
+
+        if let stored = defaults.object(forKey: fixedKey) as? Int, stored >= 0 {
+            return stored
+        }
+
+        let migrated = max(defaults.integer(forKey: legacySeedKey), 77)
+        defaults.set(migrated, forKey: fixedKey)
+        return migrated
+    }
+
     private func nextClientID() -> Int {
         let defaults = UserDefaults.standard
         let storageKey = "awc_ibkr_client_id_seed"
         let seed = defaults.integer(forKey: storageKey)
         let next = (seed >= 9_000 ? 1_000 : max(seed + 1, 1_000))
         defaults.set(next, forKey: storageKey)
+        defaults.set(next, forKey: "awc_ibkr_client_id")
         return next
     }
 }

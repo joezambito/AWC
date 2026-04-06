@@ -1,25 +1,25 @@
 import Foundation
 
 extension WealthEngineStore {
-    func handleDayRolloverIfNeeded(now: Date = .now) {
-        let previousSoft = dailySoftCycleCount
-        let previousHeavy = dailyHeavyCycleCount
-
-        resetDailyCycleCountIfNeeded(now: now)
+    @discardableResult
+    func handleDayRolloverIfNeeded(now: Date = .now) -> Bool {
+        let didRollOver = resetDailyCycleCountIfNeeded(now: now)
         WealthEventLogStore.shared.prune(now: now)
 
-        guard previousSoft != dailySoftCycleCount || previousHeavy != dailyHeavyCycleCount else { return }
+        guard didRollOver else { return false }
 
         lastRecurringCycleLabel = "WAITING"
         defaults.set("WAITING", forKey: StorageKey.lastRecurringCycleLabel)
         defaults.set("WAITING", forKey: LegacyStorageKey.lastRecurringCycleLabel)
+        return true
     }
 
-    func resetDailyCycleCountIfNeeded(now: Date = .now) {
+    @discardableResult
+    func resetDailyCycleCountIfNeeded(now: Date = .now) -> Bool {
         let dayKey = Self.dayStamp(for: now)
         let storedDay = defaults.string(forKey: StorageKey.dailyScanCycleDay)
             ?? defaults.string(forKey: LegacyStorageKey.dailyScanCycleDay)
-        guard storedDay != dayKey else { return }
+        guard storedDay != dayKey else { return false }
 
         dailySoftCycleCount = 0
         dailyHeavyCycleCount = 0
@@ -29,6 +29,7 @@ extension WealthEngineStore {
         defaults.set(0, forKey: LegacyStorageKey.dailySoftCycleCount)
         defaults.set(0, forKey: LegacyStorageKey.dailyHeavyCycleCount)
         defaults.set(dayKey, forKey: LegacyStorageKey.dailyScanCycleDay)
+        return true
     }
 
     func normalizeRecurringCycleStorageIfNeeded() {
@@ -87,12 +88,15 @@ extension WealthEngineStore {
         return formatter.string(from: date)
     }
 
-    func schedulePendingRefreshPublish(after delayNanoseconds: UInt64 = 2_000_000_000) {
+    func schedulePendingRefreshPublish(
+        payload: PendingRefreshPayload,
+        after delayNanoseconds: UInt64 = 2_000_000_000
+    ) {
         pendingPublishTask?.cancel()
-        pendingPublishTask = Task { @MainActor [weak self] in
+        pendingPublishTask = Task { @MainActor [self] in
             try? await Task.sleep(nanoseconds: delayNanoseconds)
             guard !Task.isCancelled else { return }
-            self?.applyPendingRefreshState()
+            await applyPendingRefreshState(payload)
         }
     }
 }

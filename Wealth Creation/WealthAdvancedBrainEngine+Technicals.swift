@@ -1,7 +1,7 @@
 import Foundation
 
 extension WealthAdvancedBrainEngine {
-    private static func approximateRSIBias(technical: Double, priceChangePercent: Double, catalyst: Double) -> Double {
+    static func approximateRSIBias(technical: Double, priceChangePercent: Double, catalyst: Double) -> Double {
         if technical > 86 && priceChangePercent > 2.4 {
             return catalyst > 75 ? -1 : -6
         }
@@ -14,7 +14,7 @@ extension WealthAdvancedBrainEngine {
         return 0
     }
 
-    private static func approximateStochasticBias(technical: Double, priceChangePercent: Double, probability: Double) -> Double {
+    static func approximateStochasticBias(technical: Double, priceChangePercent: Double, probability: Double) -> Double {
         if technical > 82 && probability > 72 && priceChangePercent > 0.8 {
             return 4
         }
@@ -27,35 +27,33 @@ extension WealthAdvancedBrainEngine {
         return 1
     }
 
-    private static func movingAverageBias(technical: Double, probability: Double, positiveTape: Double) -> Double {
+    static func movingAverageBias(technical: Double, probability: Double, positiveTape: Double) -> Double {
         if technical >= 76 && probability >= 70 && positiveTape > 0.25 { return 5 }
         if technical <= 46 && positiveTape < 0.2 { return -4 }
         return technical >= 60 ? 2 : 0
     }
 
-    private static func crossAssetBias(sectorFlow: Double, market: String, sourceText: String) -> Double {
+    static func crossAssetBias(sectorFlow: Double, market: String, sourceText: String) -> Double {
         var score = max(-3.0, min(5.0, (sectorFlow - 50) * 0.10))
         if market.uppercased().contains("US") || sourceText.contains("INDEX LEADER") { score += 1.5 }
         return score
     }
 
-    private static func tokenMatch(_ text: String, _ needles: [String]) -> Bool {
-        let normalized = text.uppercased()
-        return needles.contains { normalized.contains($0) }
+    private static func tokenMatch(_ uppercasedText: String, _ needles: [String]) -> Bool {
+        needles.contains { uppercasedText.contains($0) }
     }
 
-    private static func volumeDiscrepancyBias(priceChangePercent: Double, sourceText: String, intelligenceText: String) -> Double {
-        let combinedText = sourceText + " " + intelligenceText
-        if abs(priceChangePercent) >= 3.2 && tokenMatch(combinedText, ["LOW VOLUME", "THIN", "FADE"]) {
+    static func volumeDiscrepancyBias(priceChangePercent: Double, combinedUpperText: String) -> Double {
+        if abs(priceChangePercent) >= 3.2 && tokenMatch(combinedUpperText, ["LOW VOLUME", "THIN", "FADE"]) {
             return -5
         }
-        if tokenMatch(combinedText, ["ACCUMULATION", "EXPANDING VOLUME", "CONFIRMED BREAKOUT"]) {
+        if tokenMatch(combinedUpperText, ["ACCUMULATION", "EXPANDING VOLUME", "CONFIRMED BREAKOUT"]) {
             return 4
         }
         return 0
     }
 
-    private static func volatilityPenalty(risk: Double, priceChangePercent: Double, timeWindow: String) -> Double {
+    static func volatilityPenalty(risk: Double, priceChangePercent: Double, timeWindow: String) -> Double {
         var penalty = 0.0
         if risk >= 55 { penalty += 5 }
         if abs(priceChangePercent) >= 4.5 { penalty += 3 }

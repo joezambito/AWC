@@ -13,12 +13,12 @@ struct OpportunityDetailView: View {
                 let isWide = proxy.size.width >= 980
 
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 10) {
                         detailHero
 
                         if isWide {
-                            HStack(alignment: .top, spacing: 14) {
-                                VStack(spacing: 14) {
+                            HStack(alignment: .top, spacing: 10) {
+                                VStack(spacing: 10) {
                                     timingPanel
                                     researchPanel
                                 }
@@ -33,9 +33,9 @@ struct OpportunityDetailView: View {
                             tradeIntelPanel
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 110)
-                    .padding(.bottom, 40)
+                    .padding(.horizontal, 10)
+                    .padding(.top, 104)
+                    .padding(.bottom, 28)
                     .frame(maxWidth: isWide ? 1180 : .infinity)
                     .frame(maxWidth: .infinity)
                 }

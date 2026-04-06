@@ -17,6 +17,12 @@ struct CompletedOpportunityCard: View {
     var body: some View {
         let isDense = usesDenseCollapsedState && !isExpanded
 
+        // MARK: Activity Card Layout
+        // Safe manual tweak area:
+        // - outer VStack spacing
+        // - HStack gaps
+        // - card padding
+        // - horizontal inset
         return VStack(spacing: isDense ? 6 : 8) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {

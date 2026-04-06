@@ -5,63 +5,25 @@ struct OpportunityCardExpandedDetailsView: View {
     @ObservedObject private var protection = WealthProtectionSettingsStore.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            sectionTitle("STATUS")
-            detailRow("READINESS", opportunity.readinessSummary, tint: opportunity.cardSignalTint)
-            detailRow("ORDER", orderStageText, tint: orderStageTint)
-            detailRow("SESSION", opportunity.sessionState.rawValue, tint: opportunity.sessionState.color)
-            detailRow("TARGET", opportunity.targetDirective, tint: WealthTheme.green)
-            detailRow("TRADE", opportunity.tradeabilityLabel, tint: opportunity.tradeabilityTint)
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("MARKET RANK")
+                    .font(.system(size: 11, weight: .black, design: .rounded))
+                    .foregroundColor(WealthTheme.cyan.opacity(0.75))
+
+                Text("#\(opportunity.rank)")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .foregroundColor(WealthTheme.cyan)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .background(cardCellBackground(tint: WealthTheme.cyan))
+
+            detailRow("BUY PRICE", WealthFormat.money(opportunity.submittedPrice), tint: .white)
+            detailRow("CURRENT P/L", wealthPnLText(opportunity.liveNetProfit), tint: wealthPnLTint(opportunity.liveNetProfit))
             detailRow("AI SCORE", "\(opportunity.aiScore)", tint: opportunity.scoreTint)
             detailRow("CONFIDENCE", "\(opportunity.confidence)%", tint: opportunity.confidenceTint)
-            detailRow("RANK", "#\(opportunity.rank)", tint: WealthTheme.cyan)
-
-            sectionTitle("MONEY")
-            detailRow("SHARES", "\(opportunity.recommendedShares)", tint: WealthTheme.cyan)
-            detailRow("BUY PRICE", WealthFormat.money(opportunity.submittedPrice), tint: .white)
-            detailRow("LIVE PRICE", WealthFormat.money(opportunity.price), tint: priceTint)
-            detailRow("MOVE %", wealthPercentMoveText(opportunity.liveMovePercent), tint: wealthPercentMoveTint(opportunity.liveMovePercent))
-            detailRow("P / L", wealthPnLText(opportunity.liveNetProfit), tint: wealthPnLTint(opportunity.liveNetProfit))
-            detailRow("BUY FEE", WealthFormat.money(opportunity.brokerFee), tint: WealthTheme.orange)
-            detailRow("SELL FEE", WealthFormat.money(opportunity.liveSellFee), tint: WealthTheme.orange)
-            detailRow("CURR TOTAL", WealthFormat.money(opportunity.liveNetExitValue), tint: wealthNetExitTint(netExit: opportunity.liveNetExitValue, buyTotal: opportunity.trueCost))
-            detailRow("BUFFER SELL", opportunity.fixedBufferExitSummary, tint: WealthTheme.orange)
-            detailRow("SHIELD SELL", opportunity.shieldExitSummary, tint: WealthTheme.red)
-
-            sectionTitle("AI FINDINGS")
-            noteBlock("WHAT AI FOUND", opportunity.aiFoundHeadline, tint: WealthTheme.cyan)
-            noteBlock("AI DETAIL", opportunity.aiFoundDetail, tint: .white.opacity(0.94))
-            noteBlock("BLOCKERS", opportunity.blockerSummary, tint: WealthTheme.orange)
-            noteBlock("WHAT NEXT", opportunity.scoreUpgradePath, tint: WealthTheme.purple)
-            noteBlock("DECISION LINE", opportunity.buyReason, tint: .white.opacity(0.92))
-
-            sectionTitle("SIGNALS")
-            detailRow("OPTIONS", opportunity.optionsFlowLabel, tint: WealthTheme.cyan)
-            detailRow("DARK POOL", opportunity.darkPoolLabel, tint: WealthTheme.purple)
-            detailRow("INSIDER", opportunity.insiderLabel, tint: WealthTheme.orange)
-            detailRow("13F", opportunity.filingLabel, tint: WealthTheme.green)
-            detailRow("EARNINGS", opportunity.earningsRiskLabel, tint: opportunity.earningsEventRisk >= 40 ? WealthTheme.orange : WealthTheme.green)
-            detailRow("MACRO", opportunity.macroRiskLabel, tint: opportunity.macroEventRisk >= 40 ? WealthTheme.orange : WealthTheme.cyan)
-
-            sectionTitle("TIMING")
-            detailRow("WINDOW", opportunity.timeWindow, tint: WealthTheme.purple)
-            detailRow("LAST REFRESH", opportunity.lastRefreshText, tint: WealthTheme.cyan)
-            detailRow("DATA AGE", opportunity.sourceAgeText, tint: WealthTheme.orange)
-            detailRow("NEXT TRADE", opportunity.nextTradingText, tint: WealthTheme.gold)
-            detailRow("SOURCE", opportunity.sourceTrigger, tint: WealthTheme.cyan)
-
-            sectionTitle("DETAIL")
-            textBlock(opportunity.aiCommentary, tint: .white.opacity(0.92))
-            textBlock("SCORE TRAIL · \(opportunity.scoreDriftText)", tint: opportunity.scoreTint)
-            textBlock("CONF TRAIL · \(opportunity.confidenceDriftText)", tint: opportunity.confidenceTint)
-            textBlock(opportunity.researchStackText, tint: .white.opacity(0.88))
-            textBlock("DECISION MATRIX · \(opportunity.decisionMatrixText)", tint: WealthTheme.cyan)
-            textBlock("RISK MATRIX · \(opportunity.riskMatrixText)", tint: WealthTheme.orange)
-            textBlock(opportunity.commandText, tint: WealthTheme.green)
-            textBlock(opportunity.trustReason, tint: opportunity.trustState.color)
-            if !opportunity.warningReason.isEmpty {
-                textBlock(opportunity.warningReason, tint: WealthTheme.gold)
-            }
         }
     }
 

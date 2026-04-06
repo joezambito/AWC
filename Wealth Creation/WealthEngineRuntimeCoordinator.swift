@@ -12,13 +12,25 @@ final class WealthEngineRuntimeCoordinator {
 
     private init() {}
 
+    private var canBootstrapOutsideActivePhase: Bool {
+#if targetEnvironment(macCatalyst)
+        true
+#else
+        false
+#endif
+    }
+
+    private var launchDelayNanoseconds: UInt64 { 2_000_000_000 }
+    private var heartbeatIntervalNanoseconds: UInt64 { 30_000_000_000 }
+
     func startUnlockedSession() {
         setSessionEnabled(true, phase: .active)
     }
 
     func restartUnlockedSession() {
         stopSession(resetEngine: true)
-        setSessionEnabled(true, phase: lastKnownPhase == .background ? .active : lastKnownPhase)
+        let resumePhase: ScenePhase = lastKnownPhase == .background ? .active : lastKnownPhase
+        setSessionEnabled(true, phase: resumePhase)
     }
 
     func stopUnlockedSession() {
@@ -31,54 +43,111 @@ final class WealthEngineRuntimeCoordinator {
 
     func setSessionEnabled(_ enabled: Bool, phase: ScenePhase) {
         lastKnownPhase = phase
+
         guard enabled else {
-            stopSession(resetEngine: true)
+            if sessionActive || launchTask != nil || heartbeatTask != nil {
+                stopSession(resetEngine: true)
+            }
             return
         }
 
         switch phase {
         case .active:
-            let startedFresh = ensureSessionRunning()
-            if !startedFresh {
-                WealthEngineStore.shared.recoverLiveUpdatesIfNeeded(reason: "foreground")
+            prepareVisibleStartupState()
+
+            if sessionActive {
+                resumeActiveSession()
+                return
             }
-            startHeartbeat()
+
+            scheduleInitialLaunchIfNeeded()
+
         case .inactive:
-            _ = ensureSessionRunning()
-            startHeartbeat()
+            handleInactivePhase()
+
         case .background:
-            // iOS can still suspend the app, but we should not shut our own
-            // runtime down just because the phone screen slept.
-            _ = ensureSessionRunning()
-            WealthEngineStore.shared.rescheduleTimers()
-            startHeartbeat()
+            handleBackgroundPhase()
+
         @unknown default:
             break
         }
     }
 
-    private func ensureSessionRunning() -> Bool {
-        let engine = WealthEngineStore.shared
-        guard !sessionActive else {
-            engine.rescheduleTimers()
-            return false
-        }
+    private func prepareVisibleStartupState() {
+        WealthEngineStore.shared.restorePersistedMarketCacheIfNeeded()
+        _ = WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
 
-        sessionActive = true
-        launchTask?.cancel()
-        launchTask = Task { @MainActor in
-            engine.prepareForFreshLaunch()
-            startHeartbeat()
-            engine.bootstrap()
+        if WealthEngineStore.shared.hasUsableWarmStartCardCache {
+            WealthEngineStore.shared.applyWarmStartVisibleState()
         }
-        return true
+    }
+
+    private func resumeActiveSession() {
+        WealthSyncStore.shared.autoStartBrokerIfNeeded()
+        startHeartbeat()
+        WealthEngineStore.shared.recoverLiveUpdatesIfNeeded(reason: "active_resume")
+    }
+
+    private func scheduleInitialLaunchIfNeeded() {
+        guard launchTask == nil else { return }
+
+        launchTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            try? await Task.sleep(nanoseconds: launchDelayNanoseconds)
+            guard !Task.isCancelled else { return }
+
+            if self.sessionActive {
+                self.launchTask = nil
+                self.startHeartbeat()
+                return
+            }
+
+            self.sessionActive = true
+            self.launchTask = nil
+
+            WealthEngineStore.shared.bootstrap()
+            WealthSyncStore.shared.autoStartBrokerIfNeeded()
+            self.startHeartbeat()
+        }
+    }
+
+    private func handleInactivePhase() {
+        guard canBootstrapOutsideActivePhase || sessionActive else { return }
+
+        if canBootstrapOutsideActivePhase {
+            if !sessionActive {
+                sessionActive = true
+                WealthEngineStore.shared.bootstrap()
+            }
+            WealthSyncStore.shared.autoStartBrokerIfNeeded()
+            startHeartbeat()
+        } else {
+            stopHeartbeat()
+        }
+    }
+
+    private func handleBackgroundPhase() {
+        guard canBootstrapOutsideActivePhase || sessionActive else { return }
+
+        if canBootstrapOutsideActivePhase {
+            if !sessionActive {
+                sessionActive = true
+                WealthEngineStore.shared.bootstrap()
+            }
+            WealthSyncStore.shared.autoStartBrokerIfNeeded()
+            WealthEngineStore.shared.rescheduleTimers()
+            startHeartbeat()
+        } else {
+            stopHeartbeat()
+        }
     }
 
     private func stopSession(resetEngine: Bool) {
         launchTask?.cancel()
         launchTask = nil
-        heartbeatTask?.cancel()
-        heartbeatTask = nil
+
+        stopHeartbeat()
         sessionActive = false
 
         if resetEngine {
@@ -88,12 +157,18 @@ final class WealthEngineRuntimeCoordinator {
 
     private func startHeartbeat() {
         heartbeatTask?.cancel()
+
         heartbeatTask = Task { @MainActor in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                try? await Task.sleep(nanoseconds: heartbeatIntervalNanoseconds)
                 guard !Task.isCancelled else { return }
                 WealthEngineStore.shared.recoverLiveUpdatesIfNeeded(reason: "heartbeat")
             }
         }
+    }
+
+    private func stopHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = nil
     }
 }

@@ -2,7 +2,8 @@ import SwiftUI
 
 extension MarketsView {
     var instrumentBrowserPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let displayedRecords = pagedBrowserRecords
+        return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("INSTRUMENT BROWSER")
@@ -53,10 +54,10 @@ extension MarketsView {
                 }
 
                 LazyVStack(spacing: 8) {
-                    if pagedBrowserRecords.isEmpty {
+                    if displayedRecords.isEmpty {
                         browserStatusCard(title: "NO MATCHES", detail: "The current search and filter combination returned no instruments.", tint: WealthTheme.grey)
                     } else {
-                        ForEach(pagedBrowserRecords) { record in
+                        ForEach(displayedRecords) { record in
                             instrumentBrowserRow(record)
                         }
                     }

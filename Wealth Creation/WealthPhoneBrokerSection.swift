@@ -3,6 +3,7 @@ import SwiftUI
 struct WealthPhoneBrokerSection: View {
     @ObservedObject var brokerStore = WealthBrokerStore.shared
     @ObservedObject var syncStore = WealthSyncStore.shared
+    @AppStorage("awc_phone_broker_endpoint_locked") var endpointFieldsLocked = true
 
     var reviewBrokers: [BrokerProfile] {
         let query = brokerStore.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)

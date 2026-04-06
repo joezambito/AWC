@@ -1,5 +1,11 @@
 import Foundation
 
+struct WealthAdvancedBrainTextBundle: Hashable {
+    let sourceUpper: String
+    let intelligenceUpper: String
+    let combinedUpper: String
+}
+
 struct WealthAdvancedSignalProfile: Hashable {
     let trendState: String
     let momentumState: String
@@ -31,6 +37,21 @@ struct WealthAdvancedSignalProfile: Hashable {
 }
 
 enum WealthAdvancedBrainEngine {
+    static func textBundle(for blueprint: OpportunityBlueprint) -> WealthAdvancedBrainTextBundle {
+        let sourceUpper = [blueprint.sourceTrigger, blueprint.sourceSummary, blueprint.reviewSummary, blueprint.catalystBucket]
+            .joined(separator: " ")
+            .uppercased()
+        let intelligenceUpper = (blueprint.intelligenceDrivers + blueprint.intelligenceChannels)
+            .joined(separator: " ")
+            .uppercased()
+        let combinedUpper = sourceUpper + " " + intelligenceUpper
+        return WealthAdvancedBrainTextBundle(
+            sourceUpper: sourceUpper,
+            intelligenceUpper: intelligenceUpper,
+            combinedUpper: combinedUpper
+        )
+    }
+
     @MainActor
     static func profile(
         for blueprint: OpportunityBlueprint,
@@ -39,11 +60,12 @@ enum WealthAdvancedBrainEngine {
         settings: WealthBehaviorSettingsStore,
         holdings: [Holding]
     ) -> WealthAdvancedSignalProfile {
+        let textBundle = textBundle(for: blueprint)
         let trendScore = trendScore(for: blueprint, regime: regime)
         let momentumScore = momentumScore(for: blueprint)
-        let patternScore = patternScore(for: blueprint)
-        let smartMoneyScore = smartMoneyScore(for: blueprint)
-        let eventScore = eventScore(for: blueprint)
+        let patternScore = patternScore(for: blueprint, textBundle: textBundle)
+        let smartMoneyScore = smartMoneyScore(for: blueprint, textBundle: textBundle)
+        let eventScore = eventScore(for: blueprint, textBundle: textBundle)
         let executionScore = executionScore(for: blueprint, regime: regime, settings: settings)
         let portfolioScore = portfolioScore(for: blueprint, goals: goals, holdings: holdings)
         let anomalyScore = anomalyScore(for: blueprint, regime: regime)

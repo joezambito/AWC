@@ -50,13 +50,13 @@ extension WealthRootView {
             softCycleCountText: "\(engine.dailySoftCycleCount)",
             heavyCycleCountText: "\(engine.dailyHeavyCycleCount)",
             cashBalanceText: dashboardCashBalanceText,
-            holdingsValueText: dashboardHoldingsValueText,
-            accountValueText: dashboardAccountValueText,
-            accountValueTint: wealthRelativeTint(current: displayedAccountValue, baseline: max(portfolio.capitalBaseline, 1)),
+            holdingsValueText: dashboardCommittedCapitalText,
+            accountValueText: dashboardTotalPnLText,
+            accountValueTint: dashboardTotalPnLTint,
             buyReservedText: dashboardBuyReservedText,
             sellReturningText: dashboardSellReturningText,
-            totalPnLText: dashboardTotalPnLText,
-            totalPnLTint: dashboardTotalPnLTint
+            totalPnLText: dashboardPnLPercentText,
+            totalPnLTint: dashboardPnLPercentTint
         )
     }
 

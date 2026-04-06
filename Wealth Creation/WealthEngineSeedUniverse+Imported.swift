@@ -1,22 +1,83 @@
 import Foundation
 
 extension WealthEngineStore {
-    static let universeDrivenBlueprintCatalog: [OpportunityBlueprint] = buildImportedUniverseBlueprintCatalog()
+    private static var cachedUniverseDrivenBlueprintCatalog: [OpportunityBlueprint] = []
+    private static var cachedUniverseDrivenBlueprintCatalogSignature = ""
 
-    private static func buildImportedUniverseBlueprintCatalog() -> [OpportunityBlueprint] {
-        let records = WealthMarketUniverseLoader.records()
-            .filter(\.isActive)
-            .filter(isEligibleUniverseRecord)
+    @MainActor
+    static func isUsingImportedUniverseSeedSource() -> Bool {
+        let universeSource = currentUniverseSeedSource()
+        return !universeSource.records.isEmpty
+    }
 
+    @MainActor
+    static func universeDrivenBlueprintCatalog() -> [OpportunityBlueprint] {
+        let universeSource = currentUniverseSeedSource()
+        let records = deduplicatedUniverseRecords(universeSource.records)
         guard !records.isEmpty else { return [] }
 
-        let recordsByRegion = Dictionary(grouping: records, by: \.regionCode)
-        let orderedRegions = ["US", "AU", "CA", "EU", "APAC", "ME", "LATAM", "AFRICA", "GLOBAL", "FX", "CRYPTO"]
+        let signature = [
+            universeSource.label,
+            String(records.count),
+            universeSource.signature
+        ].joined(separator: "|")
+
+        if signature == cachedUniverseDrivenBlueprintCatalogSignature {
+            return cachedUniverseDrivenBlueprintCatalog
+        }
+
+        let catalog = buildImportedUniverseBlueprintCatalog(from: records)
+        cachedUniverseDrivenBlueprintCatalogSignature = signature
+        cachedUniverseDrivenBlueprintCatalog = catalog
+        return catalog
+    }
+
+    @MainActor
+    private static func currentUniverseSeedSource() -> (label: String, signature: String, records: [MarketUniverseRecord]) {
+        let universeStore = WealthMarketUniverseStore.shared
+        let persistedRecords = universeStore.records
+        if !persistedRecords.isEmpty {
+            let marker = [
+                universeStore.sourceLabel,
+                universeStore.lastSuccessfulLoadAt?.description ?? "none",
+                String(persistedRecords.count)
+            ].joined(separator: "|")
+            return ("persisted", marker, persistedRecords)
+        }
+
+        let loaderRecords = WealthMarketUniverseLoader.records()
+        if !loaderRecords.isEmpty {
+            return ("loader", "loader|\(loaderRecords.count)", loaderRecords)
+        }
+
+        return ("empty", "empty", [])
+    }
+
+    private static func deduplicatedUniverseRecords(_ records: [MarketUniverseRecord]) -> [MarketUniverseRecord] {
+        var seen: Set<String> = []
+        return records.filter { seen.insert($0.id).inserted }
+    }
+
+    private static func buildImportedUniverseBlueprintCatalog(from loaderRecords: [MarketUniverseRecord]) -> [OpportunityBlueprint] {
+        let activeRecords = loaderRecords.filter(\.isActive)
+        let eligibleRecords = activeRecords.filter(isEligibleUniverseRecord)
+
+        WealthPipelineTraceLogger.logExpandedUniverse(
+            total: eligibleRecords.count,
+            dropped: max(0, loaderRecords.count - eligibleRecords.count),
+            markets: eligibleRecords.map(\.market)
+        )
+
+        guard !eligibleRecords.isEmpty else { return [] }
+
+        let recordsByRegion = Dictionary(grouping: eligibleRecords, by: \.regionCode)
+        let orderedRegions = ["US", "AU", "CA", "EU", "APAC", "ME", "LATAM", "AFRICA", "GLOBAL", "FX", "CRYPTO", "UNKNOWN"]
+        let remainingRegions = Set(recordsByRegion.keys).subtracting(orderedRegions).sorted()
 
         var selected: [MarketUniverseRecord] = []
         var seenKeys: Set<String> = []
 
-        for region in orderedRegions {
+        for region in orderedRegions + remainingRegions {
             let regionRecords = (recordsByRegion[region] ?? [])
                 .sorted(by: universeRecordOrder)
                 .prefix(regionCap(for: region))
@@ -27,47 +88,36 @@ extension WealthEngineStore {
             }
         }
 
+        WealthPipelineTraceLogger.logSeedUniverse(selected.map(makeImportedUniverseBlueprint))
+
         return selected.map(makeImportedUniverseBlueprint)
     }
 
     private static func isEligibleUniverseRecord(_ record: MarketUniverseRecord) -> Bool {
-        let assetType = record.assetType.lowercased()
         let market = record.market.uppercased()
         let exchange = record.exchange.uppercased()
 
         guard !record.symbol.isEmpty else { return false }
-        guard market != "UNKNOWN" else { return false }
         guard !exchange.contains("OTC BULLETIN") else { return false }
         guard !market.contains("OTC BULLETIN") else { return false }
-
-        let blockedTypes = [
-            "option", "warrant", "rights", "preferred", "unit", "fund of funds", "leveraged", "inverse"
-        ]
-        if blockedTypes.contains(where: { assetType.contains($0) }) {
-            return false
-        }
-
-        let allowedBroadTypes = [
-            "equit", "stock", "etf", "reit", "adr", "crypto", "currenc", "bond", "index", "fund"
-        ]
-
-        return allowedBroadTypes.contains(where: { assetType.contains($0) }) || market == "FX" || market == "CRYPTO"
+        return true
     }
 
     private static func regionCap(for region: String) -> Int {
         switch region {
-        case "US": return 450
-        case "AU": return 220
-        case "CA": return 220
-        case "EU": return 420
-        case "APAC": return 420
-        case "ME": return 180
-        case "LATAM": return 180
-        case "AFRICA": return 140
-        case "GLOBAL": return 220
-        case "FX": return 140
-        case "CRYPTO": return 180
-        default: return 120
+        case "US": return 128623
+        case "AU": return 128623
+        case "CA": return 128623
+        case "EU": return 128623
+        case "APAC": return 128623
+        case "ME": return 128623
+        case "LATAM": return 128623
+        case "AFRICA": return 128623
+        case "GLOBAL": return 128623
+        case "FX": return 128623
+        case "CRYPTO": return 128623
+        case "UNKNOWN": return 128623
+        default: return 128623
         }
     }
 
@@ -82,7 +132,7 @@ extension WealthEngineStore {
 
     private static func universePriorityScore(for record: MarketUniverseRecord) -> Int {
         var score = 0
-        let assetType = record.assetType.lowercased()
+        let assetType = record.normalizedAssetType
         let market = record.market.uppercased()
         let exchange = record.exchange.uppercased()
 
@@ -125,7 +175,7 @@ extension WealthEngineStore {
 
     private static func normalizedEngineMarket(for record: MarketUniverseRecord) -> String {
         let market = record.market.uppercased()
-        let assetType = record.assetType.lowercased()
+        let assetType = record.normalizedAssetType
 
         if assetType.contains("currenc") { return "FX" }
         if assetType.contains("crypto") { return "CRYPTO" }
@@ -135,6 +185,10 @@ extension WealthEngineStore {
     }
 
     private static func normalizedEngineSector(for record: MarketUniverseRecord) -> String {
+        if let bundledSector = bundledSectorName(for: record), !bundledSector.isEmpty {
+            return bundledSector
+        }
+
         let sector = record.sector.trimmingCharacters(in: .whitespacesAndNewlines)
         if !sector.isEmpty, sector != "UNKNOWN" {
             return sector
@@ -150,7 +204,7 @@ extension WealthEngineStore {
 
     private static func generatedSeedPrice(for record: MarketUniverseRecord) -> Double {
         let unit = deterministicUnit("\(record.symbol)-\(record.market)-price")
-        let assetType = record.assetType.lowercased()
+        let assetType = record.normalizedAssetType
         let market = record.market.uppercased()
 
         if assetType.contains("currenc") || market == "FX" {
@@ -193,6 +247,12 @@ extension WealthEngineStore {
     private static func generatedPriceChange(for record: MarketUniverseRecord) -> Double {
         let unit = deterministicUnit("\(record.symbol)-\(record.market)-change")
         return roundTo((unit - 0.5) * 6.4, places: 2)
+    }
+
+    private static func bundledSectorName(for record: MarketUniverseRecord) -> String? {
+        guard record.provider.hasPrefix("Bundled JSON|") else { return nil }
+        let sector = String(record.provider.dropFirst("Bundled JSON|".count))
+        return sector.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func deterministicUnit(_ value: String) -> Double {

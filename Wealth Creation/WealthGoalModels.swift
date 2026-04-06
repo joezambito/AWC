@@ -43,15 +43,24 @@ struct WealthGoalVector {
     let daily: GoalProgress
     let compound: GoalProgress
     let mission: GoalProgress
+    let compoundTimePressure: Double
+    let missionTimePressure: Double
 
     var dailyPressure: Double { daily.pressure }
     var compoundPressure: Double { compound.pressure }
     var missionPressure: Double { mission.pressure }
+    var compoundUrgencyPressure: Double {
+        compound.isBehind ? compoundPressure * compoundTimePressure : 0
+    }
+    var missionUrgencyPressure: Double {
+        mission.isBehind ? missionPressure * missionTimePressure : 0
+    }
 
     var weightedPressure: Double {
         let base = (dailyPressure * 0.55) + (compoundPressure * 0.30) + (missionPressure * 0.15)
+        let timeUrgencyLift = (compoundUrgencyPressure * 0.18) + (missionUrgencyPressure * 0.12)
         let belowZeroBoost = [daily, compound, mission].contains(where: \.isNegative) ? 0.08 : 0
-        return min(1, max(0, base + belowZeroBoost))
+        return min(1, max(0, base + timeUrgencyLift + belowZeroBoost))
     }
 
     var tradingPressure: Double {
@@ -71,8 +80,8 @@ struct WealthGoalVector {
     var dominantTarget: String {
         let pressures = [
             ("DAILY", dailyPressure),
-            ("COMPOUND", compoundPressure),
-            ("MISSION", missionPressure)
+            ("COMPOUND", compoundPressure + compoundUrgencyPressure),
+            ("MISSION", missionPressure + missionUrgencyPressure)
         ]
 
         return pressures
@@ -97,6 +106,17 @@ struct WealthGoalVector {
         case "COMPOUND": return compoundPressure
         case "MISSION": return missionPressure
         default: return dailyPressure
+        }
+    }
+
+    func urgencyAdjustedPressure(for target: String) -> Double {
+        switch target {
+        case "COMPOUND":
+            return min(1, compoundPressure + compoundUrgencyPressure)
+        case "MISSION":
+            return min(1, missionPressure + missionUrgencyPressure)
+        default:
+            return dailyPressure
         }
     }
 }

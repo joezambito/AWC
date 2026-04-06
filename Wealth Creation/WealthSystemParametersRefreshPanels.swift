@@ -17,20 +17,12 @@ extension WealthSystemParametersSection {
                     solidPill("DESKTOP", color: WealthTheme.orange, darkText: true)
                 }
 
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("LIGHT REFRESH")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .foregroundColor(.white.opacity(0.62))
-                        minutesField(value: $lightRefreshMinutes, tint: WealthTheme.cyan)
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("HEAVY REFRESH")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .foregroundColor(.white.opacity(0.62))
-                        minutesField(value: $heavyRefreshMinutes, tint: WealthTheme.orange)
-                    }
-                }
+                Text("Locked schedule: IBKR updates at :09, :19, :29. Soft AI scans at :10 and :20. Heavy/Deep AI scans at :30. This schedule is fixed and cannot be edited here.")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(.white.opacity(0.82))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12)
+                    .background(cardShell(cornerRadius: 18))
             }
             .padding(12)
             .background(glowPanelShell(cornerRadius: 24, tint: WealthTheme.cyan, secondaryTint: WealthTheme.orange))

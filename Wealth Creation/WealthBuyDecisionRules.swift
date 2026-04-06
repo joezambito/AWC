@@ -4,7 +4,7 @@ enum WealthBuyDecisionRules {
     static func decisionBias(
         score: Int,
         confidence: Int,
-        safety: Int,
+        safety _: Int,
         expectedProfit: Double,
         timeWindow: String,
         dataQuality: String,
@@ -14,7 +14,6 @@ enum WealthBuyDecisionRules {
         let exceptionalRecovery =
             priceChangePercent <= -10 &&
             confidence >= 85 &&
-            safety >= 72 &&
             (
                 advanced.patternState.contains("STRONG") ||
                 advanced.smartMoneyState.contains("STRONG") ||
@@ -24,7 +23,6 @@ enum WealthBuyDecisionRules {
         let buyReadyNow =
             wealthBuyReady(score: score, confidence: confidence) &&
             expectedProfit >= 28 &&
-            safety >= 72 &&
             dataQuality == "FRESH" &&
             timeWindow != "WEEKS" &&
             (priceChangePercent > -6 || exceptionalRecovery)
@@ -34,7 +32,7 @@ enum WealthBuyDecisionRules {
         }
 
         if score <= 39 && confidence >= 60 {
-            return .hold
+            return .buy
         }
 
         return .avoid

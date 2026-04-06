@@ -18,6 +18,6 @@ extension Opportunity {
     }
 
     var usesLiveSessionGate: Bool {
-        permission != .blocked && orderState != .filled
+        decisionBias != .avoid && orderState != .filled
     }
 }

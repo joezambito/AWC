@@ -7,8 +7,7 @@ extension MarketsView {
                 .foregroundColor(WealthTheme.cyan)
 
             TextField("Search symbol, name, exchange or country", text: $browserStore.searchText)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+                .awcHostFieldInputBehavior()
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
 

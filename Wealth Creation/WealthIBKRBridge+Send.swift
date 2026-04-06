@@ -3,11 +3,15 @@ import Network
 import OSLog
 
 extension WealthIBKRBridge {
+    private var negotiatedClientVersionRange: String { "v151..178" }
+
     func sendGreeting() {
-        sendRaw(Data("API\0".utf8) + prefixed(Data("v157..178".utf8)))
+        logger.log("sendGreeting API handshake range=\(self.negotiatedClientVersionRange, privacy: .public) host=\(self.desiredHost, privacy: .public) port=\(self.desiredPort, privacy: .public)")
+        sendRaw(Data("API\0".utf8) + prefixed(Data(self.negotiatedClientVersionRange.utf8)))
     }
 
     func sendStartAPI() {
+        logger.log("sendStartAPI clientId=\(self.clientID, privacy: .public)")
         send(fields: ["71", "2", String(clientID), ""])
     }
 

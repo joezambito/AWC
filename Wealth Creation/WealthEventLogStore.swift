@@ -31,7 +31,7 @@ final class WealthEventLogStore: ObservableObject {
     private let defaults = UserDefaults.standard
     private let storageKey = "awc_event_log_entries_v1"
     private let macLookbackDays = 30
-    private let phoneLookbackDays = 1
+    private let phoneLookbackDays = 7
     private let macEntryCap = 1_200
     private let phoneEntryCap = 240
 
@@ -72,7 +72,7 @@ final class WealthEventLogStore: ObservableObject {
 #if targetEnvironment(macCatalyst)
         return "PERMANENT MAC WINDOW"
 #else
-        return "LAST 24 HOURS"
+        return "LAST 7 DAYS"
 #endif
     }
 
@@ -80,7 +80,7 @@ final class WealthEventLogStore: ObservableObject {
 #if targetEnvironment(macCatalyst)
         return "Keeps the rolling last \(macLookbackDays) days for desktop review."
 #else
-        return "Keeps today only for phone speed and resets at midnight."
+        return "Keeps the rolling last \(phoneLookbackDays) days on phone."
 #endif
     }
 
@@ -96,7 +96,7 @@ final class WealthEventLogStore: ObservableObject {
 #if targetEnvironment(macCatalyst)
         return Calendar.current.date(byAdding: .day, value: -macLookbackDays, to: now) ?? now
 #else
-        return Calendar.current.startOfDay(for: now)
+        return Calendar.current.date(byAdding: .day, value: -phoneLookbackDays, to: now) ?? now
 #endif
     }
 

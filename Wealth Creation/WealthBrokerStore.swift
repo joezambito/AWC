@@ -8,6 +8,13 @@ final class WealthBrokerStore: ObservableObject {
     static let defaultPaperBalance: Double = 0
     static let defaultLiveBalance: Double = 0
 
+    enum BrokerDisplayMode: String, CaseIterable, Identifiable {
+        case off = "OFF"
+        case debug = "DEBUG"
+
+        var id: String { rawValue }
+    }
+
     private enum StorageKey {
         static let primaryBroker = "awc_broker_primary_name"
         static let lowestFeeFirst = "awc_broker_lowest_fee_first"
@@ -17,6 +24,7 @@ final class WealthBrokerStore: ObservableObject {
         static let liveBalance = "awc_broker_ibkr_live_balance"
         static let paperEnabled = "awc_broker_paper_enabled"
         static let liveEnabled = "awc_broker_live_enabled"
+        static let brokerDisplayMode = "awc_broker_display_mode"
     }
 
     @Published var selectedBroker: BrokerProfile
@@ -27,6 +35,7 @@ final class WealthBrokerStore: ObservableObject {
     @Published var ibkrLiveBalance: Double
     @Published var paperTradingEnabled: Bool
     @Published var liveTradingEnabled: Bool
+    @Published var brokerDisplayMode: BrokerDisplayMode
     @Published var searchQuery: String
     @Published var lastBrokerFailureAt: Date?
     @Published var lastBrokerFailureReason: String
@@ -54,6 +63,7 @@ final class WealthBrokerStore: ObservableObject {
         ibkrLiveBalance = defaults.object(forKey: StorageKey.liveBalance) as? Double ?? Self.defaultLiveBalance
         paperTradingEnabled = defaults.object(forKey: StorageKey.paperEnabled) as? Bool ?? true
         liveTradingEnabled = defaults.object(forKey: StorageKey.liveEnabled) as? Bool ?? false
+        brokerDisplayMode = BrokerDisplayMode(rawValue: defaults.string(forKey: StorageKey.brokerDisplayMode) ?? BrokerDisplayMode.off.rawValue) ?? .off
         searchQuery = ""
         lastBrokerFailureAt = nil
         lastBrokerFailureReason = ""
@@ -73,6 +83,7 @@ final class WealthBrokerStore: ObservableObject {
         defaults.set(ibkrLiveBalance, forKey: StorageKey.liveBalance)
         defaults.set(paperTradingEnabled, forKey: StorageKey.paperEnabled)
         defaults.set(liveTradingEnabled, forKey: StorageKey.liveEnabled)
+        defaults.set(brokerDisplayMode.rawValue, forKey: StorageKey.brokerDisplayMode)
     }
 
     func resetBalancesToZero() {

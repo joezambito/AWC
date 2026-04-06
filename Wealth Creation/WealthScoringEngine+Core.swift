@@ -38,6 +38,29 @@ extension WealthScoringEngine {
 
         let learningAmplifier = isEnabled("Online Learning Memory") ? 1.15 : 1.0
         let providerAmplifier = isEnabled("Alternative Data Routing") ? 1.10 : 1.0
+        let targetAlignmentLift: Double = {
+            let fit = blueprint.targetFitLabel.uppercased()
+            let dominant = goals.dominantTarget
+            var lift = goals.tradingPressure * 6
+
+            if fit.contains(dominant) {
+                lift += 10
+            }
+
+            if dominant == "DAILY" && fit.contains("TARGET") {
+                lift += 6
+            } else if dominant == "COMPOUND" && (fit.contains("COMP") || fit.contains("TARGET")) {
+                lift += 6
+            } else if dominant == "MISSION" && fit.contains("MISSION") {
+                lift += 8
+            }
+
+            if fit.contains("WATCH") {
+                lift -= 4
+            }
+
+            return lift
+        }()
 
         let positiveSignalTotal =
             (blueprint.technical * 0.24) +
@@ -67,7 +90,7 @@ extension WealthScoringEngine {
             riskPenaltyTotal -
             (settings.feeEdgeMult * 4) +
             (Double(settings.buyGate - 50) * 0.35) +
-            ((settings.targetFit * 25) + (goals.tradingPressure * 4)) +
+            ((settings.targetFit * 25) + (goals.tradingPressure * 4) + targetAlignmentLift) +
             regimeBias(for: blueprint, regime: regime) +
             regimeLift +
             timeWindowBias(for: blueprint.timeWindow) +
@@ -87,6 +110,7 @@ extension WealthScoringEngine {
             (blueprint.catalyst * 0.09) -
             (blueprint.risk * 0.07) +
             (goals.tradingPressure * 2) +
+            max(0, targetAlignmentLift * 0.18) +
             advanced.confidenceLift +
             (learning.confidenceLift * learningAmplifier) +
             (provider.confidenceLift * providerAmplifier) +
@@ -96,8 +120,8 @@ extension WealthScoringEngine {
             max(0, regimeLift * 0.45) +
             max(0, dataLift * 0.25)
 
-        let confidence = clampInt(Int(round(confidenceBase)), min: 55, max: 98)
-        let lowerIsBetterScore = clampInt(Int(round(baseScore)) + confidencePenalty(for: confidence), min: 1, max: 100)
+        let confidence = clampInt(Int(round(confidenceBase)), min: 1, max: 100)
+        let lowerIsBetterScore = clampInt(Int(round(baseScore)), min: 1, max: 100)
 
         let safetyBase =
             100 -
@@ -138,3 +162,4 @@ extension WealthScoringEngine {
         return (lowerIsBetterScore, confidence, safety, expectedGross, shares, feeEstimate(for: subtotal))
     }
 }
+

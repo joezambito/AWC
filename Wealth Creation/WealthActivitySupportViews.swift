@@ -1,8 +1,16 @@
 import SwiftUI
 
 struct PendingOpportunitySection: View {
+    private enum StorageKey {
+        static let expandedIDs = "awc_activity_pending_opps_expanded_ids"
+        static let visibleCount = "awc_activity_pending_opps_visible_count"
+    }
+
     let opportunities: [Opportunity]
     @State private var expandedSymbols: Set<String> = []
+    @State private var visibleCount = 20
+    @AppStorage(StorageKey.expandedIDs) private var persistedExpandedIDs = ""
+    @AppStorage(StorageKey.visibleCount) private var persistedVisibleCount = 20
 
     private var sortedOpportunities: [Opportunity] {
         opportunities.sorted {
@@ -11,34 +19,117 @@ struct PendingOpportunitySection: View {
         }
     }
 
+    private var visibleOpportunities: [Opportunity] {
+        Array(sortedOpportunities.prefix(visibleCount))
+    }
+
     var body: some View {
+        // MARK: Activity Group Layout
+        // Safe manual tweak area:
+        // - section VStack spacing
+        // - header-to-card gap
+        // - bottom padding
         VStack(spacing: 12) {
             sectionHeader(
-                title: "AI LIVE",
-                subtitle: "Live trading feed",
+                title: "PENDING BUYS",
+                subtitle: "Final activity checks before submission",
                 badge: "Tracking \(opportunities.count)",
                 badgeColor: WealthTheme.purple,
                 darkBadgeText: false
             )
 
-            ForEach(sortedOpportunities) { opportunity in
-                OpportunityCard(
-                    opportunity: opportunity,
-                    isExpanded: expandedSymbols.contains(opportunity.symbol),
-                    onToggle: { toggleExpanded(opportunity.symbol) },
-                    allowsInlineToggle: true
-                )
+            ForEach(visibleOpportunities) { opportunity in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        toggleExpanded(opportunity.id)
+                    }
+                } label: {
+                    OpportunityCard(
+                        opportunity: opportunity,
+                        accentTint: WealthTheme.purple,
+                        statusBadgeText: pendingBuyStatusText(for: opportunity),
+                        secondaryStatusText: opportunity.marketDisplayLabel,
+                        isExpanded: expandedSymbols.contains(opportunity.id),
+                        usesDenseCollapsedState: true
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+
+            if sortedOpportunities.count > visibleCount {
+                Button {
+                    visibleCount += 20
+                } label: {
+                    Text("SHOW MORE")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(WealthTheme.cyan)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
             }
         }
         .padding(.bottom, 12)
         .background(glowPanelShell(cornerRadius: 28, tint: WealthTheme.purple, secondaryTint: WealthTheme.cyan))
+        .onAppear {
+            if expandedSymbols.isEmpty, !persistedExpandedIDs.isEmpty {
+                expandedSymbols = Set(persistedExpandedIDs.split(separator: ",").map(String.init))
+            }
+            if visibleCount == 20, persistedVisibleCount > 20 {
+                visibleCount = persistedVisibleCount
+            }
+            syncVisibleState()
+        }
+        .onChange(of: opportunities.map(\.id)) { _, _ in
+            syncVisibleState()
+        }
+        .onChange(of: expandedSymbols) { _, newValue in
+            persistedExpandedIDs = newValue.sorted().joined(separator: ",")
+        }
+        .onChange(of: visibleCount) { _, newValue in
+            persistedVisibleCount = max(20, newValue)
+        }
     }
 
-    private func toggleExpanded(_ symbol: String) {
-        if expandedSymbols.contains(symbol) {
-            expandedSymbols.remove(symbol)
+    private func toggleExpanded(_ id: String) {
+        if expandedSymbols.contains(id) {
+            expandedSymbols.remove(id)
         } else {
-            expandedSymbols.insert(symbol)
+            expandedSymbols.insert(id)
+        }
+    }
+
+    private func syncVisibleState() {
+        let validIDs = Set(sortedOpportunities.map(\.id))
+        let filteredExpanded = expandedSymbols.filter { validIDs.contains($0) }
+        if filteredExpanded != expandedSymbols {
+            expandedSymbols = filteredExpanded
+        }
+
+        if sortedOpportunities.isEmpty {
+            visibleCount = 20
+            return
+        }
+
+        visibleCount = min(max(20, visibleCount), sortedOpportunities.count)
+    }
+
+    private func pendingBuyStatusText(for opportunity: Opportunity) -> String {
+        switch opportunity.orderState {
+        case .submitted:
+            return "ORDER SUBMITTED"
+        case .pending:
+            return "ORDER PENDING"
+        case .partial:
+            return "ORDER SENT"
+        case .filled:
+            return opportunity.decisionBias == .avoid ? "SELL FILLED" : "BUY FILLED"
+        case .ready:
+            return opportunity.sessionState.canTradeNow ? "ORDER SENT" : "ORDER PENDING"
         }
     }
 }

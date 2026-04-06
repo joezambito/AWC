@@ -3,9 +3,9 @@ import SwiftUI
 func wealthConfidenceTint(_ confidence: Int) -> Color {
     switch confidence {
     case 80...100: return WealthTheme.green
-    case 60...79: return WealthTheme.blue
-    case 30...59: return WealthTheme.orange
-    default: return WealthTheme.red
+    case 60...70: return WealthTheme.blue
+    case 1...29: return WealthTheme.red
+    default: return WealthTheme.purple
     }
 }
 
@@ -16,27 +16,44 @@ func wealthHoldingConfidenceTint(_ confidence: Int) -> Color {
 func wealthScoreTint(_ score: Int) -> Color {
     switch score {
     case 1...20: return WealthTheme.green
-    case 21...39: return WealthTheme.blue
-    case 40...59: return WealthTheme.orange
-    default: return WealthTheme.red
+    case 21...29: return WealthTheme.blue
+    case 60...100: return WealthTheme.red
+    default: return WealthTheme.purple
     }
 }
 
-func wealthBuyReady(score: Int, confidence: Int) -> Bool {
+func wealthHasGreenSignalBands(score: Int, confidence: Int) -> Bool {
     wealthScoreTint(score) == WealthTheme.green && wealthConfidenceTint(confidence) == WealthTheme.green
 }
 
+func wealthHasBlueSignalBands(score: Int, confidence: Int) -> Bool {
+    wealthScoreTint(score) == WealthTheme.blue && wealthConfidenceTint(confidence) == WealthTheme.blue
+}
+
+func wealthHasRedSignalBands(score: Int, confidence: Int) -> Bool {
+    _ = confidence
+    return wealthScoreTint(score) == WealthTheme.red
+}
+
+func wealthBuyReady(score: Int, confidence: Int) -> Bool {
+    wealthHasGreenSignalBands(score: score, confidence: confidence)
+}
+
 func wealthCardSignalTint(score: Int, confidence: Int) -> Color {
-    let scoreTint = wealthScoreTint(score)
-    let confidenceTint = wealthConfidenceTint(confidence)
-    return scoreTint == confidenceTint ? scoreTint : WealthTheme.purple
+    if wealthHasBlueSignalBands(score: score, confidence: confidence) {
+        return WealthTheme.blue
+    }
+    if wealthHasRedSignalBands(score: score, confidence: confidence) {
+        return WealthTheme.red
+    }
+    return WealthTheme.purple
 }
 
 func wealthScoreBandGuideRows() -> [String] {
     [
         "1-20 = GREEN",
-        "21-39 = BLUE",
-        "40-59 = ORANGE",
+        "21-29 = BLUE",
+        "30-59 = PURPLE",
         "60-100 = RED",
         "Lower score is stronger"
     ]
@@ -45,8 +62,8 @@ func wealthScoreBandGuideRows() -> [String] {
 func wealthConfidenceBandGuideRows() -> [String] {
     [
         "80-100 = GREEN",
-        "60-79 = BLUE",
-        "30-59 = ORANGE",
+        "60-70 = BLUE",
+        "30-59 and 71-79 = PURPLE",
         "1-29 = RED"
     ]
 }

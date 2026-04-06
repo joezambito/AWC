@@ -6,6 +6,12 @@ struct OpportunityCardHeaderView: View {
     @ObservedObject private var protection = WealthProtectionSettingsStore.shared
 
     var body: some View {
+        // MARK: Opportunity Card Header Layout
+        // Safe manual tweak area:
+        // - header HStack spacing
+        // - symbol/status font sizes
+        // - icon gaps
+        // - right-column spacing
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(opportunity.symbol)

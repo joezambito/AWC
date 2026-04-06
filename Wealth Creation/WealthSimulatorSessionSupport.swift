@@ -8,11 +8,11 @@ enum WealthSimulatorSessionSupport {
     }
 
     static var defaultRootTab: MainTab {
-        shouldAutoUnlock ? .markets : .dashboard
+        .dashboard
     }
 
     private static var shouldAutoUnlock: Bool {
-#if targetEnvironment(simulator)
+#if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
         true
 #else
         false

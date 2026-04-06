@@ -34,20 +34,29 @@ final class WealthPortfolioStore: ObservableObject {
     private init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         Self.purgeLegacyPortfolioStorage(from: defaults)
+        Self.normalizePersistedOpportunityDecisionStates(in: defaults)
 
         let restoredHoldings = Self.loadPersistedHoldings(from: defaults)
         let restoredQueued = Self.restoreQueuedOpportunities(from: defaults)
         let restoredCompleted = Self.loadPersistedCompletedActivity(from: defaults)
+        let initialCompletedActivity = restoredCompleted.isEmpty
+            ? Self.seedCompletedActivity(from: restoredHoldings)
+            : Self.prunedCompletedActivity(restoredCompleted)
+        let fallbackEarnedProfit = defaults.object(forKey: StorageKey.earnedProfit) as? Double ?? 0
+        let fallbackDailyProfit = defaults.object(forKey: StorageKey.dailyProfit) as? Double ?? 0
 
         externalDeposits = defaults.object(forKey: StorageKey.externalDeposits) as? Double ?? 0
         protectedBaseCapital = defaults.object(forKey: StorageKey.protectedBaseCapital) as? Double ?? 0
-        earnedProfit = defaults.object(forKey: StorageKey.earnedProfit) as? Double ?? 0
-        dailyProfit = defaults.object(forKey: StorageKey.dailyProfit) as? Double ?? 0
         holdings = restoredHoldings
         queuedOpportunities = restoredQueued
-        completedActivity = restoredCompleted.isEmpty
-            ? Self.seedCompletedActivity(from: restoredHoldings)
-            : Self.prunedCompletedActivity(restoredCompleted)
+        let profitMetrics = Self.recalculatedProfitMetrics(
+            from: initialCompletedActivity,
+            fallbackEarnedProfit: fallbackEarnedProfit,
+            fallbackDailyProfit: fallbackDailyProfit
+        )
+        earnedProfit = profitMetrics.earnedProfit
+        dailyProfit = profitMetrics.dailyProfit
+        completedActivity = initialCompletedActivity
         reservedOrderCapital = Self.restoredReservedOrderCapital(
             holdings: restoredHoldings,
             queuedOpportunities: restoredQueued
@@ -69,6 +78,9 @@ final class WealthPortfolioStore: ObservableObject {
         completedActivity = []
         saleGates = [:]
         lastRefresh = Date()
+        let protection = WealthProtectionSettingsStore.shared
+        protection.demoBalance = 0
+        protection.demoMode = false
 
         persistMetrics()
         persistHoldings()

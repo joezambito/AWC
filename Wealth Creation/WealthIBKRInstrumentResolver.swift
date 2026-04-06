@@ -141,11 +141,13 @@ enum WealthIBKRInstrumentResolver {
         )
     }
 
+    @MainActor
     static func supportedContract(for record: MarketUniverseRecord) -> WealthIBKRContract? {
         let resolution = resolution(for: record)
         return resolution.isSupportedEquity ? resolution.contract : nil
     }
 
+    @MainActor
     static func reportRows(for records: [MarketUniverseRecord]) -> [WealthIBKRInstrumentResolution] {
         records
             .map(resolution(for:))

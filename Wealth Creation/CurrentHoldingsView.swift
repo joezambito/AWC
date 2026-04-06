@@ -50,6 +50,7 @@ struct CurrentHoldingsView: View {
             ForEach(sortedHoldings) { holding in
                 Button {
                     toggleExpanded(holding.id)
+                    onSelect(holding)
                 } label: {
                     CurrentHoldingCard(
                         holding: holding,

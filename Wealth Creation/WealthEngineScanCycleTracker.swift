@@ -42,28 +42,15 @@ extension WealthEngineStore {
         switch mode {
         case .soft:
             return .soft
-        case .heavy:
+        case .heavy, .deep:
             return .hard
-        case .startup, .quick, .deep:
+        case .startup, .quick:
             return nil
         }
     }
 
     func catchUpRecurringCyclesIfNeeded(now: Date = .now) {
-        let softMinutes = configuredSoftRefreshMinutes
-        let heavyMinutes = configuredHeavyRefreshMinutes
-
-        let missedSoft = missedCycleCount(for: .soft, intervalMinutes: softMinutes, now: now)
-        let missedHard = missedCycleCount(for: .hard, intervalMinutes: heavyMinutes, now: now)
-
-        guard missedSoft > 0 || missedHard > 0 else { return }
-        applyCatchUpCounters(soft: missedSoft, hard: missedHard, now: now)
-
-        if missedHard > 0 {
-            refresh(mode: .heavy, countsTowardDailyCycles: true)
-        } else if missedSoft > 0 {
-            refresh(mode: .soft, countsTowardDailyCycles: true)
-        }
+        resetDailyCycleCountIfNeeded(now: now)
     }
 
     private func applyCatchUpCounters(soft: Int, hard: Int, now: Date) {

@@ -35,8 +35,7 @@ struct BrainPicksView: View {
                     isExpanded: expandedSymbols.contains(opportunity.symbol),
                     onToggle: {
                         toggle(opportunity.symbol)
-                    },
-                    allowsInlineToggle: true
+                    }
                 )
             }
         }

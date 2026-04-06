@@ -1,9 +1,12 @@
 import Foundation
 
 extension WealthEngineStore {
-    private var minimumRecurringLeadTime: TimeInterval { 90 }
-    private var phoneStartupScanDelayNanoseconds: UInt64 { 5_000_000_000 }
+    private var phoneStartupScanDelayNanoseconds: UInt64 { 2_000_000_000 }
+    private var warmStartRefreshDelayNanoseconds: UInt64 { 3_000_000_000 }
+    private var warmStartRefreshWatchdogNanoseconds: UInt64 { 20_000_000_000 }
     private var phoneStartupFinalizeDelayNanoseconds: UInt64 { 2_000_000_000 }
+    private var softScanDurationNanoseconds: UInt64 { 4_000_000_000 }
+    private var deepScanDurationNanoseconds: UInt64 { 8_000_000_000 }
 
     var prefersFullSpeedActivation: Bool {
 #if targetEnvironment(macCatalyst)
@@ -14,47 +17,91 @@ extension WealthEngineStore {
     }
 
     func runActivationSequence() {
+        guard activationTask == nil else { return }
+        scheduledCheckpointTimer?.invalidate()
         softTimer?.invalidate()
         heavyTimer?.invalidate()
+        preScanBurstTimer?.invalidate()
+        scheduledCheckpointTimer = nil
         softTimer = nil
         heavyTimer = nil
+        preScanBurstTimer = nil
+        downstreamRecoveryPending = true
 
-        activationTask?.cancel()
-        activationTask = Task { @MainActor [weak self] in
-            let steps: [(UInt64, RefreshMode, Bool)] = [
-                (0, .startup, false),
-                (self?.phoneStartupScanDelayNanoseconds ?? 5_000_000_000, .deep, false)
-            ]
-
-            for (delay, mode, publishToUI) in steps {
-                try? await Task.sleep(nanoseconds: delay)
-                guard !Task.isCancelled else { return }
-                self?.refresh(mode: mode, publishToUI: publishToUI)
+        activationTask = Task { @MainActor [self] in
+            defer {
+                if Task.isCancelled {
+                    pendingRefreshPayload = nil
+                    startupSequencePhase = .idle
+                    endDashboardRefreshFreeze()
+                }
+                activationTask = nil
             }
 
-            try? await Task.sleep(nanoseconds: self?.phoneStartupFinalizeDelayNanoseconds ?? 2_000_000_000)
+            startupSequencePhase = .waitingToScan
+            try? await Task.sleep(nanoseconds: phoneStartupScanDelayNanoseconds)
             guard !Task.isCancelled else { return }
-            self?.applyPendingRefreshState()
-            self?.rescheduleTimers()
-            self?.activationTask = nil
+
+            let reusedCachedUniverse = WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
+            guard !Task.isCancelled else { return }
+
+            if !reusedCachedUniverse {
+                startupSequencePhase = .universeRefreshRunning
+                await WealthMarketUniverseStore.shared.reloadForStartupSequence()
+                guard !Task.isCancelled else { return }
+            }
+
+            startupSequencePhase = .aiScanRunning
+            startScanProgressAnimation(for: .startup)
+            await runStartupActivationScan()
+            guard !Task.isCancelled else { return }
+
+            await applyPendingRefreshState()
+            guard !Task.isCancelled else { return }
+
+            startupSequencePhase = .marketWarmupRunning
+            await runStartupMarketWarmup()
+            guard !Task.isCancelled else { return }
+
+            activationStage = 0
+            activationCycleComplete = true
+            lockedCheckpointProgress = Self.lockedCheckpointCount
+            tradingLifecycleArmed = true
+            await refreshDownstreamPromotionStateAfterStartupGate()
+            guard !Task.isCancelled else { return }
+            startupSequencePhase = .idle
+            rescheduleTimers()
         }
     }
 
     func prepareForFreshLaunch() {
+        scheduledCheckpointTimer?.invalidate()
         softTimer?.invalidate()
         heavyTimer?.invalidate()
+        preScanBurstTimer?.invalidate()
+        scheduledCheckpointTimer = nil
         softTimer = nil
         heavyTimer = nil
+        preScanBurstTimer = nil
         activationTask?.cancel()
         activationTask = nil
         hasBootstrapped = false
         pendingRefreshPayload = nil
         pendingPublishTask?.cancel()
         pendingPublishTask = nil
+        scanProgressAnimationTask?.cancel()
+        scanProgressAnimationTask = nil
+        scanProgressAnimationEndsAt = nil
         activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
         activationStage = 0
-        activationCycleComplete = lastRefresh != nil
+        activationCycleComplete = false
+        lockedCheckpointProgress = 0
         tradingLifecycleArmed = false
+        downstreamRecoveryPending = false
+        startupSequencePhase = .idle
+        appOpenUpdatedAt = nil
+        invalidatePersistedMarketRestoreGuard()
+        endDashboardRefreshFreeze()
     }
 
     func bootstrap() {
@@ -62,101 +109,191 @@ extension WealthEngineStore {
         hasBootstrapped = true
         catchUpRecurringCyclesIfNeeded()
 
-        if prefersFullSpeedActivation {
-            activationStageTotal = 1
-            activationStage = activationStageTotal
-            activationCycleComplete = false
-            tradingLifecycleArmed = false
-            refresh(mode: .deep)
-            rescheduleTimers()
+        restorePersistedMarketCacheIfNeeded()
+        if useWarmStartupCacheIfAvailable() {
             return
         }
 
-        activationStageTotal = Self.phoneActivationStageCount
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
         activationStage = 0
         activationCycleComplete = false
+        lockedCheckpointProgress = 0
         tradingLifecycleArmed = false
         runActivationSequence()
     }
 
     func handleForegroundActivation() {
+        guard activationTask == nil else { return }
         catchUpRecurringCyclesIfNeeded()
+        restorePersistedMarketCacheIfNeeded()
+        if useWarmStartupCacheIfAvailable() {
+            return
+        }
         if let lastRefresh, Date().timeIntervalSince(lastRefresh) < 8 {
             return
         }
 
-        if prefersFullSpeedActivation {
-            activationStageTotal = 1
-            activationStage = activationStageTotal
-            activationCycleComplete = false
-            tradingLifecycleArmed = false
-            refresh(mode: .deep)
-            return
-        }
-
-        activationStageTotal = Self.phoneActivationStageCount
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
         activationStage = 0
         activationCycleComplete = false
+        lockedCheckpointProgress = 0
         tradingLifecycleArmed = false
         runActivationSequence()
     }
 
-    func rescheduleTimers() {
-        softTimer?.invalidate()
-        heavyTimer?.invalidate()
+    @discardableResult
+    private func useCachedPhoneStateIfAvailable() -> Bool {
+        guard !(scanUniverse.isEmpty && rankedAssets.isEmpty) else { return false }
+        activationStageTotal = prefersFullSpeedActivation ? 1 : Self.phoneActivationStageCount
+        activationStage = 0
+        activationCycleComplete = true
+        lockedCheckpointProgress = Self.lockedCheckpointCount
+        tradingLifecycleArmed = false
+        return true
+    }
 
-        let softMinutes = configuredSoftRefreshMinutes
-        let heavyMinutes = configuredHeavyRefreshMinutes
+    @discardableResult
+    private func useWarmStartupCacheIfAvailable() -> Bool {
+        let restoredUniverse = WealthMarketUniverseStore.shared.prepareCachedSnapshotForStartup()
+        let restoredCards = useCachedPhoneStateIfAvailable()
 
-        softTimer = alignedRepeatingTimer(minutes: softMinutes) { [weak self] in
-            self?.refresh(mode: .soft, countsTowardDailyCycles: true)
+        guard restoredUniverse || restoredCards || hasUsableWarmStartCardCache else { return false }
+        guard hasUsableWarmStartCardCache || restoredUniverse else { return false }
+
+        applyWarmStartVisibleState()
+        if downstreamRecoveryPending {
+            runActivationSequence()
+        } else {
+            queueSilentWarmStartRefreshIfNeeded()
         }
+        return true
+    }
 
-        heavyTimer = alignedRepeatingTimer(minutes: heavyMinutes) { [weak self] in
-            self?.refresh(mode: .heavy, countsTowardDailyCycles: true)
+    private func queueSilentWarmStartRefreshIfNeeded() {
+        guard activationTask == nil else { return }
+        guard warmStartRefreshTask == nil else { return }
+
+        let staleInterval = max(60, configuredSoftRefreshMinutes * 60)
+        let shouldRefresh = lastRefresh == nil || Date().timeIntervalSince(lastRefresh!) >= staleInterval
+        guard shouldRefresh else { return }
+
+        warmStartRefreshTask = Task { [weak self] in
+            guard let self else { return }
+
+            let watchdog = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: self?.warmStartRefreshWatchdogNanoseconds ?? 20_000_000_000)
+                guard let self else { return }
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    WealthEventLogStore.shared.record(
+                        title: "Warm Refresh Watchdog",
+                        detail: "Silent warm-start refresh exceeded the watchdog window and was cancelled to keep cached UI stable.",
+                        category: "refresh",
+                        tintName: "orange",
+                        timestamp: .now
+                    )
+                    self.warmStartRefreshTask?.cancel()
+                }
+            }
+
+            defer {
+                watchdog.cancel()
+                Task { @MainActor [weak self] in
+                    self?.warmStartRefreshTask = nil
+                }
+            }
+
+            try? await Task.sleep(nanoseconds: warmStartRefreshDelayNanoseconds)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                guard self.activationTask == nil else { return }
+                guard !self.isDashboardRefreshInFlight else { return }
+                WealthEventLogStore.shared.record(
+                    title: "Warm Refresh",
+                    detail: "Cached open is staying visible while a silent background refresh runs.",
+                    category: "refresh",
+                    tintName: "cyan",
+                    timestamp: .now
+                )
+            }
+
+            await self.refreshAsync(mode: .soft, publishToUI: false)
         }
     }
 
-    private func alignedRepeatingTimer(minutes: Double, action: @escaping @MainActor () -> Void) -> Timer {
-        let interval = minutes * 60
-        let firstFire = nextAlignedFireDate(minutes: minutes, minimumLeadTime: minimumRecurringLeadTime)
-        let timer = Timer(fire: firstFire, interval: interval, repeats: true) { _ in
-            Task { @MainActor in
-                action()
+    func startScanProgressAnimation(for mode: RefreshMode) {
+        guard let durationNanoseconds = progressAnimationDurationNanoseconds(for: mode) else { return }
+        scanProgressAnimationTask?.cancel()
+        scanProgressAnimationTask = nil
+        scanProgressAnimationEndsAt = Date().addingTimeInterval(Double(durationNanoseconds) / 1_000_000_000)
+        activationStageTotal = Self.lockedCheckpointCount
+        activationStage = 0
+        activationCycleComplete = false
+        lockedCheckpointProgress = 0
+
+        let stepDelayNanoseconds = max(1, durationNanoseconds / UInt64(Self.lockedCheckpointCount))
+        scanProgressAnimationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            for step in 1...Self.lockedCheckpointCount {
+                guard !Task.isCancelled else { return }
+                self.activationStage = step
+                self.lockedCheckpointProgress = step
+                if step < Self.lockedCheckpointCount {
+                    try? await Task.sleep(nanoseconds: stepDelayNanoseconds)
+                }
             }
         }
-        RunLoop.main.add(timer, forMode: .common)
-        return timer
     }
 
-    private func nextAlignedFireDate(
-        minutes: Double,
-        from now: Date = .now,
-        minimumLeadTime: TimeInterval = 0
-    ) -> Date {
-        let calendar = Calendar.current
-        let minuteInterval = max(1, Int(minutes.rounded()))
-        let minute = calendar.component(.minute, from: now)
-        let second = calendar.component(.second, from: now)
-        let nanosecond = calendar.component(.nanosecond, from: now)
+    func progressAnimationDurationNanoseconds(for mode: RefreshMode) -> UInt64? {
+        switch mode {
+        case .soft:
+            return softScanDurationNanoseconds
+        case .heavy, .deep:
+            return deepScanDurationNanoseconds
+        case .startup:
+            return phoneStartupFinalizeDelayNanoseconds
+        case .quick:
+            return nil
+        }
+    }
 
-        let roundedDown = calendar.date(
-            bySettingHour: calendar.component(.hour, from: now),
-            minute: minute,
-            second: 0,
-            of: now
-        ) ?? now
+    func pendingDashboardPublishDelayNanoseconds(now: Date = .now) -> UInt64 {
+        let baseDelayNanoseconds: UInt64 = 2_000_000_000
+        guard let endsAt = scanProgressAnimationEndsAt else { return baseDelayNanoseconds }
+        let remainingSeconds = max(0, endsAt.timeIntervalSince(now))
+        let remainingNanoseconds = UInt64(remainingSeconds * 1_000_000_000)
+        return baseDelayNanoseconds + remainingNanoseconds
+    }
 
-        let base = second == 0 && nanosecond == 0
-            ? roundedDown.addingTimeInterval(TimeInterval(minuteInterval * 60))
-            : roundedDown.addingTimeInterval(60)
-        let baseMinute = calendar.component(.minute, from: base)
-        let remainder = baseMinute % minuteInterval
-        let adjustment = remainder == 0 ? 0 : (minuteInterval - remainder)
-        let aligned = base.addingTimeInterval(TimeInterval(adjustment * 60))
-        let earliestAllowed = now.addingTimeInterval(minimumLeadTime)
-        return aligned < earliestAllowed
-            ? aligned.addingTimeInterval(TimeInterval(minuteInterval * 60))
-            : aligned
+    private func runStartupMarketWarmup() async {
+        let portfolio = WealthPortfolioStore.shared
+        let universeStore = WealthMarketUniverseStore.shared
+        let quoteStore = WealthBrokerQuoteStore.shared
+        let snapshotStore = WealthPreparedSnapshotStore.shared
+
+        isMarketMaterializationInFlight = true
+        defer { isMarketMaterializationInFlight = false }
+
+        let marketCandidates = WealthAllCardsStore.shared.currentMarketCards(preferredRefreshTime: lastRefresh)
+
+        snapshotStore.invalidatePreparedMarkets()
+        snapshotStore.refreshMarkets(
+            engine: self,
+            portfolio: portfolio,
+            universeStore: universeStore,
+            quoteStore: quoteStore
+        )
+        WealthMarketViewCycleStore.shared.syncCycle(
+            candidates: marketCandidates,
+            cycleMarker: lastRefresh
+        )
+        if let pendingMarketMaterializationTask {
+            await pendingMarketMaterializationTask.value
+        } else {
+            await Task.yield()
+        }
+        snapshotStore.refreshCore(engine: self, portfolio: portfolio)
     }
 }

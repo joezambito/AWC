@@ -3,20 +3,20 @@ import SwiftUI
 
 extension Opportunity {
     var buyBlockReason: String {
-        if isGreenBuyReady {
-            return "Buy ready. AI score, confidence, and net profit are all clear."
+        if isExecutionEligible {
+            return "Execution ready. Color is green and the final buy checks are clear."
         }
         if isBlueWatchCandidate {
-            return "AI score and confidence are green, but net profit is still below costs, so AI keeps this on blue watch."
+            return "Blue watch. Research is strong, but current P/L is still negative or the setup needs more proof."
         }
         if warningReason.localizedCaseInsensitiveContains("cooldown") {
             return warningReason
         }
-        if confidence < 80 {
-            return "Confidence is not green yet, so AI keeps this on monitor only."
+        if cardHoldingBucket == .purple {
+            return "Purple state. AI score and confidence are mixed, so the setup stays in intel review."
         }
-        if aiScore > 20 {
-            return "AI score is not green yet, so AI keeps this on monitor only."
+        if cardHoldingBucket == .red {
+            return "Red state. The setup failed the checkpoint and is bad overall right now."
         }
         switch permission {
         case .blocked:
@@ -69,13 +69,13 @@ extension Opportunity {
         if warningReason.localizedCaseInsensitiveContains("cooldown") {
             needs.append("cooldown to expire")
         }
-        if !clearsProfitGuard {
-            needs.append("net profit back above costs")
+        if !hasNonNegativeCurrentPnL {
+            needs.append("current P/L back to non-negative")
         }
-        if aiScore > 20 {
+        if scoreTint != WealthTheme.green {
             needs.append("AI score back into green")
         }
-        if confidence < 80 {
+        if confidenceTint != WealthTheme.green {
             needs.append("confidence back into green")
         }
         if staleDataWarning != nil {

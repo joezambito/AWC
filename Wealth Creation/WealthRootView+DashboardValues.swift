@@ -5,36 +5,46 @@ extension WealthRootView {
         engine.dashboardSnapshot
     }
 
+    private var fallbackDashboardMoney: WealthPortfolioRuntimeMoneySnapshot {
+        portfolio.runtimeMoneySnapshot
+    }
+
     var displayedCashBalance: Double {
-        displayedDashboardSnapshot?.availableCapital ?? portfolio.availableCapital
+        displayedDashboardSnapshot?.cashBalance ?? fallbackDashboardMoney.cashBalance
     }
 
     var displayedAvailableCapital: Double {
-        displayedDashboardSnapshot?.availableCapital ?? portfolio.availableCapital
+        displayedDashboardSnapshot?.availableCapital ?? fallbackDashboardMoney.availableCapital
     }
 
     var displayedCommittedCapital: Double {
-        displayedDashboardSnapshot?.committedCapital ?? portfolio.committedCapital
+        displayedDashboardSnapshot?.committedCapital ?? fallbackDashboardMoney.committedCapital
     }
 
     var displayedHoldingsValue: Double {
-        displayedDashboardSnapshot?.holdingsValue ?? portfolio.holdingsValue
+        displayedDashboardSnapshot?.holdingsValue ?? fallbackDashboardMoney.holdingsValue
     }
 
     var displayedAccountValue: Double {
-        displayedDashboardSnapshot?.accountValue ?? portfolio.totalAccountAmount
+        displayedDashboardSnapshot?.accountValue ?? fallbackDashboardMoney.accountValue
     }
 
     var displayedBuyReserved: Double {
-        displayedDashboardSnapshot?.buyReserved ?? portfolio.totalBuyReservedCapital
+        displayedDashboardSnapshot?.buyReserved ?? fallbackDashboardMoney.buyReserved
     }
 
     var displayedSellReturning: Double {
-        displayedDashboardSnapshot?.sellReturning ?? portfolio.pendingSellReturnCapital
+        displayedDashboardSnapshot?.sellReturning ?? fallbackDashboardMoney.sellReturning
     }
 
     var displayedTotalPnL: Double {
-        displayedDashboardSnapshot?.totalPnL ?? portfolio.totalPnL
+        displayedDashboardSnapshot?.totalPnL ?? fallbackDashboardMoney.totalPnL
+    }
+
+    var displayedPnLPercent: Double {
+        let invested = max(displayedCommittedCapital, 0)
+        guard invested > 0 else { return 0 }
+        return (displayedTotalPnL / invested) * 100
     }
 
     var dashboardAvailableCapitalText: String {
@@ -71,5 +81,13 @@ extension WealthRootView {
 
     var dashboardTotalPnLTint: Color {
         wealthPnLTint(displayedTotalPnL)
+    }
+
+    var dashboardPnLPercentText: String {
+        wealthPercentMoveText(displayedPnLPercent)
+    }
+
+    var dashboardPnLPercentTint: Color {
+        wealthPercentMoveTint(displayedPnLPercent)
     }
 }

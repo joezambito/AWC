@@ -9,10 +9,10 @@ enum OrderExecutionState: String, CaseIterable {
 
     var color: Color {
         switch self {
-        case .ready: return WealthTheme.grey
+        case .ready: return WealthTheme.green
         case .submitted: return WealthTheme.yellow
         case .pending: return WealthTheme.yellow
-        case .partial: return WealthTheme.orange
+        case .partial: return WealthTheme.yellow
         case .filled: return Color.white.opacity(0.9)
         }
     }
@@ -33,8 +33,8 @@ enum HoldingOrderIntent: String, CaseIterable {
 
     var color: Color {
         switch self {
-        case .live: return WealthTheme.grey
-        case .buyPending: return WealthTheme.cyan
+        case .live: return WealthTheme.green
+        case .buyPending: return WealthTheme.yellow
         case .sellPending: return WealthTheme.yellow
         }
     }

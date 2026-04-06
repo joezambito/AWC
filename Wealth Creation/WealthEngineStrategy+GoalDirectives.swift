@@ -13,7 +13,7 @@ extension WealthEngineStore {
     static func targetDirective(goals: WealthGoalVector, expectedNetProfit: Double) -> String {
         let dominant = goals.dominantTarget
         let gap = goals.progress(for: dominant).remaining
-        let pressure = goals.pressure(for: dominant)
+        let pressure = goals.urgencyAdjustedPressure(for: dominant)
 
         if gap <= 0 {
             return "TARGET ALREADY COVERED"

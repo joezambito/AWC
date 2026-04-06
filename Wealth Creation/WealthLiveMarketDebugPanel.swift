@@ -1,22 +1,36 @@
 import SwiftUI
 
+@MainActor
 struct WealthLiveMarketDebugPanel: View {
     @ObservedObject private var liveStore = WealthLiveMarketDataStore.shared
+    @ObservedObject private var brokerStore = WealthBrokerStore.shared
     let compact: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
+            displayModeRow
             summaryGrid
-            if !liveStore.symbolDiagnosticsList.isEmpty {
+            if brokerStore.brokerDisplayMode == .debug && !compact && !liveStore.visibleDiagnostics.isEmpty {
                 diagnosticsList
             }
-            if !liveStore.recentErrors.isEmpty {
+            if brokerStore.brokerDisplayMode == .debug && !compact && !liveStore.visibleErrors.isEmpty {
                 errorList
+            }
+            if compact {
+                compactFooter
             }
         }
         .padding(14)
         .background(cardShell(cornerRadius: compact ? 20 : 24))
+        .onAppear {
+            if !compact {
+                liveStore.setBrokerUIScreenVisible(true)
+            }
+        }
+        .onDisappear {
+            liveStore.setBrokerUIScreenVisible(false)
+        }
     }
 
     private var header: some View {
@@ -51,13 +65,31 @@ struct WealthLiveMarketDebugPanel: View {
         }
     }
 
+    private var displayModeRow: some View {
+        HStack(spacing: 10) {
+            Text("BROKER DISPLAY")
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.62))
+
+            Picker("Broker Display Mode", selection: $brokerStore.brokerDisplayMode) {
+                ForEach(WealthBrokerStore.BrokerDisplayMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: brokerStore.brokerDisplayMode) { _, _ in
+                brokerStore.persistRouting()
+            }
+        }
+    }
+
     private var diagnosticsList: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("SYMBOLS")
                 .font(.system(size: 11, weight: .black, design: .rounded))
                 .foregroundColor(.white.opacity(0.62))
 
-            ForEach(Array(liveStore.symbolDiagnosticsList.prefix(compact ? 6 : 10))) { item in
+            ForEach(liveStore.visibleDiagnostics) { item in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text(item.symbolLabel)
@@ -94,7 +126,7 @@ struct WealthLiveMarketDebugPanel: View {
                 .font(.system(size: 11, weight: .black, design: .rounded))
                 .foregroundColor(.white.opacity(0.62))
 
-            ForEach(Array(liveStore.recentErrors.prefix(compact ? 4 : 6))) { item in
+            ForEach(liveStore.visibleErrors) { item in
                 HStack(alignment: .top, spacing: 10) {
                     Circle()
                         .fill(WealthTheme.red)
@@ -114,6 +146,29 @@ struct WealthLiveMarketDebugPanel: View {
                 .padding(12)
                 .background(cardShell(cornerRadius: 16))
             }
+        }
+    }
+
+    private var compactFooter: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(
+                brokerStore.brokerDisplayMode == .off
+                    ? "BROKER DISPLAY IS OFF. SYMBOLS STAY IN THE BACKGROUND STORE ONLY."
+                    : "PHONE DEBUG IS SUMMARY-ONLY TO REDUCE LIVE UI CHURN."
+            )
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.56))
+
+            HStack(spacing: 8) {
+                debugMiniPill("RAW \(liveStore.rawQuoteCount)", tint: WealthTheme.cyan)
+                debugMiniPill("UI \(liveStore.visibleDiagnostics.count)", tint: WealthTheme.green)
+                debugMiniPill("RX \(liveStore.receivedQuoteUpdatesInCycle)", tint: WealthTheme.gold)
+            }
+
+            Text(liveStore.lastBrokerPerfMessage)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundColor(WealthTheme.grey)
+                .lineLimit(2)
         }
     }
 

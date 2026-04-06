@@ -4,14 +4,16 @@ extension SystemView {
     var phoneTabs: [SystemTab] {
         SystemTab.allCases
     }
-
     var phoneSystemShell: some View {
-        VStack(spacing: 10) {
-            phoneHeaderCard
-            phoneSystemTabs
-            activeSystemView
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 10) {
+                phoneHeaderCard
+                phoneSystemTabs
+                activeSystemView
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
         }
+    
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .id("system-phone-\(tab.rawValue)")
     }

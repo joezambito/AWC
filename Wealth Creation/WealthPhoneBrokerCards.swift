@@ -1,6 +1,14 @@
 import SwiftUI
 
 extension WealthPhoneBrokerSection {
+    private var twsStatusValue: String {
+        syncStore.isTWSConnectedForQuotes ? "ONLINE" : "OFFLINE"
+    }
+
+    private var twsStatusTint: Color {
+        syncStore.isTWSConnectedForQuotes ? WealthTheme.green : WealthTheme.red
+    }
+
     var activeBrokerCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -8,7 +16,7 @@ extension WealthPhoneBrokerSection {
                     Text("ACTIVE BROKER")
                         .font(.system(size: 17, weight: .black, design: .rounded))
                         .foregroundColor(.white)
-                    Text("IBKR stays active for balance, buys and sells. Search the others only when the brain recommends them.")
+                    Text("Phone can use direct TWS access when the broker endpoint points at your Mac.")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundColor(WealthTheme.grey)
                 }
@@ -52,39 +60,75 @@ extension WealthPhoneBrokerSection {
                     brokerStore.persistRouting()
                 }
 
-            HStack(spacing: 10) {
-                compactSummaryCard(title: "Host", value: syncStore.brokerHost, tint: WealthTheme.cyan)
-                compactSummaryCard(title: "Port", value: "\(syncStore.brokerPort)", tint: WealthTheme.orange)
+            HStack(alignment: .top, spacing: 10) {
+                compactSummaryCard(title: "TWS", value: twsStatusValue, tint: twsStatusTint)
                 compactSummaryCard(title: "API", value: syncStore.syncStatus, tint: apiTint)
             }
 
-            HStack(spacing: 10) {
-                Button {
-                    syncStore.connectBrokerAPI()
-                } label: {
-                    actionLabel("TEST TWS", colors: [WealthTheme.cyan, WealthTheme.green], textColor: .black)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("BROKER ENDPOINT")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundColor(.white.opacity(0.62))
+                    Spacer()
+                    Button {
+                        endpointFieldsLocked.toggle()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: endpointFieldsLocked ? "lock.fill" : "lock.open.fill")
+                                .font(.system(size: 10, weight: .black))
+                            Text(endpointFieldsLocked ? "LOCKED" : "EDITING")
+                                .font(.system(size: 10, weight: .black, design: .rounded))
+                        }
+                        .foregroundColor(endpointFieldsLocked ? WealthTheme.grey : WealthTheme.cyan)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(cardShell(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
 
-                Button {
-                    syncStore.disconnectBrokerAPI()
-                } label: {
-                    Text("DISCONNECT")
-                        .font(.system(size: 13, weight: .black, design: .rounded))
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("HOST")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundColor(.white.opacity(0.62))
+                    TextField("Broker host", text: $syncStore.brokerHost)
+                        .awcHostFieldInputBehavior()
+                        .font(.system(size: 18, weight: .black, design: .rounded))
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.08))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
-                                )
-                        )
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
+                        .background(cardShell(cornerRadius: 18))
+                        .disabled(endpointFieldsLocked)
                 }
-                .buttonStyle(.plain)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("PORT")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundColor(.white.opacity(0.62))
+                    TextField("Broker port", value: $syncStore.brokerPort, format: .number)
+                        .awcNumberPadInputBehavior()
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 14)
+                        .background(cardShell(cornerRadius: 18))
+                        .disabled(endpointFieldsLocked)
+                }
             }
+
+            HStack(spacing: 10) {
+                wealthSystemSyncActionButton("TEST TWS") { syncStore.connectBrokerAPI() }
+                wealthSystemSyncActionButton("DISCONNECT") { syncStore.disconnectBrokerAPI() }
+            }
+
+            Text("Point host to your Mac, keep the matching TWS port, then test the connection from here.")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(WealthTheme.grey)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(cardShell(cornerRadius: 18))
 
             WealthLiveMarketDebugPanel(compact: true)
         }

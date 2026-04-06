@@ -55,12 +55,12 @@ extension Opportunity {
     var profitEdgeSentence: String {
         guard trueCost > 0 else { return "" }
 
-        if isGreenBuyReady {
+        if isExecutionEligible {
             return "Projected net profit is \(WealthFormat.money(expectedNetProfit)) after costs on \(WealthFormat.money(trueCost)) deployed."
         }
-        if clearsProfitGuard {
-            return "Net edge is still positive at \(WealthFormat.money(expectedNetProfit)), but another gate is holding the order back."
+        if hasNonNegativeCurrentPnL {
+            return "Current P/L is no longer negative, but another execution check is still holding the order back."
         }
-        return "Current projected net profit is \(WealthFormat.money(expectedNetProfit)), so AI is not treating it as buy-ready yet."
+        return "Current P/L is still negative, so AI keeps this in watch instead of treating it as execution-ready."
     }
 }

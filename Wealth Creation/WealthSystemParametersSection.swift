@@ -13,6 +13,7 @@ struct WealthSystemParametersSection: View {
     @ObservedObject var protection = WealthProtectionSettingsStore.shared
     @ObservedObject var notifications = WealthNotificationStore.shared
     @ObservedObject var portfolio = WealthPortfolioStore.shared
+    @ObservedObject private var engine = WealthEngineStore.shared
 
     @State var protectionTab: ProtectionTab = .shield
     @State private var demoTopUpAmount: Double = 0
@@ -24,6 +25,16 @@ struct WealthSystemParametersSection: View {
         VStack(spacing: 12) {
             if hasDesktopSystemLayout {
                 desktopParametersLeadCard
+            }
+
+            if !hasDesktopSystemLayout {
+                WealthSystemAIStatusPanel(
+                    activationCycleComplete: engine.activationCycleComplete,
+                    activationStage: engine.activationStage,
+                    activationStageTotal: engine.activationStageTotal,
+                    lightRefreshMinutes: Int(lightRefreshMinutes),
+                    heavyRefreshMinutes: Int(heavyRefreshMinutes)
+                )
             }
 
             wealthSystemToggleCard(title: "KILL SWITCH", subtitle: "Instant emergency stop for new trading activity.", tint: WealthTheme.red, isOn: $protection.killSwitch)

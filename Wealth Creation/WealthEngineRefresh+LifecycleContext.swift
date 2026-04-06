@@ -23,7 +23,7 @@ extension WealthEngineStore {
                 portfolio.queuedOpportunities.map { wealthRefreshIdentityKey(symbol: $0.symbol, market: $0.market) }
             ),
             previousByKey: Dictionary(
-                uniqueKeysWithValues: rankedAssets.map {
+                uniqueKeysWithValues: (scanUniverse.isEmpty ? rankedAssets : scanUniverse).map {
                     (wealthRefreshIdentityKey(symbol: $0.symbol, market: $0.market), $0)
                 }
             ),

@@ -16,12 +16,14 @@ final class WealthBrainStore: ObservableObject {
 
     func ingest(
         opportunities: [Opportunity],
+        focusOpportunity: Opportunity?,
         stage: Int,
         stageTotal: Int,
         cycleComplete: Bool,
         lastRefresh: Date?
     ) {
         let timestamp = lastRefresh ?? .now
+        let top = focusOpportunity ?? WealthOpportunityLaneRules.brainFocusOpportunity(from: opportunities)
         featureSnapshots = Array(opportunities.prefix(8)).map { opportunity in
             WealthBrainFeatureSnapshot(
                 symbol: opportunity.symbol,
@@ -45,7 +47,7 @@ final class WealthBrainStore: ObservableObject {
         let readiness = cycleComplete ? "UP TO DATE" : "LEARNING \(stage)/\(stageTotal)"
         let anomalyWatch = featureSnapshots.first(where: { $0.anomaly != "STABLE" })?.anomaly ?? "STABLE"
         let dataReadiness: String = {
-            guard let top = opportunities.first else { return "NO DATA" }
+            guard let top else { return "NO DATA" }
             switch top.dataQualityLabel.uppercased() {
             case "FRESH":
                 return "LIVE FRESH"
@@ -62,7 +64,7 @@ final class WealthBrainStore: ObservableObject {
             modelVersion: "BRAIN-V2",
             featureSnapshots: featureSnapshots.count,
             activatedBrainItems: WealthBrainToggleStore.shared.activeRuntimeCount,
-            topSymbol: opportunities.first?.symbol ?? "--",
+            topSymbol: top?.symbol ?? "--",
             computeMode: cycleComplete ? computeModeLabel : "STAGED",
             trainingState: opportunities.isEmpty ? "WAITING" : trainingStateLabel,
             governanceState: governanceStateLabel,
@@ -71,12 +73,20 @@ final class WealthBrainStore: ObservableObject {
             dataReadiness: dataReadiness
         )
 
-        if let top = opportunities.first {
+        if let top {
             lastLearningSummary = "\(top.symbol) leads with \(top.advancedSignal.trendState.lowercased()), \(top.advancedSignal.smartMoneyState.lowercased()), and \(top.advancedSignal.executionState.lowercased()). \(WealthBrainToggleStore.shared.activeRuntimeCount) brain items are active in \(WealthBrainToggleStore.shared.runtimeMode.rawValue.lowercased()) mode with \(modelState.governanceState.lowercased())."
         } else {
             lastLearningSummary = "Brain memory waiting for the next cycle."
         }
 
         learn(from: opportunities, holdings: WealthPortfolioStore.shared.holdings)
+    }
+
+    func resetToPlaceholder() {
+        featureSnapshots = []
+        modelState = .placeholder
+        lastLearningSummary = "Brain memory waiting for the next cycle."
+        symbolStrength = [:]
+        sectorStrength = [:]
     }
 }

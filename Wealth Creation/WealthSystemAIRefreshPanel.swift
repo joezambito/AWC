@@ -20,27 +20,17 @@ struct WealthSystemAIRefreshPanel: View {
                 solidPill(hasDesktopSystemLayout ? "FULL" : "AUTO", color: hasDesktopSystemLayout ? WealthTheme.orange : WealthTheme.cyan, darkText: true)
             }
 
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("SOFT REFRESH")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundColor(.white.opacity(0.62))
-                    wealthSystemMinutesField(value: $lightRefreshMinutes, tint: WealthTheme.cyan)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("HEAVY REFRESH")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundColor(.white.opacity(0.62))
-                    wealthSystemMinutesField(value: $heavyRefreshMinutes, tint: WealthTheme.orange)
-                }
-            }
+            Text("Locked cycle: IBKR soft at :09, :19, :39, :49. IBKR deep at :29 and :59. Soft AI at :10, :20, :40, :50. Heavy/Deep AI at :00 and :30. App open always triggers one immediate deep scan without shifting the fixed schedule.")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(.white.opacity(0.82))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(cardShell(cornerRadius: 18))
 
             if hasDesktopSystemLayout {
                 HStack(spacing: 10) {
-                    wealthSystemSyncActionButton("APPLY TIMERS") {
+                    wealthSystemSyncActionButton("RESYNC SCHEDULE") {
                         WealthEngineStore.shared.rescheduleTimers()
-                        WealthEngineStore.shared.refresh(mode: .heavy)
                     }
                     wealthSystemSyncActionButton("RUN SOFT") {
                         WealthEngineStore.shared.refresh(mode: .soft)
@@ -50,7 +40,7 @@ struct WealthSystemAIRefreshPanel: View {
                     }
                 }
             } else {
-                Text("Phone safe mode keeps refresh actions automatic. Use Mac for manual engine controls.")
+                Text("Phone safe mode keeps the locked cycle automatic. Use Mac only for manual scan triggers, not timer changes.")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundColor(.white.opacity(0.72))
                     .frame(maxWidth: .infinity, alignment: .leading)

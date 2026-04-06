@@ -49,6 +49,7 @@ extension WealthEngineRefreshRanking {
             score: signalContext.scoreResult.score,
             confidence: signalContext.scoreResult.confidence,
             expectedNetProfit: pricing.expectedNetProfit,
+            goals: goals,
             advanced: signalContext.advanced,
             regime: regime
         )

@@ -65,7 +65,7 @@ struct WealthSystemDesktopSyncSection: View {
                     .font(.system(size: 11, weight: .black, design: .rounded))
                     .foregroundColor(.white.opacity(0.62))
                 TextField("", value: $syncStore.brokerPort, format: .number)
-                    .keyboardType(.numberPad)
+                    .awcNumberPadInputBehavior()
                     .font(.system(size: 18, weight: .black, design: .rounded))
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)

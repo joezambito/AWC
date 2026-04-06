@@ -52,7 +52,7 @@ enum WealthAISafeguards {
     static func volatilityShockState(priceChangePercent: Double, timeWindow: String) -> WealthPermissionState? {
         let absoluteMove = abs(priceChangePercent)
         if absoluteMove >= 12 {
-            return .blocked
+            return .wait
         }
         if timeWindow == "HOURS" && absoluteMove >= 7 {
             return .wait
@@ -65,7 +65,7 @@ enum WealthAISafeguards {
 
     static func spreadSpikeState(spreadBps: Double, slippageRisk: Double) -> WealthPermissionState? {
         if spreadBps >= 45 || slippageRisk >= 65 {
-            return .blocked
+            return .wait
         }
         if spreadBps >= 28 || slippageRisk >= 45 {
             return .wait
@@ -74,10 +74,8 @@ enum WealthAISafeguards {
     }
 
     static func shouldForceProtectiveSell(live: Opportunity, holding: Holding) -> Bool {
-        if live.confidence <= 20 {
-            return true
-        }
-        if live.aiScore >= 60 && live.confidence <= 35 {
+        if live.cardHoldingBucket == .red &&
+            (live.trustState == .weak || !live.warningReason.isEmpty) {
             return true
         }
         if live.permission == .blocked &&
@@ -85,10 +83,11 @@ enum WealthAISafeguards {
             (live.dataQualityLabel.uppercased() != "FRESH" || !live.warningReason.isEmpty) {
             return true
         }
-        if live.dataQualityLabel.uppercased() == "STALE" && live.confidence < 55 {
+        if live.dataQualityLabel.uppercased() == "STALE" &&
+            (live.trustState == .weak || live.cardHoldingBucket == .red) {
             return true
         }
-        if holding.netReturnPercent < 0 && live.decisionBias == .avoid && live.confidence < 45 {
+        if holding.netReturnPercent < 0 && live.decisionBias == .avoid {
             return true
         }
         return false

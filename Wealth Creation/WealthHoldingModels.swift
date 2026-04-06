@@ -86,6 +86,12 @@ struct Holding: Identifiable, Hashable {
     var nextTradingText: String {
         BrokerSessionClock.nextTradingText(for: market, brokerName: WealthBrokerStore.shared.selectedBroker.name)
     }
+    var manualShieldEnabled: Bool {
+        WealthProtectionSettingsStore.shared.shieldPercent > 0
+    }
+    var manualShieldLabel: String {
+        "\(Int(max(0, WealthProtectionSettingsStore.shared.shieldPercent)))%"
+    }
     var ruleShieldVisible: Bool {
         netReturnPercent > -WealthProtectionSettingsStore.shared.shieldPercent
     }
@@ -114,6 +120,14 @@ struct Holding: Identifiable, Hashable {
     var profitLockPercent: Double {
         max(0, WealthProtectionSettingsStore.shared.profitTargetValue)
     }
+    var surgeStatusLabel: String {
+        WealthProtectionSettingsStore.shared.surgeEnabled ? "ON" : "OFF"
+    }
+    var surgeOverrideLabel: String {
+        WealthProtectionSettingsStore.shared.surgeEnabled
+            ? "+\(Int(max(0, WealthProtectionSettingsStore.shared.surgeOverridePercent)))%"
+            : "OFF"
+    }
     var surgeTriggerPercent: Double {
         let protection = WealthProtectionSettingsStore.shared
         if protection.surgeEnabled {
@@ -126,6 +140,9 @@ struct Holding: Identifiable, Hashable {
     }
     var surgeExitPrice: Double {
         exitPrice(forNetReturnPercent: surgeTriggerPercent)
+    }
+    var surgeExitSummary: String {
+        "\(WealthFormat.money(surgeExitPrice)) (\(wealthPercentMoveText(surgeTriggerPercent)))"
     }
     var surgeExitNetValue: Double {
         exitNetValue(forPrice: surgeExitPrice)

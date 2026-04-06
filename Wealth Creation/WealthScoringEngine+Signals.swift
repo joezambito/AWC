@@ -52,24 +52,27 @@ extension WealthScoringEngine {
 
     static func dataInfrastructureLift(for blueprint: OpportunityBlueprint, isEnabled: (String) -> Bool) -> Double {
         var lift = 0.0
-        if isEnabled("Data Infrastructure") && blueprint.dataQualityLabel == "FRESH" { lift += 3.0 }
-        if isEnabled("Historical Feature Store") && blueprint.analysisAge <= 3_600 { lift += 1.5 }
-        if isEnabled("Market Replay / Backtest Dataset") && blueprint.timeWindow != "UNKNOWN" { lift += 1.0 }
-        if isEnabled("Broker State Memory") && blueprint.dataAge <= 900 { lift += 1.0 }
-        if isEnabled("Cache / Snapshot Layer") && blueprint.dataAge <= 300 { lift += 1.5 }
-        return lift
+        if isEnabled("Data Infrastructure") && blueprint.dataQualityLabel == "FRESH" { lift += 2.2 }
+        if isEnabled("Historical Feature Store") && blueprint.analysisAge <= 3_600 { lift += 1.0 }
+        if isEnabled("Market Replay / Backtest Dataset") && blueprint.timeWindow != "UNKNOWN" { lift += 0.4 }
+        if isEnabled("Broker State Memory") && blueprint.dataAge <= 900 { lift += 0.6 }
+        if isEnabled("Cache / Snapshot Layer") && blueprint.dataAge <= 300 { lift += 0.6 }
+        if isEnabled("Computational Power Layer") {
+            lift += computePlatformLift(for: blueprint, isEnabled: isEnabled)
+        }
+        return min(lift, 3.6)
     }
 
     static func brokerStateLift(isEnabled: (String) -> Bool) -> Double {
         var lift = 0.0
         let broker = WealthBrokerStore.shared
         let sync = WealthSyncStore.shared
-        if isEnabled("Broker Route Selection") && broker.smartRouting { lift += 1.5 }
-        if isEnabled("Order Type Selection") && broker.paperTradingEnabled { lift += 1.0 }
-        if isEnabled("Broker State Memory") && sync.syncStatus.contains("TWS") { lift += 1.0 }
-        if isEnabled("Cloud / Remote Worker Path") && sync.cloudSyncEnabled { lift += 0.8 }
-        if isEnabled("Heavy Backtest / Training Jobs") && sync.macBridgeEnabled { lift += 0.8 }
-        return lift
+        if isEnabled("Broker Route Selection") && broker.smartRouting { lift += 0.6 }
+        if isEnabled("Order Type Selection") && broker.paperTradingEnabled { lift += 0.4 }
+        if isEnabled("Broker State Memory") && sync.syncStatus.contains("TWS") { lift += 0.5 }
+        if isEnabled("Cloud / Remote Worker Path") && sync.cloudSyncEnabled { lift += 0.25 }
+        if isEnabled("Heavy Backtest / Training Jobs") && sync.macBridgeEnabled { lift += 0.25 }
+        return min(lift, 1.4)
     }
 
     static func portfolioHeatPenalty(
@@ -92,5 +95,29 @@ extension WealthScoringEngine {
         } / Double(values.count)
         let deviation = sqrt(variance)
         return clamp(average - deviation, min: -10, max: 20)
+    }
+
+    private static func computePlatformLift(
+        for blueprint: OpportunityBlueprint,
+        isEnabled: (String) -> Bool
+    ) -> Double {
+        var lift = 0.0
+        if isEnabled("Phone Staged Compute") {
+#if targetEnvironment(macCatalyst)
+            lift += 0.05
+#else
+            if blueprint.dataQualityLabel == "FRESH" { lift += 0.35 }
+            if blueprint.analysisAge <= 21_600 { lift += 0.15 }
+#endif
+        }
+        if isEnabled("Mac Full Compute") {
+#if targetEnvironment(macCatalyst)
+            if blueprint.analysisAge <= 86_400 { lift += 0.45 }
+            if blueprint.dataAge <= 21_600 { lift += 0.15 }
+#else
+            lift += 0.05
+#endif
+        }
+        return min(lift, 0.7)
     }
 }

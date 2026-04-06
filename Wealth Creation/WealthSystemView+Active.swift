@@ -10,8 +10,6 @@ extension SystemView {
             WealthSystemBrainSection(hasDesktopSystemLayout: hasDesktopSystemLayout)
         case .events:
             WealthSystemEventLogSection()
-        case .ai:
-            WealthSystemAISection(hasDesktopSystemLayout: hasDesktopSystemLayout)
         case .brokers:
             if hasDesktopSystemLayout {
                 WealthSystemDesktopBrokerSection()

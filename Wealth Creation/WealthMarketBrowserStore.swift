@@ -63,6 +63,7 @@ final class WealthMarketBrowserStore: ObservableObject {
     }
 
     func resetPagination() {
+        guard page != 0 else { return }
         page = 0
     }
 

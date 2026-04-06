@@ -8,8 +8,7 @@ struct WealthDesktopBrokerRegistrySearchCard: View {
             wealthDesktopBrokerHeaderRow(title: "REGISTRY SEARCH", badge: brokerStore.pinnedBroker().name, tint: WealthTheme.green)
 
             TextField("Search trusted broker if needed", text: $brokerStore.searchQuery)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+                .awcHostFieldInputBehavior()
                 .font(.system(size: 16, weight: .black, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 14)

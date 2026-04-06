@@ -2,7 +2,7 @@ import Foundation
 
 enum WealthPortfolioExecutionSnapshots {
     static func completedBuySnapshot(from holding: Holding, completedAt: Date) -> Opportunity {
-        let grossProfit = (holding.effectiveCurrentPrice - holding.averagePrice) * Double(holding.shares)
+        let grossProfit = 0.0
 
         return Opportunity(
             rank: max(holding.aiBand, 1),
@@ -79,7 +79,9 @@ enum WealthPortfolioExecutionSnapshots {
     static func completedSellSnapshot(from holding: Holding, completedAt: Date) -> Opportunity {
         let soldShares = max(holding.pendingShares, holding.shares)
         let exitPrice = holding.submittedExitPrice ?? holding.effectiveCurrentPrice
-        let grossProfit = (exitPrice - holding.averagePrice) * Double(soldShares)
+        let entrySubtotal = Double(soldShares) * holding.averagePrice
+        let exitSubtotal = Double(soldShares) * exitPrice
+        let grossProfit = exitSubtotal - entrySubtotal
 
         return Opportunity(
             rank: max(holding.aiBand, 1),

@@ -5,6 +5,7 @@ extension WealthEngineStore {
         decision: WealthDecisionBias,
         rotation: WealthRotationBias,
         mode: WealthAggressionMode,
+        goals: WealthGoalVector,
         regime: WealthMarketRegime,
         confidence: Int,
         sessionOpen: Bool,
@@ -21,7 +22,7 @@ extension WealthEngineStore {
             return .strike
         }
 
-        if mode == .aggressive || rotation == .rotate {
+        if mode == .aggressive || rotation == .rotate || goals.tradingPressure >= 0.28 {
             return .staged
         }
 
@@ -46,7 +47,7 @@ extension WealthEngineStore {
             return "WAIT \(symbol)"
         case .go:
             if decision != .buy {
-                return "HOLD \(symbol)"
+                return "WAIT \(symbol)"
             }
 
             switch executionStyle {

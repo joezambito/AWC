@@ -9,7 +9,7 @@ struct PendingHoldingCard: View {
     private var saleStatusTint: Color {
         switch holding.orderState {
         case .partial:
-            return WealthTheme.orange
+            return WealthTheme.yellow
         case .filled:
             return WealthTheme.white
         default:
@@ -35,6 +35,12 @@ struct PendingHoldingCard: View {
     var body: some View {
         let isDense = usesDenseCollapsedState && !isExpanded
 
+        // MARK: Activity Card Layout
+        // Safe manual tweak area:
+        // - outer VStack spacing
+        // - HStack gaps
+        // - card padding
+        // - horizontal inset
         return VStack(alignment: .leading, spacing: isDense ? 6 : 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {

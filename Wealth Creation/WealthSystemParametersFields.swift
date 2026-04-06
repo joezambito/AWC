@@ -24,7 +24,7 @@ extension WealthSystemParametersSection {
     func percentField(value: Binding<Double>, tint: Color) -> some View {
         HStack {
             TextField("", value: value, format: .number)
-                .keyboardType(.decimalPad)
+                .awcDecimalPadInputBehavior()
                 .font(.system(size: 30, weight: .black, design: .rounded))
                 .foregroundColor(tint)
                 .multilineTextAlignment(.center)
@@ -43,7 +43,7 @@ extension WealthSystemParametersSection {
                 .font(.system(size: 22, weight: .black, design: .rounded))
                 .foregroundColor(tint)
             TextField("", value: value, format: .number)
-                .keyboardType(.decimalPad)
+                .awcDecimalPadInputBehavior()
                 .font(.system(size: 28, weight: .black, design: .rounded))
                 .foregroundColor(tint)
         }
@@ -55,7 +55,7 @@ extension WealthSystemParametersSection {
     func minutesField(value: Binding<Double>, tint: Color) -> some View {
         HStack(spacing: 10) {
             TextField("", value: value, format: .number)
-                .keyboardType(.decimalPad)
+                .awcDecimalPadInputBehavior()
                 .font(.system(size: 24, weight: .black, design: .rounded))
                 .foregroundColor(tint)
                 .multilineTextAlignment(.center)

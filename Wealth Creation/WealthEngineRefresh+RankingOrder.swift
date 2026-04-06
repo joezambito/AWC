@@ -8,19 +8,20 @@ extension WealthEngineRefreshRanking {
         refreshTime: Date
     ) -> [Opportunity] {
         opportunities
-            .sorted(by: rankingOrder)
+            .sorted(by: marketRankingOrder)
             .enumerated()
             .map { index, opportunity in
-                let previous = previousByKey[refreshIdentityKey(for: opportunity)]
-                let analysisTimestamp = analysisDidChange(for: opportunity, comparedTo: previous)
+                let rankedOpportunity = opportunity.withRank(index + 1)
+                let previous = previousByKey[refreshIdentityKey(for: rankedOpportunity)]
+                let analysisTimestamp = analysisDidChange(for: rankedOpportunity, comparedTo: previous)
                     ? refreshTime
-                    : (previous?.analysisTimestamp ?? opportunity.analysisTimestamp)
-                let dataTimestamp = dataDidChange(for: opportunity, comparedTo: previous)
+                    : (previous?.analysisTimestamp ?? rankedOpportunity.analysisTimestamp)
+                let dataTimestamp = dataDidChange(for: rankedOpportunity, comparedTo: previous)
                     ? refreshTime
-                    : (previous?.dataTimestamp ?? opportunity.dataTimestamp)
+                    : (previous?.dataTimestamp ?? rankedOpportunity.dataTimestamp)
 
-                return opportunity.replacingRankContext(
-                    rank: index + 1,
+                return rankedOpportunity.replacingRankContext(
+                    rank: rankedOpportunity.rank,
                     analysisTimestamp: analysisTimestamp,
                     dataTimestamp: dataTimestamp,
                     refreshTime: refreshTime,
@@ -28,21 +29,13 @@ extension WealthEngineRefreshRanking {
                 )
             }
     }
-
-    @MainActor
-    static func rankingOrder(lhs: Opportunity, rhs: Opportunity) -> Bool {
-        if lhs.aiScore != rhs.aiScore { return lhs.aiScore < rhs.aiScore }
-        if lhs.confidence != rhs.confidence { return lhs.confidence > rhs.confidence }
-        if lhs.priorityScore != rhs.priorityScore { return lhs.priorityScore > rhs.priorityScore }
-        return lhs.symbol < rhs.symbol
-    }
 }
 
 private func refreshIdentityKey(for opportunity: Opportunity) -> String {
     wealthRefreshIdentityKey(symbol: opportunity.symbol, market: opportunity.market)
 }
 
-private extension Opportunity {
+extension Opportunity {
     func replacingRankContext(
         rank: Int,
         analysisTimestamp: Date,

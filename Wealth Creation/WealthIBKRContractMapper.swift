@@ -16,6 +16,21 @@ enum WealthIBKRContractMapper {
         )
     }
 
+    static func contract(for opportunity: Opportunity) -> WealthIBKRContract? {
+        let market = normalizedMarketCode(
+            exchange: opportunity.market,
+            market: opportunity.market,
+            assetType: "",
+            provider: ""
+        )
+
+        return contract(
+            key: WealthBrokerQuoteKey(symbol: opportunity.symbol, market: opportunity.market),
+            symbol: opportunity.symbol,
+            market: market
+        )
+    }
+
     static func contract(for record: MarketUniverseRecord) -> WealthIBKRContract? {
         let market = normalizedMarketCode(
             exchange: record.exchange,

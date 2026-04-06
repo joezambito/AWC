@@ -3,17 +3,22 @@ import SwiftUI
 struct WealthAdvancedAIStackPanel: View {
     private let groups = WealthAIStackCatalog.groups
     @ObservedObject private var toggleStore = WealthBrainToggleStore.shared
+    @ObservedObject private var providerStore = WealthExternalDataStore.shared
 
     private var statusCounts: [(title: String, value: String, tint: Color)] {
         let allItems = groups.flatMap(\.items)
-        let planned = allItems.filter { $0.status == .planned }.count
-        let external = allItems.filter { $0.status == .external }.count
+        let truth = allItems.map(WealthBrainModuleRegistry.truth(for:))
+        let intel = truth.filter { $0.classification == .intelSupport }.count
+        let safety = truth.filter {
+            $0.classification == .controlRule || $0.classification == .executionSafety
+        }.count
+        let offline = truth.filter { $0.activityState == .off || $0.activityState == .notInstalled }.count
 
         return [
-            ("Enabled", "\(toggleStore.activeRuntimeCount)", WealthTheme.green),
-            ("Available", "\(toggleStore.totalRunnableCount)", WealthTheme.cyan),
-            ("Planned", "\(planned)", WealthTheme.orange),
-            ("External", "\(external)", WealthTheme.purple)
+            ("Enabled", toggleStore.runtimeCoverageText, WealthTheme.green),
+            ("Intel", "\(intel)", WealthTheme.cyan),
+            ("Safety", "\(safety)", WealthTheme.orange),
+            ("Offline", "\(offline)", WealthTheme.grey)
         ]
     }
 
@@ -60,9 +65,11 @@ struct WealthAdvancedAIStackPanel: View {
                     }
 
                     ForEach(group.items) { item in
+                        let truth = WealthBrainModuleRegistry.truth(for: item)
+                        let enabled = WealthBrainModuleRegistry.isEnabled(title: item.title)
                         HStack(alignment: .top, spacing: 10) {
                             Circle()
-                                .fill(toggleStore.isEnabled(item) ? WealthTheme.green : WealthTheme.orange)
+                                .fill(enabled ? WealthTheme.green : truth.classification.tint)
                                 .frame(width: 10, height: 10)
                                 .padding(.top, 4)
 
@@ -72,29 +79,34 @@ struct WealthAdvancedAIStackPanel: View {
                                         .font(.system(size: 13, weight: .black, design: .rounded))
                                         .foregroundColor(.white)
                                     Spacer()
-                                    Button {
-                                        toggleStore.toggle(item)
-                                    } label: {
-                                        Text(toggleStore.isEnabled(item) ? "ON" : "OFF")
-                                            .font(.system(size: 10, weight: .black, design: .rounded))
-                                            .foregroundColor(.black)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 7)
-                                            .background(toggleStore.isEnabled(item) ? WealthTheme.green : WealthTheme.orange)
-                                            .clipShape(Capsule())
+                                    solidPill(truth.activityState.rawValue, color: truth.activityState.tint, darkText: true)
+                                    if truth.allowsToggle {
+                                        Button {
+                                            WealthBrainModuleRegistry.setEnabled(!enabled, title: item.title)
+                                        } label: {
+                                            Text(enabled ? "ON" : "OFF")
+                                                .font(.system(size: 10, weight: .black, design: .rounded))
+                                                .foregroundColor(.black)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 7)
+                                                .background(enabled ? WealthTheme.green : WealthTheme.yellow)
+                                                .clipShape(Capsule())
+                                        }
+                                        .buttonStyle(.plain)
+                                    } else {
+                                        solidPill(truth.classification.rawValue, color: truth.classification.tint, darkText: true)
                                     }
-                                    .buttonStyle(.plain)
                                 }
 
                                 HStack(alignment: .top) {
-                                    Text(item.note)
+                                    Text("\(item.note) \(truth.detail)")
                                         .font(.system(size: 10, weight: .bold, design: .rounded))
                                         .foregroundColor(.white.opacity(0.78))
                                         .fixedSize(horizontal: false, vertical: true)
                                     Spacer(minLength: 8)
-                                    Text(item.status == .external ? item.status.rawValue : "\(item.status.rawValue) · \(toggleStore.runtimeMode.rawValue)")
+                                    Text(truth.classification.rawValue)
                                         .font(.system(size: 9, weight: .black, design: .rounded))
-                                        .foregroundColor(item.status.color)
+                                        .foregroundColor(truth.classification.tint)
                                 }
                             }
                         }
@@ -103,7 +115,7 @@ struct WealthAdvancedAIStackPanel: View {
                             cardShell(cornerRadius: 18)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .stroke((toggleStore.isEnabled(item) ? WealthTheme.green : WealthTheme.orange).opacity(0.18), lineWidth: 1)
+                                        .stroke((enabled ? WealthTheme.green : truth.classification.tint).opacity(0.18), lineWidth: 1)
                                 )
                         )
                     }

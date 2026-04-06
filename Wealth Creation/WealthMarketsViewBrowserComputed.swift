@@ -2,27 +2,27 @@ import SwiftUI
 
 extension MarketsView {
     var assetTypeOptions: [String] {
-        browserStore.options(for: universeStore.records, keyPath: \.assetType)
+        browserStore.options(for: scopedMarketUniverseRecords, keyPath: \.assetType)
     }
 
     var regionOptions: [String] {
-        browserStore.options(for: universeStore.records, keyPath: \.region)
+        browserStore.options(for: scopedMarketUniverseRecords, keyPath: \.region)
     }
 
     var countryOptions: [String] {
-        browserStore.options(for: universeStore.records, keyPath: \.country)
+        browserStore.options(for: scopedMarketUniverseRecords, keyPath: \.country)
     }
 
     var exchangeOptions: [String] {
-        browserStore.options(for: universeStore.records, keyPath: \.exchange)
+        browserStore.options(for: scopedMarketUniverseRecords, keyPath: \.exchange)
     }
 
     var currencyOptions: [String] {
-        browserStore.options(for: universeStore.records, keyPath: \.currency)
+        browserStore.options(for: scopedMarketUniverseRecords, keyPath: \.currency)
     }
 
     var filteredBrowserRecords: [MarketUniverseRecord] {
-        browserStore.filteredRecords(from: universeStore.records)
+        browserStore.filteredRecords(from: scopedMarketUniverseRecords)
     }
 
     var pagedBrowserRecords: [MarketUniverseRecord] {

@@ -10,10 +10,10 @@ extension OpportunityDetailView {
     }
 
     var tradeIntelPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("RESEARCH / TRADE MAP")
-                .font(.system(size: 20, weight: .black, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 18, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.96))
 
             intelRow(
                 label: localOpportunityAuditLabel,
@@ -48,20 +48,20 @@ extension OpportunityDetailView {
             intelRow(label: "Earnings Risk", value: "\(Int(opportunity.earningsEventRisk)) · \(opportunity.earningsRiskLabel)")
             intelRow(label: "Macro Risk", value: "\(Int(opportunity.macroEventRisk)) · \(opportunity.macroRiskLabel)")
         }
-        .padding(18)
+        .padding(14)
         .background(glowPanelShell(cornerRadius: 28, tint: WealthTheme.purple, secondaryTint: WealthTheme.orange))
     }
 
     func intelRow(label: String, value: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             Text(label)
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(WealthTheme.cyan)
-                .frame(width: 150, alignment: .leading)
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.50))
+                .frame(width: 136, alignment: .leading)
             Spacer(minLength: 0)
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(.white.opacity(0.96))
                 .multilineTextAlignment(.trailing)
         }
     }

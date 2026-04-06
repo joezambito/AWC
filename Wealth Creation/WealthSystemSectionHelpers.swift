@@ -107,7 +107,7 @@ func wealthSystemToggleCard(title: String, subtitle: String, tint: Color, isOn: 
 func wealthSystemMinutesField(value: Binding<Double>, tint: Color) -> some View {
     HStack(spacing: 10) {
         TextField("", value: value, format: .number)
-            .keyboardType(.decimalPad)
+            .awcDecimalPadInputBehavior()
             .font(.system(size: 28, weight: .black, design: .rounded))
             .foregroundColor(tint)
             .multilineTextAlignment(.center)

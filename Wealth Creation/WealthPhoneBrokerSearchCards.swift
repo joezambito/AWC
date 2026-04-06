@@ -12,8 +12,7 @@ extension WealthPhoneBrokerSection {
             }
 
             TextField("Search broker name", text: $brokerStore.searchQuery)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+                .awcHostFieldInputBehavior()
                 .font(.system(size: 17, weight: .black, design: .rounded))
                 .foregroundColor(.white)
                 .padding(.horizontal, 14)

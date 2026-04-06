@@ -5,13 +5,15 @@ struct WealthSystemBrainSection: View {
 
     @ObservedObject private var engine = WealthEngineStore.shared
     @ObservedObject private var brainStore = WealthBrainStore.shared
+    @AppStorage("awc_scan_refresh_light_minutes") private var lightRefreshMinutes: Double = 10
+    @AppStorage("awc_scan_refresh_heavy_minutes") private var heavyRefreshMinutes: Double = 30
 
     var body: some View {
         VStack(spacing: 12) {
             if hasDesktopSystemLayout {
                 wealthSystemHeroPanel(
                     title: "BRAIN",
-                    subtitle: "Brain control tab, tuning and operator view",
+                    subtitle: "Operator view, provider stack and tuning",
                     icon: "brain.head.profile",
                     badge: brainStore.modelState.modelVersion,
                     badgeColor: WealthTheme.purple
@@ -51,8 +53,21 @@ struct WealthSystemBrainSection: View {
                 )
             }
 
+            WealthSystemAIStatusPanel(
+                activationCycleComplete: engine.activationCycleComplete,
+                activationStage: engine.activationStage,
+                activationStageTotal: engine.activationStageTotal,
+                lightRefreshMinutes: Int(lightRefreshMinutes),
+                heavyRefreshMinutes: Int(heavyRefreshMinutes)
+            )
+            WealthSystemAIProviderPanel()
             WealthSystemBrainTuningPanel()
             WealthAdvancedAIStackPanel()
+            WealthSystemAIRefreshPanel(
+                hasDesktopSystemLayout: hasDesktopSystemLayout,
+                lightRefreshMinutes: $lightRefreshMinutes,
+                heavyRefreshMinutes: $heavyRefreshMinutes
+            )
         }
     }
 }

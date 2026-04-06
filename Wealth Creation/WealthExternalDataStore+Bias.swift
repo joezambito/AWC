@@ -7,6 +7,9 @@ extension WealthExternalDataStore {
         var confidence = 0.0
         var reward = 0.0
         var risk = 0.0
+        var supportQuality = 0.0
+        var supportConfidence = 0.0
+        var supportReward = 0.0
 
         if optionsFlowEnabled {
             quality += blueprint.optionsFlowStrength * 0.08
@@ -31,24 +34,28 @@ extension WealthExternalDataStore {
             risk += blueprint.macroEventRisk * 0.07
         }
         if liveOutcomeLearningEnabled {
-            quality += blueprint.timeWindow == "HOURS" ? 2.5 : 0.8
-            confidence += blueprint.timeWindow == "HOURS" ? 1.8 : 0.6
+            supportQuality += blueprint.timeWindow == "HOURS" ? 1.1 : 0.4
+            supportConfidence += blueprint.timeWindow == "HOURS" ? 0.8 : 0.3
         }
         if backtestEngineEnabled {
-            quality += blueprint.dataQualityLabel.uppercased() == "FRESH" ? 2.0 : 0.5
+            supportQuality += blueprint.dataQualityLabel.uppercased() == "FRESH" ? 0.8 : 0.2
         }
         if retrainingEnabled, blueprint.probability >= 70 {
-            quality += 2.2
-            reward += 1.2
+            supportQuality += 0.9
+            supportReward += 0.4
         }
         if researchMeshEnabled {
             let sourceText = ([blueprint.sourceTrigger, blueprint.reviewSummary] + blueprint.intelligenceDrivers)
                 .joined(separator: " ")
                 .uppercased()
-            if sourceText.contains("TRANSCRIPT") { confidence += 2.0 }
-            if sourceText.contains("RESEARCH") { quality += 1.5 }
-            if sourceText.contains("CONSENSUS") { confidence += 1.2 }
+            if sourceText.contains("TRANSCRIPT") { supportConfidence += 0.8 }
+            if sourceText.contains("RESEARCH") { supportQuality += 0.6 }
+            if sourceText.contains("CONSENSUS") { supportConfidence += 0.5 }
         }
+
+        quality += min(supportQuality, 2.4)
+        confidence += min(supportConfidence, 1.8)
+        reward += min(supportReward, 0.9)
 
         return WealthProviderBias(
             qualityLift: quality,
@@ -59,13 +66,11 @@ extension WealthExternalDataStore {
     }
 
     var providerSources: [WealthProviderSource] {
-        [
-            makeSource("Options Flow", enabled: optionsFlowEnabled, detail: "Tape and skew"),
-            makeSource("Dark Pool", enabled: darkPoolEnabled, detail: "Accumulation prints"),
-            makeSource("Insider", enabled: insiderEnabled, detail: "Director behavior"),
-            makeSource("13F", enabled: filing13FEnabled, detail: "Institutional positioning"),
-            makeSource("Earnings", enabled: earningsCalendarEnabled, detail: "Calendar risk"),
-            makeSource("Macro", enabled: macroCalendarEnabled, detail: "Rates and event risk"),
+        let researchSources = WealthExternalResearchKind.allCases.map { kind in
+            makeResearchSource(kind)
+        }
+
+        return researchSources + [
             makeSource("Outcome", enabled: liveOutcomeLearningEnabled, detail: "Trade learning"),
             makeSource("Backtest", enabled: backtestEngineEnabled, detail: "Replay memory"),
             makeSource("Retraining", enabled: retrainingEnabled, detail: "Adaptive weights"),
@@ -74,7 +79,7 @@ extension WealthExternalDataStore {
     }
 
     var activeProviderCount: Int {
-        providerSources.filter { $0.status == "LIVE" }.count
+        providerSources.filter { ["LIVE", "FRESH ONLINE", "CACHED", "NO LIVE CONFIG", "SYNTHETIC FALLBACK"].contains($0.status) }.count
     }
 
     var readinessLabel: String {
@@ -83,23 +88,44 @@ extension WealthExternalDataStore {
         return "BASE STACK"
     }
 
-    private var feedClients: [any WealthExternalFeedClient] {
-        var clients: [any WealthExternalFeedClient] = []
-        if optionsFlowEnabled { clients.append(WealthOptionsFlowFeedClient()) }
-        if darkPoolEnabled { clients.append(WealthDarkPoolFeedClient()) }
-        if insiderEnabled { clients.append(WealthInsiderFeedClient()) }
-        if filing13FEnabled { clients.append(WealthFiling13FFeedClient()) }
-        if earningsCalendarEnabled { clients.append(WealthEarningsFeedClient()) }
-        if macroCalendarEnabled { clients.append(WealthMacroFeedClient()) }
-        return clients
-    }
-
     private func makeSource(_ name: String, enabled: Bool, detail: String) -> WealthProviderSource {
         WealthProviderSource(
             name: name,
             status: enabled ? "LIVE" : "OFF",
             detail: detail,
             tint: enabled ? WealthTheme.green : WealthTheme.grey
+        )
+    }
+
+    private func makeResearchSource(_ kind: WealthExternalResearchKind) -> WealthProviderSource {
+        let enabled = isEnabled(kind)
+        let state = enabled ? (sourceStatesByKind[kind] ?? .syntheticFallback) : .off
+        let updatedAt = sourceUpdatedAtByKind[kind].map(WealthFormat.clock) ?? "--:--"
+        let providerMode = mode(for: kind)
+        let detail = sourceDetailByKind[kind] ?? kind.detail
+        let endpointMissing = enabled && endpoint(for: kind) == nil
+        let statusDetail: String
+        let statusLabel: String
+
+        if !enabled {
+            statusLabel = WealthExternalSignalState.off.rawValue
+            statusDetail = detail
+        } else if providerMode == .mockTest {
+            statusLabel = "MOCK / TEST"
+            statusDetail = "Sample provider responses in use."
+        } else if endpointMissing && state == .syntheticFallback {
+            statusLabel = "NO LIVE CONFIG"
+            statusDetail = "No live provider endpoint is configured. Built-in fallback is active."
+        } else {
+            statusLabel = state.rawValue
+            statusDetail = detail
+        }
+
+        return WealthProviderSource(
+            name: kind.displayName,
+            status: statusLabel,
+            detail: "\(statusDetail) · \(updatedAt)",
+            tint: providerMode == .mockTest ? WealthTheme.yellow : state.tint
         )
     }
 }

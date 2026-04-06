@@ -2,10 +2,10 @@ import SwiftUI
 
 extension HoldingDetailView {
     var technicalPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("TECHNICAL / FUNDAMENTAL")
-                .font(.system(size: 20, weight: .black, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 18, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.96))
             intelRow(label: "AI Rank", value: "\(holding.aiBand)/10")
             intelRow(label: "Confidence", value: "\(holding.confidence)%")
             intelRow(label: "Current Price", value: WealthFormat.money(holding.effectiveCurrentPrice))
@@ -21,15 +21,15 @@ extension HoldingDetailView {
                 intelRow(label: "Pending Net Return", value: wealthPercentMoveText(holding.pendingNetReturnPercent))
             }
         }
-        .padding(18)
+        .padding(14)
         .background(glowPanelShell(cornerRadius: 28, tint: WealthTheme.cyan, secondaryTint: WealthTheme.purple))
     }
 
     var feesPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("FEES / SELL NOW")
-                .font(.system(size: 20, weight: .black, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 18, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.96))
             intelRow(label: "Gross Value", value: WealthFormat.money(holding.marketValue))
             intelRow(label: "Broker Fee In", value: WealthFormat.money(holding.buyFee))
             intelRow(label: "Broker Fee Out", value: WealthFormat.money(holding.estimatedSellFee))
@@ -44,20 +44,20 @@ extension HoldingDetailView {
                 intelRow(label: "Capital Status", value: "Not added to Capital until broker confirms")
             }
         }
-        .padding(18)
+        .padding(14)
         .background(glowPanelShell(cornerRadius: 28, tint: WealthTheme.orange, secondaryTint: WealthTheme.red))
     }
 
     func intelRow(label: String, value: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             Text(label)
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(.white.opacity(0.62))
-                .frame(width: 160, alignment: .leading)
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .foregroundColor(.white.opacity(0.50))
+                .frame(width: 142, alignment: .leading)
             Spacer(minLength: 0)
             Text(value)
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(.white.opacity(0.96))
         }
     }
 }

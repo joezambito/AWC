@@ -33,8 +33,7 @@ extension WealthEngineRefreshRanking {
         let sourceReliabilityScore = WealthEngineStore.sourceReliabilityScore(for: blueprint)
         let shareReliabilityScore = WealthEngineStore.shareReliabilityScore(
             for: blueprint,
-            confidence: scoreResult.confidence,
-            safety: scoreResult.safety
+            confidence: scoreResult.confidence
         )
         let trustState = WealthEngineStore.trustState(
             sourceReliability: sourceReliabilityScore,
@@ -44,6 +43,7 @@ extension WealthEngineRefreshRanking {
             decision: decision,
             rotation: rotation.bias,
             mode: selectionMode,
+            goals: goals,
             regime: regime,
             confidence: scoreResult.confidence,
             sessionOpen: sessionState.canTradeNow,
@@ -55,6 +55,8 @@ extension WealthEngineRefreshRanking {
             decision: decision,
             buyingPower: buyingPower,
             totalCost: pricing.totalCost,
+            entryPrice: blueprint.price,
+            shares: stagedShares,
             expectedNetProfit: pricing.expectedNetProfit,
             spreadBps: blueprint.spreadBps,
             slippageRisk: blueprint.slippageRisk,

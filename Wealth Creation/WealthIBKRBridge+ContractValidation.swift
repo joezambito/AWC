@@ -89,7 +89,7 @@ extension WealthIBKRBridge {
         resolvedContract: WealthIBKRContract?,
         reason: String
     ) {
-        guard var request = contractValidationRequests.removeValue(forKey: requestID) else { return }
+        guard let request = contractValidationRequests.removeValue(forKey: requestID) else { return }
         request.timeoutTask?.cancel()
 
         if let resolvedContract {

@@ -7,6 +7,8 @@ extension WealthEngineStore {
         decision: WealthDecisionBias,
         buyingPower: Double,
         totalCost: Double,
+        entryPrice: Double,
+        shares: Int,
         expectedNetProfit: Double,
         spreadBps: Double,
         slippageRisk: Double,
@@ -37,13 +39,6 @@ extension WealthEngineStore {
         let portfolio = WealthPortfolioStore.shared
         portfolio.clearExpiredBuyCooldown(for: symbol, market: market)
 
-        let strongWatchSetup =
-            score <= 20 &&
-            confidence >= 80 &&
-            decision != .avoid &&
-            dataQuality != "STALE" &&
-            trustState != .weak
-
         let slippageAdjustedNetProfit = expectedNetProfit - estimatedSlippageCost(
             totalCost: totalCost,
             spreadBps: spreadBps,
@@ -51,16 +46,22 @@ extension WealthEngineStore {
         )
 
         if killSwitch || decision == .avoid || totalCost <= 0 { return .blocked }
-        if dailyLossLocked || brokerCooldownActive { return .blocked }
-        if portfolio.buyCooldown(for: symbol, market: market) != nil { return .blocked }
+        if dailyLossLocked || brokerCooldownActive { return .wait }
+        if !WealthProtectionExitRules.hasValidShieldBoundary(
+            entryPrice: entryPrice,
+            shares: shares,
+            totalCost: totalCost,
+            protection: WealthProtectionSettingsStore.shared
+        ) { return .blocked }
+        if portfolio.buyCooldown(for: symbol, market: market) != nil { return .wait }
         if marketWideBrake { return .wait }
-        if score > 39 { return .blocked }
+        if score > 39 { return .wait }
         if score > 20 { return .wait }
         if currentOpenPositions >= positionLimit { return .wait }
-        if duplicateExposureCount >= maxSectorExposure { return .blocked }
-        if dataQuality == "STALE" || rotation == .block || trustState == .weak { return .blocked }
-        if dataAge >= 86_400 { return .blocked }
-        if rewardRiskRatio < 1.15 { return strongWatchSetup ? .wait : .blocked }
+        if duplicateExposureCount >= maxSectorExposure { return .wait }
+        if dataQuality == "STALE" || rotation == .block || trustState == .weak { return .wait }
+        if dataAge >= 86_400 { return .wait }
+        if rewardRiskRatio < 1.15 { return .wait }
         if rewardRiskRatio < 1.55 { return .wait }
 
         if let spreadState = WealthAISafeguards.spreadSpikeState(spreadBps: spreadBps, slippageRisk: slippageRisk) {
@@ -72,8 +73,11 @@ extension WealthEngineStore {
             return volatilityState
         }
 
-        if slippageAdjustedNetProfit < 24 { return strongWatchSetup ? .wait : .blocked }
-        if expectedNetProfit < 28 { return .wait }
+        let weakNetEdge = slippageAdjustedNetProfit <= 0 || expectedNetProfit <= 0
+        if weakNetEdge &&
+            (advanced.executionState == "EXECUTION RISK" || advanced.anomalyState == "ANOMALY HIGH") {
+            return .wait
+        }
         if dataQuality != "FRESH" { return .wait }
         if confidence < 80 { return .wait }
         if dataQuality == "AGING" || dataAge >= 21_600 { return .wait }
@@ -88,7 +92,7 @@ extension WealthEngineStore {
             earningsEventRisk: earningsEventRisk,
             macroEventRisk: macroEventRisk
         ) {
-            return .blocked
+            return .wait
         }
         if earningsEventRisk >= 55 || macroEventRisk >= 60 { return .wait }
         if slippageRisk >= 58 || spreadBps >= 45 { return .wait }
@@ -97,7 +101,7 @@ extension WealthEngineStore {
 
         if toggles.isEnabled(title: "Execution Safety Layer"),
            (advanced.anomalyState == "ANOMALY HIGH" || advanced.executionState == "EXECUTION RISK") {
-            return .blocked
+            return .wait
         }
 
         if toggles.isEnabled(title: "Tail-Risk Overrides"),

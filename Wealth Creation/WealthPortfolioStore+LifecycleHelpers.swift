@@ -5,7 +5,8 @@ extension WealthPortfolioStore {
 
     func refreshLiveHoldings(
         _ holdings: [Holding],
-        using lookup: [String: Opportunity]
+        using lookup: [String: Opportunity],
+        rankedMarketLookup: [String: Opportunity] = [:]
     ) -> [Holding] {
         holdings.map { holding in
             let key = activityRuleKey(symbol: holding.symbol, market: holding.market)
@@ -18,7 +19,13 @@ extension WealthPortfolioStore {
                 averagePrice: holding.averagePrice
             )
             next.aiScore = live.aiScore
-            next.aiBand = live.rank
+            if let ranked = rankedMarketLookup[key] {
+                next.aiBand = ranked.rank
+            } else if holding.orderIntent == .buyPending || holding.orderIntent == .sellPending {
+                next.aiBand = max(holding.aiBand, live.rank)
+            } else {
+                next.aiBand = live.rank
+            }
             next.confidence = live.confidence
             next.safety = live.safety
             next.prospect = live.prospect
@@ -77,6 +84,13 @@ extension WealthPortfolioStore {
                     tintName: "orange",
                     timestamp: now
                 )
+                noteActivityReturn(
+                    symbol: next.symbol,
+                    market: next.market,
+                    state: .activityCancelledPendingBuy,
+                    reason: cancelReason,
+                    timestamp: now
+                )
                 return nil
             }
 
@@ -103,6 +117,35 @@ extension WealthPortfolioStore {
 
         case .sellPending:
             let age = now.timeIntervalSince(holding.orderSubmittedAt ?? now)
+            if let cancelReason = submittedSellCancellationReason(
+                holding: next,
+                live: liveOpportunity,
+                protection: protection,
+                now: now
+            ) {
+                WealthEventLogStore.shared.record(
+                    title: "Sell Cancelled",
+                    detail: "\(next.symbol) sell cancelled because \(cancelReason).",
+                    category: "sell",
+                    tintName: "orange",
+                    timestamp: now
+                )
+                noteActivityReturn(
+                    symbol: next.symbol,
+                    market: next.market,
+                    state: .activityCancelledPendingSell,
+                    reason: cancelReason,
+                    timestamp: now
+                )
+                next.orderIntent = .live
+                next.orderState = .ready
+                next.pendingShares = 0
+                next.submittedExitPrice = nil
+                next.orderSubmittedAt = nil
+                next.lastRefreshTimestamp = now
+                return next
+            }
+
             let shouldStillSell = shouldTriggerSell(next, protection: protection)
             next.submittedExitPrice = next.currentPrice
 
@@ -154,6 +197,7 @@ extension WealthPortfolioStore {
     func reconcileQueuedOpportunity(
         _ queued: Opportunity,
         lookup: [String: Opportunity],
+        rankedMarketLookup: [String: Opportunity],
         now: Date
     ) -> Opportunity? {
         let key = activityRuleKey(symbol: queued.symbol, market: queued.market)
@@ -167,33 +211,54 @@ extension WealthPortfolioStore {
                     tintName: "orange",
                     timestamp: now
                 )
+                noteActivityReturn(
+                    symbol: queued.symbol,
+                    market: queued.market,
+                    state: .activityRejected,
+                    reason: "live data stopped updating",
+                    timestamp: now
+                )
                 return nil
             }
 
             return queued.withLastRefresh(now)
         }
 
-        guard let rejectReason = activityRejectReason(for: live) else {
-            let submittedPrice = queued.submittedPrice > 0 ? queued.submittedPrice : live.submittedPrice
-            let submittedShares = max(queued.submittedShares, live.recommendedShares)
-
-            return live
-                .withOrderState(
-                    .ready,
-                    submittedPrice: submittedPrice,
-                    submittedShares: submittedShares
-                )
-                .withLastRefresh(now)
+        let rankedLive: Opportunity
+        if let marketRanked = rankedMarketLookup[key] {
+            rankedLive = marketRanked
+        } else if queued.orderState == .submitted || queued.orderState == .pending || queued.orderState == .partial {
+            rankedLive = live.rank > 0 ? live : live.withRank(queued.rank)
+        } else {
+            rankedLive = live
         }
 
-        WealthEventLogStore.shared.record(
-            title: "Activity Rejected",
-            detail: "\(queued.symbol) left activity because \(rejectReason).",
-            category: "buy",
-            tintName: "orange",
-            timestamp: now
+        let submittedPrice = queued.submittedPrice > 0 ? queued.submittedPrice : live.submittedPrice
+        let submittedShares = max(queued.submittedShares, live.recommendedShares)
+
+        return rankedLive
+            .withOrderState(
+                .ready,
+                submittedPrice: submittedPrice,
+                submittedShares: submittedShares
+            )
+            .withLastRefresh(now)
+    }
+
+    func noteActivityReturn(
+        symbol: String,
+        market: String,
+        state: WealthActivityReturnState,
+        reason: String,
+        timestamp: Date
+    ) {
+        WealthEngineStore.shared.noteActivityRefusal(
+            symbol: symbol,
+            market: market,
+            state: state,
+            reason: reason,
+            timestamp: timestamp
         )
-        return nil
     }
 
     func activityRuleKey(symbol: String, market: String) -> String {
@@ -203,8 +268,6 @@ extension WealthPortfolioStore {
     func rankedLifecycleOpportunities(_ opportunities: [Opportunity]) -> [Opportunity] {
         opportunities.sorted { lhs, rhs in
             if lhs.rank != rhs.rank { return lhs.rank < rhs.rank }
-            if lhs.aiScore != rhs.aiScore { return lhs.aiScore < rhs.aiScore }
-            if lhs.confidence != rhs.confidence { return lhs.confidence > rhs.confidence }
             return lhs.symbol.localizedStandardCompare(rhs.symbol) == .orderedAscending
         }
     }
@@ -227,23 +290,20 @@ extension WealthPortfolioStore {
     }
 
     func activityRejectReason(for live: Opportunity) -> String? {
+        if live.rank <= 0 {
+            return "Market rank is missing"
+        }
+        if !live.hasFreshPromotionRefresh {
+            return "latest refresh is too old"
+        }
         if !meetsRebuyGate(live) {
             return "rebuy protection is active"
         }
-        if live.permission != .go {
-            return "AI permission is no longer GO"
-        }
-        if !live.isGreenBuyReady || live.cardSignalLabel != "GREEN" {
-            return "the card is no longer green"
+        if let readinessReason = live.executionReadiness.reason {
+            return readinessReason
         }
         if live.dataQualityLabel.uppercased() == "STALE" {
             return "the live data is stale"
-        }
-        if live.expectedNetProfit <= 0 {
-            return "projected net profit dropped below costs"
-        }
-        if live.recommendedShares <= 0 || live.trueCost <= 0 {
-            return "the position size is no longer valid"
         }
         if live.earningsEventRisk >= 70 || live.macroEventRisk >= 75 {
             return "event risk spiked too high"
@@ -261,6 +321,36 @@ extension WealthPortfolioStore {
                 return rejectReason
             }
             return nil
+        }
+
+        guard !shouldHoldMissingActivityCard(holding.lastRefreshTimestamp, now: now) else {
+            return nil
+        }
+
+        return "live data stopped updating"
+    }
+
+    func submittedSellCancellationReason(
+        holding: Holding,
+        live: Opportunity?,
+        protection: WealthProtectionSettingsStore,
+        now: Date
+    ) -> String? {
+        if let live {
+            let protectiveExitTriggered = WealthAISafeguards.shouldForceProtectiveSell(
+                live: live,
+                holding: holding
+            )
+
+            if shouldTriggerSell(holding, protection: protection) || protectiveExitTriggered {
+                return nil
+            }
+
+            if live.dataQualityLabel.uppercased() == "STALE" {
+                return "fresh sell confirmation is no longer available"
+            }
+
+            return "the sell trigger is no longer active"
         }
 
         guard !shouldHoldMissingActivityCard(holding.lastRefreshTimestamp, now: now) else {

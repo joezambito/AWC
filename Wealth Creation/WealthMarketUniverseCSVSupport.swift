@@ -83,27 +83,89 @@ extension WealthMarketUniverseLoader {
     }
 
     nonisolated static func normalizedMarket(_ market: String, exchange: String, assetType: String) -> String {
-        let rawMarket = market.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        if !rawMarket.isEmpty {
-            return rawMarket
-        }
-
         let rawExchange = exchange.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        if !rawExchange.isEmpty {
-            return rawExchange
+        let rawMarket = market.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let normalizedAssetType = assetType.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+
+        if let canonicalExchange = canonicalExecutionMarket(forExchange: rawExchange, assetType: normalizedAssetType) {
+            return canonicalExchange
         }
 
-        switch assetType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "currencies":
+        if let canonicalMarket = canonicalExecutionMarket(forMarket: rawMarket) {
+            return canonicalMarket
+        }
+
+        switch normalizedAssetType {
+        case "CURRENCIES":
             return "FX"
-        case "cryptos":
+        case "CRYPTOS":
             return "CRYPTO"
-        case "moneymarkets":
+        case "MONEYMARKETS":
             return "BOND"
-        case "indices":
+        case "INDICES":
             return "GLOBAL"
         default:
+            if !rawMarket.isEmpty { return rawMarket }
+            if !rawExchange.isEmpty { return rawExchange }
             return "UNKNOWN"
+        }
+    }
+
+    nonisolated private static func canonicalExecutionMarket(forExchange exchange: String, assetType: String) -> String? {
+        switch exchange {
+        case "NAS", "NMS", "NGM", "NCM":
+            return "NASDAQ"
+        case "NYQ", "NYS":
+            return "NYSE"
+        case "ASE", "PCX", "ARC", "AMEX":
+            return "AMEX"
+        case "BTS":
+            return "CBOE"
+        case "PNK", "OTC", "OBB":
+            return "OTC"
+        case "CCC":
+            return "CRYPTO"
+        case "CCY":
+            return "FX"
+        case "TSE":
+            return "TSX"
+        case "VSE":
+            return "TSXV"
+        case "ASX", "LSE", "SIX", "OMX", "XETRA", "BME", "BIT", "WSE", "OSE", "BIST", "MOEX",
+             "HKEX", "SSE", "SZSE", "KRX", "SGX", "NSE", "BSE", "TWSE", "TPEX", "NZX", "SET", "IDX", "BURSA",
+             "PSE", "HOSE", "HNX", "JSE", "KSE", "MSX", "BHB", "DFM", "ADX", "QSE", "TADAWUL",
+             "TASE", "EGX", "BMV", "BCBA", "B3", "CSE", "CME", "CBOT", "NYMEX", "COMEX", "ICE":
+            return exchange
+        case "":
+            return assetType == "INDICES" ? nil : nil
+        default:
+            return nil
+        }
+    }
+
+    nonisolated private static func canonicalExecutionMarket(forMarket market: String) -> String? {
+        switch market {
+        case "NASDAQ GLOBAL SELECT", "NASDAQ CAPITAL MARKET", "NASDAQ GLOBAL MARKET", "NASDAQ":
+            return "NASDAQ"
+        case "NEW YORK STOCK EXCHANGE", "NYSE", "NYSE MKT":
+            return "NYSE"
+        case "NYSE ARCA":
+            return "AMEX"
+        case "BATS BZX EXCHANGE":
+            return "CBOE"
+        case "OTC BULLETIN BOARD", "PINK SHEETS":
+            return "OTC"
+        case "CRYPTO":
+            return "CRYPTO"
+        case "FX":
+            return "FX"
+        case "ASX", "TSX", "TSXV", "LSE", "EURONEXT", "SIX", "OMX", "XETRA", "HKEX", "SSE", "SZSE",
+             "KRX", "SGX", "NSE", "BSE", "TWSE", "TPEX", "SET", "IDX", "BURSA", "PSE", "HOSE", "HNX",
+             "NZX", "JSE", "DFM", "ADX", "QSE", "TADAWUL", "TASE", "KSE", "MSX", "BHB", "EGX", "BMV",
+             "BCBA", "B3", "CME", "CBOT", "NYMEX", "COMEX", "ICE":
+            return market
+        default:
+            return nil
         }
     }
 }

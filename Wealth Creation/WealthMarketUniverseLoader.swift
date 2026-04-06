@@ -73,6 +73,7 @@ enum WealthMarketUniverseLoader {
     nonisolated private static func candidateURLs(fileName: String, fileExtension: String) -> [URL] {
         let fileManager = FileManager.default
         var urls: [URL] = []
+        let moduleRoot = Bundle(for: BundleToken.self).resourceURL
 
         if let bundleURL = Bundle.main.url(
             forResource: fileName,
@@ -84,6 +85,16 @@ enum WealthMarketUniverseLoader {
 
         if let bundleURL = Bundle.main.url(forResource: fileName, withExtension: fileExtension) {
             urls.append(bundleURL)
+        }
+
+        if let moduleRoot {
+            urls.append(
+                moduleRoot
+                    .appendingPathComponent("data", isDirectory: true)
+                    .appendingPathComponent("markets", isDirectory: true)
+                    .appendingPathComponent("\(fileName).\(fileExtension)")
+            )
+            urls.append(moduleRoot.appendingPathComponent("\(fileName).\(fileExtension)"))
         }
 
         let searchDirectories: [FileManager.SearchPathDirectory] = [
@@ -196,17 +207,21 @@ private struct BundledUniverseRecord: Decodable {
     }
 
     nonisolated func makeMarketUniverseRecord() -> MarketUniverseRecord {
-        MarketUniverseRecord(
+        let normalizedSector = sector?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let providerLabel = normalizedSector.isEmpty
+            ? "Bundled JSON"
+            : "Bundled JSON|\(normalizedSector)"
+        return MarketUniverseRecord(
             symbol: symbol.uppercased(),
             name: companyName ?? "",
-            assetType: (sector?.isEmpty == false ? sector! : "equity"),
+            assetType: "equity",
             country: "",
             region: regionName(for: market),
             exchange: market.uppercased(),
             market: market.uppercased(),
             currency: "",
             isin: "",
-            provider: "Bundled JSON",
+            provider: providerLabel,
             isActive: true
         )
     }

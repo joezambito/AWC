@@ -4,7 +4,6 @@ struct CurrentHoldingCard: View {
     let holding: Holding
     var isExpanded: Bool = false
     var usesDenseCollapsedState: Bool = false
-    @ObservedObject private var protection = WealthProtectionSettingsStore.shared
 
     private var rankTint: Color {
         switch holding.aiBand {

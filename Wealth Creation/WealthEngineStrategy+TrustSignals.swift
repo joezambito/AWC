@@ -24,12 +24,10 @@ extension WealthEngineStore {
 
     static func shareReliabilityScore(
         for blueprint: OpportunityBlueprint,
-        confidence: Int,
-        safety: Int
+        confidence: Int
     ) -> Int {
         var score = Int(round((blueprint.fundamental * 0.20) + (blueprint.technical * 0.18) + (blueprint.institutional * 0.16) + (blueprint.catalyst * 0.14) + (blueprint.sectorFlow * 0.10)))
         score += Int(round(Double(confidence) * 0.15))
-        score += Int(round(Double(safety) * 0.12))
         score -= Int(round(blueprint.risk * 0.35))
 
         if blueprint.timeWindow == "UNKNOWN" { score -= 12 }

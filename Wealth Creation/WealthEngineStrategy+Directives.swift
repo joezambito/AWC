@@ -4,7 +4,7 @@ extension WealthEngineStore {
     static func decisionBias(
         for score: Int,
         confidence: Int,
-        safety: Int,
+        safety _: Int,
         expectedProfit: Double,
         timeWindow: String,
         dataQuality: String,
@@ -14,7 +14,7 @@ extension WealthEngineStore {
         WealthBuyDecisionRules.decisionBias(
             score: score,
             confidence: confidence,
-            safety: safety,
+            safety: 0,
             expectedProfit: expectedProfit,
             timeWindow: timeWindow,
             dataQuality: dataQuality,

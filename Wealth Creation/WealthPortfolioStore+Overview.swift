@@ -1,6 +1,27 @@
 import Foundation
 
 extension WealthPortfolioStore {
+    private var hasMeaningfulPortfolioState: Bool {
+        !holdings.isEmpty ||
+        !queuedOpportunities.isEmpty ||
+        externalDeposits != 0 ||
+        protectedBaseCapital != 0 ||
+        earnedProfit != 0 ||
+        dailyProfit != 0 ||
+        reservedOrderCapital != 0
+    }
+
+    private var normalizedDisplayCashBalance: Double {
+        let protection = WealthProtectionSettingsStore.shared
+        if protection.demoMode {
+            if !hasMeaningfulPortfolioState, protection.demoBalance > 0 {
+                return 0
+            }
+            return protection.demoBalance
+        }
+        return WealthBrokerStore.shared.executionCashBalance
+    }
+
     var hasPendingBrokerLifecycleWork: Bool {
         holdings.contains { $0.orderIntent == .buyPending || $0.orderIntent == .sellPending }
     }
@@ -25,16 +46,22 @@ extension WealthPortfolioStore {
         deployedHoldings.reduce(0) { $0 + $1.buyTotalCost }
     }
 
-    var effectiveReservedCapital: Double { totalBuyReservedCapital }
-    var availableToTrade: Double { max(0, brokerCashBalance - floorReserve - effectiveReservedCapital) }
-    var availableCapital: Double { availableToTrade }
-    var committedCapital: Double { currentlyInvested + pendingBuyReserveCapital }
-    var totalAccountAmount: Double { availableToTrade + totalBuyReservedCapital + floorReserve + holdingsValue }
-    var portfolioValue: Double { totalAccountAmount }
-    var portfolioAmount: Double { totalAccountAmount }
-    var tradingCapital: Double { availableCapital }
-    var investedCapital: Double { committedCapital }
-    var capitalBaseline: Double { max(protectedBaseCapital, externalDeposits) }
+    var availableToTrade: Double {
+        max(0, brokerCashBalance - floorReserve - effectiveReservedCapital)
+    }
+
+    var availableCapital: Double {
+        availableToTrade
+    }
+
+    var committedCapital: Double {
+        currentlyInvested + pendingBuyReserveCapital
+    }
+
+    var totalAccountAmount: Double {
+        normalizedDisplayCashBalance + holdingsValue
+    }
+
     var totalPnL: Double {
         deployedHoldings.reduce(0) { running, holding in
             if holding.orderIntent == .sellPending {
@@ -43,9 +70,44 @@ extension WealthPortfolioStore {
             return running + holding.netPnL
         }
     }
-    var profitOnlyProgress: Double { earnedProfit }
-    var reusableBuyingPower: Double { availableCapital }
-    var freeBuyingPower: Double { availableCapital }
+
+    var profitOnlyProgress: Double {
+        earnedProfit
+    }
+
+    var reusableBuyingPower: Double {
+        availableCapital
+    }
+
+    var freeBuyingPower: Double {
+        availableCapital
+    }
+    var effectiveReservedCapital: Double { totalBuyReservedCapital }
+    var portfolioValue: Double { totalAccountAmount }
+    var portfolioAmount: Double { totalAccountAmount }
+    var tradingCapital: Double { availableCapital }
+    var investedCapital: Double { committedCapital }
+    var capitalBaseline: Double { max(protectedBaseCapital, externalDeposits) }
+
+    var runtimeMoneySnapshot: WealthPortfolioRuntimeMoneySnapshot {
+        let positions = holdings.filter { $0.orderIntent != .buyPending && $0.orderState != .filled }
+        let buyReserved = totalBuyReservedCapital
+        let cashBalance = normalizedDisplayCashBalance
+        let holdingsValue = self.holdingsValue
+
+        return WealthPortfolioRuntimeMoneySnapshot(
+            cashBalance: cashBalance,
+            availableCapital: max(0, cashBalance - floorReserve - buyReserved),
+            committedCapital: currentlyInvested + pendingBuyReserveCapital,
+            holdingsValue: holdingsValue,
+            accountValue: cashBalance + holdingsValue,
+            buyReserved: buyReserved,
+            sellReturning: pendingSellReturnCapital,
+            totalPnL: totalPnL,
+            holdingsCount: holdings.count,
+            positionsCount: positions.count
+        )
+    }
 
     var pendingBuyReserveCapital: Double {
         holdings
@@ -78,27 +140,36 @@ extension WealthPortfolioStore {
     }
 
     func dailyGoal(target: Double) -> GoalProgress {
-        GoalProgress(target: target, actual: dailyGoalActual)
+        GoalProgress(target: max(0, target), actual: dailyGoalActual)
     }
 
     func compoundGoal(target: Double) -> GoalProgress {
-        GoalProgress(target: target, actual: compoundGoalActual)
+        GoalProgress(target: max(0, target), actual: compoundGoalActual)
     }
 
     func missionGoal(target: Double) -> GoalProgress {
-        GoalProgress(target: target, actual: missionGoalActual)
+        GoalProgress(target: max(0, target), actual: missionGoalActual)
     }
 
     func goalVector() -> WealthGoalVector {
         let defaults = UserDefaults.standard
-        let dailyTarget = defaults.object(forKey: "awc_daily_target") as? Double ?? 100
-        let compoundTarget = defaults.object(forKey: "awc_campaign_target") as? Double ?? 1_000
-        let missionTarget = defaults.object(forKey: "awc_mission_amount") as? Double ?? 25_000
+
+        let dailyTarget = max(0, defaults.object(forKey: "awc_daily_target") as? Double ?? 100)
+        let compoundTarget = max(0, defaults.object(forKey: "awc_campaign_target") as? Double ?? 1_000)
+        let missionTarget = max(0, defaults.object(forKey: "awc_mission_amount") as? Double ?? 25_000)
+
+        refreshGoalBaselinesIfNeeded(
+            dailyTarget: dailyTarget,
+            compoundTarget: compoundTarget,
+            missionTarget: missionTarget
+        )
 
         return WealthGoalVector(
             daily: dailyGoal(target: dailyTarget),
             compound: compoundGoal(target: compoundTarget),
-            mission: missionGoal(target: missionTarget)
+            mission: missionGoal(target: missionTarget),
+            compoundTimePressure: compoundRemainingWindowPressure(),
+            missionTimePressure: missionRemainingWindowPressure()
         )
     }
 
@@ -109,9 +180,12 @@ extension WealthPortfolioStore {
             }
         )
 
-        holdings = holdings.map { holding in
+        holdings = holdings.compactMap { holding in
             let key = overviewKey(symbol: holding.symbol, market: holding.market)
-            guard let live = lookup[key] else { return holding }
+            let keepPending = holding.orderIntent == .buyPending || holding.orderIntent == .sellPending
+            guard let live = lookup[key] else {
+                return keepPending ? holding : nil
+            }
 
             var next = holding
             next.currentPrice = WealthHoldingLivePriceResolver.resolvedCurrentPrice(
@@ -154,6 +228,17 @@ extension WealthPortfolioStore {
         lastRefresh = .now
     }
 
+    func normalizeRuntimeBalancesIfNeeded() {
+        let protection = WealthProtectionSettingsStore.shared
+        guard protection.demoMode else { return }
+        guard protection.demoBalance > 0 else { return }
+        guard !hasMeaningfulPortfolioState else { return }
+
+        protection.demoBalance = 0
+        protection.demoMode = false
+        lastRefresh = .now
+    }
+
     private func overviewKey(symbol: String, market: String) -> String {
         "\(symbol.uppercased())-\(market.uppercased())"
     }
@@ -166,6 +251,6 @@ extension WealthPortfolioStore {
     }
 
     private var deployedHoldings: [Holding] {
-        holdings.filter { $0.orderIntent != .buyPending }
+        holdings.filter { $0.orderState == .filled }
     }
 }

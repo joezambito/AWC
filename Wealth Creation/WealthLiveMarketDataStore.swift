@@ -5,6 +5,13 @@ import Combine
 final class WealthLiveMarketDataStore: ObservableObject {
     static let shared = WealthLiveMarketDataStore()
 
+    private enum UIRefreshPolicy {
+        static let throttleNanoseconds: UInt64 = 250_000_000
+        static let diagnosticsLimit = 16
+        static let errorsLimit = 12
+        static let invalidContractsLimit = 24
+    }
+
     struct SymbolDiagnostics: Identifiable, Hashable {
         let id: String
         let key: WealthBrokerQuoteKey
@@ -51,14 +58,33 @@ final class WealthLiveMarketDataStore: ObservableObject {
     @Published private(set) var marketDataType = 1
     @Published private(set) var lastTickReceivedAt: Date?
     @Published private(set) var lastConnectionMessage = ""
-    @Published private(set) var liveQuotes: [WealthBrokerQuoteKey: WealthBrokerQuote] = [:]
-    @Published private(set) var symbolDiagnostics: [String: SymbolDiagnostics] = [:]
-    @Published private(set) var recentErrors: [ErrorSnapshot] = []
-    @Published private(set) var invalidContracts: [WealthBrokerQuoteKey] = []
     @Published private(set) var apiPort = 8787
+    @Published private(set) var rawQuoteCount = 0
+    @Published private(set) var visibleDiagnostics: [SymbolDiagnostics] = []
+    @Published private(set) var visibleErrors: [ErrorSnapshot] = []
+    @Published private(set) var visibleInvalidContracts: [WealthBrokerQuoteKey] = []
+    @Published private(set) var receivedQuoteUpdatesInCycle = 0
+    @Published private(set) var publishedUIQuoteUpdatesInCycle = 0
+    @Published private(set) var lastBrokerPerfMessage = "idle"
 
     private let timestampFormatter = ISO8601DateFormatter()
-    private init() {}
+    private var cancellables: Set<AnyCancellable> = []
+    private var liveQuotes: [WealthBrokerQuoteKey: WealthBrokerQuote] = [:]
+    private var symbolDiagnostics: [String: SymbolDiagnostics] = [:]
+    private var recentErrors: [ErrorSnapshot] = []
+    private var invalidContracts: [WealthBrokerQuoteKey] = []
+    private var pendingUIRefreshTask: Task<Void, Never>?
+    private var pendingQuoteUpdatesInCycle = 0
+    private var brokerUIScreenVisible = false
+
+    private init() {
+        WealthBrokerStore.shared.$brokerDisplayMode
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.handleBrokerUIDisplayStateChange()
+            }
+            .store(in: &cancellables)
+    }
 
     var symbolDiagnosticsList: [SymbolDiagnostics] {
         symbolDiagnostics.values.sorted { lhs, rhs in
@@ -70,7 +96,15 @@ final class WealthLiveMarketDataStore: ObservableObject {
     }
 
     var endpointLabel: String {
-        "http://127.0.0.1:\(apiPort)/api/prices"
+        "http://\(connectionHost):\(apiPort)/api/prices"
+    }
+
+    var rawBrokerSymbolCount: Int {
+        max(symbolDiagnostics.count, liveQuotes.count)
+    }
+
+    var shouldPublishBrokerUI: Bool {
+        brokerUIScreenVisible && WealthBrokerStore.shared.brokerDisplayMode == .debug
     }
 
     var noTickDiagnostics: [SymbolDiagnostics] {
@@ -88,11 +122,19 @@ final class WealthLiveMarketDataStore: ObservableObject {
         apiPort = port
     }
 
+    func setBrokerUIScreenVisible(_ isVisible: Bool) {
+        guard brokerUIScreenVisible != isVisible else { return }
+        brokerUIScreenVisible = isVisible
+        handleBrokerUIDisplayStateChange()
+    }
+
     func setInvalidContracts(_ keys: [WealthBrokerQuoteKey]) {
         invalidContracts = keys.sorted {
             if $0.market != $1.market { return $0.market < $1.market }
             return $0.symbol < $1.symbol
         }
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "invalid_contracts")
     }
 
     func noteConnectionAttempt(host: String, port: Int, clientID: Int) {
@@ -110,22 +152,30 @@ final class WealthLiveMarketDataStore: ObservableObject {
         twsConnected = true
         connectionStatus = "TWS CONNECTED"
         lastConnectionMessage = "Connected to \(host):\(port)"
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "connected")
     }
 
     func noteDisconnected(_ message: String) {
         twsConnected = false
         connectionStatus = "TWS OFFLINE"
         lastConnectionMessage = message
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "disconnected")
     }
 
     func noteFailed(_ message: String) {
         twsConnected = false
         connectionStatus = "TWS FAILED"
         lastConnectionMessage = message
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "failed")
     }
 
     func noteMarketDataType(_ type: Int) {
         marketDataType = type
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "market_data_type")
     }
 
     func noteSubscription(contract: WealthIBKRContract, requestID: Int) {
@@ -134,6 +184,8 @@ final class WealthLiveMarketDataStore: ObservableObject {
             item.requestID = requestID
             item.reqMktDataSent = true
         }
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "subscription")
     }
 
     func noteTickPrice(key: WealthBrokerQuoteKey, requestID: Int, contract: WealthIBKRContract?, tickType: Int, timestamp: Date) {
@@ -144,6 +196,8 @@ final class WealthLiveMarketDataStore: ObservableObject {
             item.lastTickAt = timestamp
         }
         lastTickReceivedAt = timestamp
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "tick_price")
     }
 
     func noteTickSize(key: WealthBrokerQuoteKey, requestID: Int, contract: WealthIBKRContract?, tickType: Int, timestamp: Date) {
@@ -154,14 +208,20 @@ final class WealthLiveMarketDataStore: ObservableObject {
             item.lastTickAt = timestamp
         }
         lastTickReceivedAt = timestamp
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "tick_size")
     }
 
     func noteQuote(_ quote: WealthBrokerQuote) {
         liveQuotes[quote.key] = quote
+        rawQuoteCount = liveQuotes.count
         updateDiagnostics(for: quote.key) { item in
             item.lastTickAt = quote.timestamp
         }
         lastTickReceivedAt = quote.timestamp
+        guard shouldPublishBrokerUI else { return }
+        pendingQuoteUpdatesInCycle += 1
+        scheduleUIRefresh(reason: "quote")
     }
 
     func noteError(code: Int?, message: String, requestID: Int?, key: WealthBrokerQuoteKey?) {
@@ -181,11 +241,16 @@ final class WealthLiveMarketDataStore: ObservableObject {
                 item.lastErrorMessage = message
             }
         }
+        guard shouldPublishBrokerUI else { return }
+        scheduleUIRefresh(reason: "error")
     }
 
     func clearQuotes() {
         liveQuotes.removeAll()
+        rawQuoteCount = 0
         lastTickReceivedAt = nil
+        pendingQuoteUpdatesInCycle = 0
+        clearPublishedBrokerUIState(reason: "clear_quotes")
     }
 
     func apiResponseData(path: String) -> Data {
@@ -270,73 +335,67 @@ final class WealthLiveMarketDataStore: ObservableObject {
         symbolDiagnostics[itemKey] = item
     }
 
+    private func handleBrokerUIDisplayStateChange() {
+        guard shouldPublishBrokerUI else {
+            clearPublishedBrokerUIState(reason: "hidden")
+            return
+        }
+        scheduleUIRefresh(reason: "display_enabled")
+    }
+
+    private func scheduleUIRefresh(reason: String) {
+        guard pendingUIRefreshTask == nil else { return }
+        pendingUIRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UIRefreshPolicy.throttleNanoseconds)
+            self?.flushUIRefresh(reason: reason)
+        }
+    }
+
+    private func flushUIRefresh(reason: String) {
+        pendingUIRefreshTask?.cancel()
+        pendingUIRefreshTask = nil
+        guard shouldPublishBrokerUI else {
+            clearPublishedBrokerUIState(reason: "hidden")
+            return
+        }
+
+        let diagnostics = Array(symbolDiagnosticsList.prefix(UIRefreshPolicy.diagnosticsLimit))
+        let errors = Array(recentErrors.prefix(UIRefreshPolicy.errorsLimit))
+        let invalid = Array(invalidContracts.prefix(UIRefreshPolicy.invalidContractsLimit))
+        let received = pendingQuoteUpdatesInCycle
+
+        visibleDiagnostics = diagnostics
+        visibleErrors = errors
+        visibleInvalidContracts = invalid
+        receivedQuoteUpdatesInCycle = received
+        publishedUIQuoteUpdatesInCycle += received
+        pendingQuoteUpdatesInCycle = 0
+        lastBrokerPerfMessage = "reason=\(reason) raw=\(rawQuoteCount) visible=\(diagnostics.count) quotes=\(received)"
+
+#if DEBUG
+        if WealthPipelineTraceLogger.isEnabledForDebugOutput && WealthBrokerStore.shared.brokerDisplayMode == .debug {
+            print(
+                "[BrokerPerf] rawSymbols=\(rawQuoteCount) visibleSymbols=\(diagnostics.count) " +
+                "quoteUpdatesReceived=\(received) quoteUpdatesPublished=\(diagnostics.count) " +
+                "batched=true reason=\(reason)"
+            )
+        }
+#endif
+    }
+
+    private func clearPublishedBrokerUIState(reason: String) {
+        pendingUIRefreshTask?.cancel()
+        pendingUIRefreshTask = nil
+        visibleDiagnostics = []
+        visibleErrors = []
+        visibleInvalidContracts = []
+        receivedQuoteUpdatesInCycle = 0
+        pendingQuoteUpdatesInCycle = 0
+        lastBrokerPerfMessage = "reason=\(reason) raw=\(rawQuoteCount) visible=0 quotes=0"
+    }
+
     private static func requestedSymbol(from path: String) -> String? {
         guard let components = URLComponents(string: "http://localhost\(path)") else { return nil }
         return components.queryItems?.first(where: { $0.name == "symbol" })?.value
-    }
-}
-
-private extension WealthLiveMarketDataStore {
-    struct APIPayload: Encodable {
-        let twsConnected: Bool
-        let connectionStatus: String
-        let host: String
-        let port: Int
-        let clientID: Int
-        let marketDataType: Int
-        let lastTickReceivedAt: Date?
-        let quotes: [APIQuote]
-        let diagnostics: [APIDiagnostics]
-        let recentErrors: [APIError]
-        let invalidContracts: [APIInvalidContract]
-    }
-
-    struct APIQuote: Encodable {
-        let symbol: String
-        let market: String
-        let price: Double
-        let close: Double?
-        let bid: Double?
-        let ask: Double?
-        let bidSize: Int?
-        let askSize: Int?
-        let lastSize: Int?
-        let currency: String
-        let timestamp: Date
-        let isDelayed: Bool
-    }
-
-    struct APIDiagnostics: Encodable {
-        let symbol: String
-        let market: String
-        let status: String
-        let requestID: Int?
-        let reqMktDataSent: Bool
-        let tickPriceCount: Int
-        let tickSizeCount: Int
-        let lastTickAt: Date?
-        let contract: APIContract?
-        let lastErrorCode: Int?
-        let lastErrorMessage: String?
-    }
-
-    struct APIContract: Encodable {
-        let symbol: String
-        let secType: String
-        let exchange: String
-        let primaryExchange: String
-        let currency: String
-    }
-
-    struct APIError: Encodable {
-        let code: Int?
-        let message: String
-        let requestID: Int?
-        let timestamp: Date
-    }
-
-    struct APIInvalidContract: Encodable {
-        let symbol: String
-        let market: String
     }
 }

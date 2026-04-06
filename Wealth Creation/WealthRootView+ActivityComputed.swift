@@ -84,7 +84,7 @@ extension WealthRootView {
                     id: "queue-\(queued.id)",
                     title: queued.sessionState.canTradeNow ? "\(queued.symbol) WAITING TRADE" : "\(queued.symbol) WAITING OPEN",
                     detail: queued.sessionState.canTradeNow
-                        ? "Queued for the final AI check before the next order is sent."
+                        ? "Queued for the final Activity confirmation before the next order is sent."
                         : "Queued for broker session review before the next order is sent.",
                     tint: WealthTheme.gold
                 )
@@ -122,8 +122,6 @@ extension WealthRootView {
 
     func opportunitySort(_ lhs: Opportunity, _ rhs: Opportunity) -> Bool {
         if lhs.rank != rhs.rank { return lhs.rank < rhs.rank }
-        if lhs.aiScore != rhs.aiScore { return lhs.aiScore < rhs.aiScore }
-        if lhs.confidence != rhs.confidence { return lhs.confidence > rhs.confidence }
         return lhs.symbol < rhs.symbol
     }
 

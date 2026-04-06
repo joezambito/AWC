@@ -13,12 +13,10 @@ extension MarketsView {
     }
 
     private struct MarketRegionLabelCount: Identifiable {
-        let band: MarketUniverseLabelBand
+        let id: String
+        let title: String
         let count: Int
-
-        var id: String {
-            band.rawValue
-        }
+        let tint: Color
     }
 
     private var marketRowDetailLimit: Int {
@@ -32,157 +30,107 @@ extension MarketsView {
     private var phoneFolderBatchSize: Int {
         36
     }
-
+    // MARK: Region Card Layout
+    // Safe manual tweak area:
+    // - outer VStack spacing
+    // - header HStack spacing
+    // - icon size and corner radius
+    // - title/subtitle font sizes
+    // - header padding
+    // - card stroke opacity / corner radius
     func marketRegionCard(
-        region: String,
-        entries: [MarketUniverseEntry],
-        rawCount: Int,
+        summary: MarketRegionBoardSummary,
         phaseLabel: String? = nil
     ) -> some View {
-        let regionKey = "world-\(region)"
-        let isExpanded = expandedRegions.contains(regionKey)
-        let lead = entries.first
-        let visibleEntries = visibleRegionEntries(entries)
-        let folders = phoneMarketFolders(for: region, entries: visibleEntries)
+        let labelCounts = marketRegionLabelCounts(summary: summary)
 
-        return VStack(spacing: 8) {
-            Button {
-                toggleRegion(regionKey)
-            } label: {
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill((lead?.tint ?? WealthTheme.cyan).opacity(0.16))
-                        .frame(width: 42, height: 42)
-                        .overlay(
-                            Image(systemName: "globe")
-                                .font(.system(size: 18, weight: .black))
-                                .foregroundColor(lead?.tint ?? WealthTheme.cyan)
-                        )
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(summary.accentTint.opacity(0.16))
+                    .frame(width: 42, height: 42)
+                    .overlay(
+                        Image(systemName: "globe")
+                            .font(.system(size: 18, weight: .black))
+                            .foregroundColor(summary.accentTint)
+                    )
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(region)
-                            .font(.system(size: 18, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("\(rawCount) cards available")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(WealthTheme.grey)
-                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(summary.region)
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                    Text("\(summary.rawCount) cards available")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(WealthTheme.grey)
+                }
 
-                    Spacer()
+                Spacer()
 
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(lead?.symbol ?? "--")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text(isExpanded ? "TAP TO CLOSE" : "TAP TO OPEN")
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(summary.state.canTradeNow ? "OPEN" : "CLOSED")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                        .foregroundColor(summary.state.color)
+                    if let phaseLabel {
+                        Text(phaseLabel)
                             .font(.system(size: 12, weight: .black, design: .rounded))
-                            .foregroundColor(WealthTheme.grey)
-                    }
-                }
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
-                        .fill(Color.black.opacity(0.20))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
-                                .stroke((lead?.tint ?? WealthTheme.cyan).opacity(0.16), lineWidth: 1)
-                        )
-                )
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded {
-                if let phaseLabel {
-                    marketRegionPhaseRow(phaseLabel, rawCount: rawCount)
-                } else {
-                    marketRegionSummaryRow(entries: entries, rawCount: rawCount)
-
-                    if folders.isEmpty {
-                        ForEach(Array(visibleEntries.prefix(marketRowDetailLimit))) { entry in
-                            marketPulseRow(entry)
-                        }
-                    } else {
-                        ForEach(folders) { folder in
-                            marketFolderCard(region: region, folder: folder)
-                        }
+                            .foregroundColor(WealthTheme.gold)
                     }
                 }
             }
-        }
-    }
-
-    private func marketRegionSummaryRow(entries: [MarketUniverseEntry], rawCount: Int) -> some View {
-        let sortedCount = entries.filter { $0.aiLabelBand != nil }.count
-        let labelCounts = marketRegionLabelCounts(entries: entries)
-
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("AI SORTED \(sortedCount)/\(rawCount)")
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.08))
-                )
 
             HStack(spacing: 8) {
-                ForEach(labelCounts) { item in
-                    marketRegionCountPill(item)
-                }
-                Spacer(minLength: 0)
+                marketCollapsedSummaryRow(labelCounts)
             }
         }
-        .padding(.horizontal, 4)
-    }
-
-    private func marketRegionPhaseRow(_ phaseLabel: String, rawCount: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(rawCount) RAW MARKETS READY")
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.08))
+        .contentShape(Rectangle())
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
+                .fill(Color.black.opacity(0.20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
+                        .stroke(summary.accentTint.opacity(0.16), lineWidth: 1)
                 )
-
-            Text(phaseLabel)
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(WealthTheme.gold)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(cardShell(cornerRadius: 14))
-        }
-        .padding(.horizontal, 4)
+        )
     }
 
-    private func marketRegionLabelCounts(entries: [MarketUniverseEntry]) -> [MarketRegionLabelCount] {
-        MarketUniverseLabelBand.allCases.map { band in
-            let count = entries.reduce(into: 0) { total, entry in
-                if entry.aiLabelBand == band {
-                    total += 1
-                }
+    private func marketCollapsedSummaryRow(_ labelCounts: [MarketRegionLabelCount]) -> some View {
+        return HStack(spacing: 8) {
+            ForEach(labelCounts) { item in
+                marketRegionCountPill(item)
             }
-            return MarketRegionLabelCount(band: band, count: count)
+            Spacer(minLength: 0)
         }
+    }
+
+    private func marketRegionLabelCounts(summary: MarketRegionBoardSummary) -> [MarketRegionLabelCount] {
+        [
+            MarketRegionLabelCount(id: "green", title: "GREEN", count: summary.greenCount, tint: WealthTheme.green),
+            MarketRegionLabelCount(id: "blue", title: "BLUE", count: summary.blueCount, tint: WealthTheme.blue),
+            MarketRegionLabelCount(id: "purple", title: "PURPLE", count: summary.purpleCount, tint: WealthTheme.purple),
+            MarketRegionLabelCount(id: "red", title: "RED", count: summary.redCount, tint: WealthTheme.red),
+            MarketRegionLabelCount(id: "grey", title: "GREY", count: summary.greyCount, tint: WealthTheme.grey)
+        ]
     }
 
     private func marketRegionCountPill(_ item: MarketRegionLabelCount) -> some View {
-        Text("\(item.count) \(item.band.title)")
-            .font(.system(size: 11, weight: .black, design: .rounded))
-            .foregroundColor(item.band.tint)
+        VStack(spacing: 2) {
+            Text(item.title)
+                .font(.system(size: 10, weight: .black, design: .rounded))
+                .foregroundColor(item.tint.opacity(0.9))
+            Text("\(item.count)")
+                .font(.system(size: 14, weight: .black, design: .rounded))
+                .foregroundColor(item.tint)
+        }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
                 Capsule(style: .continuous)
-                    .fill(item.band.tint.opacity(0.14))
+                    .fill(item.tint.opacity(0.14))
             )
             .overlay(
                 Capsule(style: .continuous)
-                    .stroke(item.band.tint.opacity(0.30), lineWidth: 1)
+                    .stroke(item.tint.opacity(0.30), lineWidth: 1)
             )
     }
 
@@ -253,54 +201,33 @@ extension MarketsView {
     }
 
     private func marketFolderCard(region: String, folder: MarketEntryFolder) -> some View {
-        let folderKey = "world-\(region)-\(folder.title)"
-        let isExpanded = expandedRegions.contains(folderKey)
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(folder.tint.opacity(0.16))
+                .frame(width: 38, height: 38)
+                .overlay(
+                    Text(folder.title)
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                        .foregroundColor(folder.tint)
+                )
 
-        return VStack(spacing: 8) {
-            Button {
-                toggleRegion(folderKey)
-            } label: {
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(folder.tint.opacity(0.16))
-                        .frame(width: 38, height: 38)
-                        .overlay(
-                            Text(folder.title)
-                                .font(.system(size: 11, weight: .black, design: .rounded))
-                                .foregroundColor(folder.tint)
-                        )
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(folder.title)
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("\(folder.entries.count) cards")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(WealthTheme.grey)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(folder.leadSymbol)
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text(isExpanded ? "TAP TO CLOSE" : "TAP TO OPEN")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .foregroundColor(WealthTheme.grey)
-                    }
-                }
-                .padding(10)
-                .background(cardShell(cornerRadius: 16))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(folder.title)
+                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                Text("\(folder.entries.count) cards")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(WealthTheme.grey)
             }
-            .buttonStyle(.plain)
 
-            if isExpanded {
-                ForEach(Array(visibleFolderEntries(folder).prefix(marketRowDetailLimit))) { entry in
-                    marketPulseRow(entry)
-                }
-            }
+            Spacer()
+
+            Text(folder.leadSymbol)
+                .font(.system(size: 14, weight: .black, design: .rounded))
+                .foregroundColor(.white)
         }
+        .padding(10)
+        .background(cardShell(cornerRadius: 16))
     }
 
     private func visibleRegionEntries(_ entries: [MarketUniverseEntry]) -> [MarketUniverseEntry] {
@@ -329,110 +256,221 @@ extension MarketsView {
         return Array(folder.entries[start..<end])
     }
 
-    func marketPulseRow(_ entry: MarketUniverseEntry) -> some View {
-        let isExpanded = expandedSymbols.contains(entry.id)
+    private func visibleBucketEntries(_ entries: [MarketUniverseEntry]) -> [MarketUniverseEntry] {
+        guard !hasDesktopLayout else { return entries }
+        guard entries.count > phoneFolderBatchSize else { return entries }
 
-        return Button {
-            toggleSymbol(entry.id)
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
+        let batchCount = max(1, Int(ceil(Double(entries.count) / Double(phoneFolderBatchSize))))
+        let batchIndex = marketFeedScanBatchIndex % batchCount
+        let start = batchIndex * phoneFolderBatchSize
+        let end = min(start + phoneFolderBatchSize, entries.count)
+
+        guard start < end else { return Array(entries.prefix(phoneFolderBatchSize)) }
+        return Array(entries[start..<end])
+    }
+
+    private func marketPriceChangeTint(for entry: MarketUniverseEntry) -> Color {
+        guard entry.hasQuoteData else { return WealthTheme.grey }
+        if abs(entry.priceChangePercent) < 0.05 { return WealthTheme.orange }
+        return entry.priceChangePercent > 0 ? WealthTheme.green : WealthTheme.red
+    }
+
+    private func marketQuoteStatusTagText(for entry: MarketUniverseEntry) -> String {
+        let status = entry.statusText.uppercased()
+        if status.contains("NO PERMISSION") { return "NO PERMISSION" }
+        if entry.isDelayed || status.contains("DELAYED") { return "DELAYED" }
+        if entry.hasQuoteData || status.contains("LIVE") { return "LIVE" }
+        return "PENDING"
+    }
+
+    private func marketQuoteStatusTagTint(for entry: MarketUniverseEntry) -> Color {
+        let label = marketQuoteStatusTagText(for: entry)
+        switch label {
+        case "LIVE":
+            return WealthTheme.green
+        case "DELAYED":
+            return WealthTheme.orange
+        case "NO PERMISSION":
+            return WealthTheme.red
+        default:
+            return WealthTheme.grey
+        }
+    }
+
+    // MARK: Compact Share Row Layout
+    // Safe manual tweak area:
+    // - row HStack spacing
+    // - symbol/market/value font sizes
+    // - row horizontal/vertical padding
+    // - card shell corner radius
+    func marketCompactShareRow(_ entry: MarketUniverseEntry) -> some View {
+        let detailOpportunity = marketDetailOpportunity(for: entry)
+        let expansionKey = entry.id
+        let isExpanded = expandedSymbols.contains(expansionKey)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Button {
+                guard detailOpportunity != nil else { return }
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    toggleSymbol(expansionKey)
+                }
+            } label: {
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(entry.tint.opacity(0.16))
-                        .frame(width: 42, height: 42)
-                        .overlay(
-                            Image(systemName: entry.market.contains("CRYPTO") ? "bitcoinsign.circle.fill" : "chart.line.uptrend.xyaxis.circle.fill")
-                                .font(.system(size: 18, weight: .black))
-                                .foregroundColor(entry.tint)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(entry.tint.opacity(0.28), lineWidth: 1)
-                        )
-
                     VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            Text(entry.symbol)
-                                .font(.system(size: 18, weight: .black, design: .rounded))
-                                .foregroundColor(.white)
-                            Text(entry.marketDisplayLabel)
-                                .font(.system(size: 12, weight: .black, design: .rounded))
-                                .foregroundColor(WealthTheme.grey)
-                        }
-                        Text(entry.statusText)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(entry.tint)
-                            .lineLimit(1)
-                        Text(entry.whyText)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(.white.opacity(0.78))
-                            .lineLimit(2)
+                        Text(entry.symbol)
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                        Text(entry.marketDisplayLabel)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(WealthTheme.grey)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     Spacer()
 
-                    VStack(alignment: .trailing, spacing: 4) {
+                    VStack(alignment: .trailing, spacing: 3) {
                         Text(entry.priceText)
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                        Text(entry.confidenceText)
                             .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundColor(entry.hasQuoteData ? .white : WealthTheme.grey)
+                        Text(entry.changeText)
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundColor(marketPriceChangeTint(for: entry))
+                        Text(marketQuoteStatusTagText(for: entry))
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundColor(marketQuoteStatusTagTint(for: entry))
+                    }
+                    .frame(width: 92, alignment: .trailing)
+
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text(entry.aiScoreText)
+                            .font(.system(size: 13, weight: .black, design: .rounded))
                             .foregroundColor(entry.tint)
-                        Text(isExpanded ? "TAP TO CLOSE" : "TAP TO OPEN")
+                        Text(entry.confidenceText)
+                            .font(.system(size: 12, weight: .black, design: .rounded))
+                            .foregroundColor(entry.tint)
+                    }
+                    .frame(width: 74, alignment: .trailing)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(cardShell(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded, let opportunity = detailOpportunity {
+                marketCompactDetail(opportunity)
+            }
+        }
+    }
+
+    private func marketDetailOpportunity(for entry: MarketUniverseEntry) -> Opportunity? {
+        let lookupKey = entry.backingOpportunityKey
+            ?? WealthOpportunityLaneRules.laneKey(symbol: entry.symbol, market: entry.market)
+
+        if let exact = marketLaneOpportunities.first(where: {
+            WealthOpportunityLaneRules.laneKey($0) == lookupKey
+        }) {
+            return exact
+        }
+
+        return marketOpportunityLookup[lookupKey]
+    }
+
+    private func marketCompactDetail(_ opportunity: Opportunity) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("MARKET RANK")
+                    .font(.system(size: 10, weight: .black, design: .rounded))
+                    .foregroundColor(WealthTheme.cyan.opacity(0.78))
+                Text("#\(max(opportunity.rank, 1))")
+                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .foregroundColor(WealthTheme.cyan)
+            }
+
+            marketCompactDetailRow("BUY PRICE", WealthFormat.money(opportunity.submittedPrice), tint: .white)
+            marketCompactDetailRow("CURRENT P/L", wealthPnLText(opportunity.liveNetProfit), tint: wealthPnLTint(opportunity.liveNetProfit))
+            marketCompactDetailRow("AI SCORE", "\(opportunity.aiScore)", tint: opportunity.scoreTint)
+            marketCompactDetailRow("CONFIDENCE", "\(opportunity.confidence)%", tint: opportunity.confidenceTint)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(cardShell(cornerRadius: 16))
+    }
+
+    private func marketCompactDetailRow(_ label: String, _ value: String, tint: Color) -> some View {
+        HStack(spacing: 10) {
+            Text(label)
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .foregroundColor(tint.opacity(0.82))
+                .frame(width: 94, alignment: .leading)
+
+            Text(value)
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundColor(tint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    func marketPulseRow(_ entry: MarketUniverseEntry) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(entry.backgroundTint.opacity(entry.hasFreshData ? 0.16 : 0.28))
+                    .frame(width: 42, height: 42)
+                    .overlay(
+                        Image(systemName: entry.market.contains("CRYPTO") ? "bitcoinsign.circle.fill" : "chart.line.uptrend.xyaxis.circle.fill")
+                            .font(.system(size: 18, weight: .black))
+                            .foregroundColor(entry.tint)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(entry.borderTint.opacity(0.28), lineWidth: 1)
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(entry.symbol)
+                            .font(.system(size: 18, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                        Text(entry.marketDisplayLabel)
                             .font(.system(size: 12, weight: .black, design: .rounded))
                             .foregroundColor(WealthTheme.grey)
                     }
+                    Text(entry.statusText)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(entry.tint)
+                        .lineLimit(1)
+                    Text(entry.whyText)
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.78))
+                        .lineLimit(2)
                 }
 
-                if isExpanded {
-                    HStack(spacing: 8) {
-                        marketDetailCell("MARKET", entry.marketDisplayLabel, tint: WealthTheme.purple)
-                        marketDetailCell("PRICE", entry.priceText, tint: .white)
-                        marketDetailCell("MOVE", entry.changeText, tint: entry.hasQuoteData ? (entry.priceChangePercent >= 0 ? WealthTheme.green : WealthTheme.orange) : WealthTheme.grey)
-                    }
+                Spacer()
 
-                    HStack(spacing: 8) {
-                        marketDetailCell("DATA AGE", entry.dataAgeText, tint: WealthTheme.orange)
-                        marketDetailCell("NEXT TRADE", entry.nextTradeText, tint: WealthTheme.gold)
-                        marketDetailCell("SECTOR", entry.sector, tint: WealthTheme.green)
-                    }
-
-                    if let shieldExitPrice = entry.shieldExitPrice,
-                       let shieldTriggerPercent = entry.shieldTriggerPercent {
-                        HStack(spacing: 8) {
-                            marketDetailCell("EXIT PRICE", "\(WealthFormat.money(shieldExitPrice)) (\(wealthPercentMoveText(shieldTriggerPercent)))", tint: WealthTheme.red)
-                            marketDetailCell("NEXT TRADE", entry.nextTradeText, tint: WealthTheme.gold)
-                            marketDetailCell("SECTOR", entry.sector, tint: WealthTheme.green)
-                        }
-                    }
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(entry.priceText)
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundColor(entry.hasQuoteData ? .white : WealthTheme.grey)
+                    Text(entry.aiScoreText)
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(entry.tint)
+                    Text(entry.confidenceText)
+                        .font(.system(size: 14, weight: .black, design: .rounded))
+                        .foregroundColor(entry.tint)
                 }
             }
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
-                    .fill(Color.black.opacity(0.20))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
-                            .stroke(entry.tint.opacity(0.16), lineWidth: 1)
-                    )
-            )
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
+                .fill(entry.backgroundTint.opacity(entry.hasFreshData ? 0.16 : 0.24))
+                .overlay(
+                    RoundedRectangle(cornerRadius: hasDesktopLayout ? 20 : 18, style: .continuous)
+                        .stroke(entry.borderTint.opacity(0.22), lineWidth: 1)
+                )
+        )
     }
 
-    func marketDetailCell(_ title: String, _ value: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.system(size: 12, weight: .black, design: .rounded))
-                .foregroundColor(.white.opacity(0.56))
-            Text(value)
-                .font(.system(size: 14, weight: .black, design: .rounded))
-                .foregroundColor(tint)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-        .background(cardShell(cornerRadius: 14))
-    }
 }

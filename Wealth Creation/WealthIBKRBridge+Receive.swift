@@ -1,7 +1,14 @@
 import Foundation
 import Network
+import OSLog
 
 extension WealthIBKRBridge {
+    private var handshakeLogPrefix: String { "IB handshake" }
+
+    private var handshakeRejectedMessage: String {
+        "TWS reset the API handshake before sending serverVersion. Check TWS API socket access, trusted IP settings, and the selected port."
+    }
+
     func receiveData() {
         guard let connection else { return }
 
@@ -19,7 +26,10 @@ extension WealthIBKRBridge {
             let totalLength = 4 + Int(messageLength)
             guard receiveBuffer.count >= totalLength else { return }
 
-            let payload = receiveBuffer[4..<totalLength]
+            let bufferStart = receiveBuffer.startIndex
+            let payloadStart = receiveBuffer.index(bufferStart, offsetBy: 4)
+            let payloadEnd = receiveBuffer.index(bufferStart, offsetBy: totalLength)
+            let payload = Data(receiveBuffer[payloadStart..<payloadEnd])
             receiveBuffer.removeFirst(totalLength)
 
             let fields = payload
@@ -35,7 +45,13 @@ extension WealthIBKRBridge {
 
         let fields = rawFields.last == "" ? Array(rawFields.dropLast()) : rawFields
 
-        if !apiReady, !hasValidRequestID, !hasManagedAccounts, fields.count == 2, let serverVersion = Int(fields[0]), serverVersion >= 157 {
+        if !apiReady {
+            let preview = fields.prefix(4).joined(separator: "|")
+            logger.log("\(self.handshakeLogPrefix, privacy: .public) message fields=\(fields.count, privacy: .public) preview=\(preview, privacy: .public)")
+        }
+
+        if !apiReady, !hasValidRequestID, !hasManagedAccounts, fields.count == 2, let serverVersion = Int(fields[0]), serverVersion >= 100 {
+            logger.log("\(self.handshakeLogPrefix, privacy: .public) serverVersion=\(serverVersion, privacy: .public) connectionTime=\(fields[1], privacy: .public)")
             sendStartAPI()
             return
         }
@@ -66,23 +82,41 @@ extension WealthIBKRBridge {
 
     func handleReceiveChunk(data: Data?, isComplete: Bool, error: NWError?) {
         if let error {
+            logger.error("\(self.handshakeLogPrefix, privacy: .public) receive error=\(error.localizedDescription, privacy: .public)")
             connection = nil
-            WealthLiveMarketDataStore.shared.noteFailed(error.localizedDescription)
-            emit(.failed(error.localizedDescription))
-            scheduleReconnect(reason: error.localizedDescription)
+            let failureMessage: String
+            if !apiReady && !receivedServerHandshakeBytes {
+                failureMessage = handshakeRejectedMessage
+            } else {
+                failureMessage = error.localizedDescription
+            }
+            WealthLiveMarketDataStore.shared.noteFailed(failureMessage)
+            emit(.failed(failureMessage))
+            scheduleReconnect(reason: failureMessage)
             return
         }
 
         if let data, !data.isEmpty {
+            if !apiReady {
+                receivedServerHandshakeBytes = true
+                logger.log("\(self.handshakeLogPrefix, privacy: .public) received bytes=\(data.count, privacy: .public) complete=\(isComplete, privacy: .public)")
+            }
             receiveBuffer.append(data)
             processReceiveBuffer()
         }
 
         if isComplete {
+            logger.error("\(self.handshakeLogPrefix, privacy: .public) peer closed connection before apiReady=\((!self.apiReady), privacy: .public)")
             connection = nil
-            WealthLiveMarketDataStore.shared.noteDisconnected("TWS closed the connection.")
-            emit(.disconnected("TWS closed the connection."))
-            scheduleReconnect(reason: "TWS closed the connection.")
+            let disconnectMessage: String
+            if !apiReady && !receivedServerHandshakeBytes {
+                disconnectMessage = handshakeRejectedMessage
+            } else {
+                disconnectMessage = "TWS closed the connection."
+            }
+            WealthLiveMarketDataStore.shared.noteDisconnected(disconnectMessage)
+            emit(.disconnected(disconnectMessage))
+            scheduleReconnect(reason: disconnectMessage)
             return
         }
 

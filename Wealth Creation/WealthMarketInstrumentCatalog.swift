@@ -134,4 +134,9 @@ enum WealthMarketInstrumentCatalog {
         guard let definition = definition(symbol: symbol, market: market) else { return [] }
         return definition.providerFallbackOrder.map { definition.providerSymbols.symbol(for: $0) }
     }
+
+    nonisolated
+    static func isReferenceInstrument(symbol: String, market: String) -> Bool {
+        definitionsByKey[WealthOpportunityLaneRules.laneKey(symbol: symbol, market: market)] != nil
+    }
 }

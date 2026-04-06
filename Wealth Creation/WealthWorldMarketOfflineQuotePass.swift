@@ -6,6 +6,7 @@ final class WealthWorldMarketOfflineQuotePass {
 
     private let batchSize = 120
     private let batchIntervalNanoseconds: UInt64 = 2_000_000_000
+    private let immediateIngestLimit = 120
 
     private var records: [MarketUniverseRecord] = []
     private var recordKeys: [String] = []
@@ -31,7 +32,14 @@ final class WealthWorldMarketOfflineQuotePass {
         task?.cancel()
         self.records = orderedRecords
         recordKeys = nextKeys
-        cursor = 0
+        let immediateRecords = Array(orderedRecords.prefix(immediateIngestLimit))
+        ingest(immediateRecords, at: Date())
+        cursor = immediateRecords.count
+
+        guard cursor < self.records.count else {
+            task = nil
+            return
+        }
 
         task = Task { @MainActor [weak self] in
             await self?.run()
@@ -51,10 +59,7 @@ final class WealthWorldMarketOfflineQuotePass {
             let batch = nextBatch()
             guard !batch.isEmpty else { return }
 
-            let now = Date()
-            for record in batch {
-                WealthBrokerQuoteStore.shared.ingest(makeQuote(for: record, at: now))
-            }
+            ingest(batch, at: Date())
 
             do {
                 try await Task.sleep(nanoseconds: batchIntervalNanoseconds)
@@ -72,6 +77,12 @@ final class WealthWorldMarketOfflineQuotePass {
         let batch = Array(records[start..<end])
         cursor = end >= records.count ? 0 : end
         return batch
+    }
+
+    private func ingest(_ records: [MarketUniverseRecord], at now: Date) {
+        for record in records {
+            WealthBrokerQuoteStore.shared.ingest(makeQuote(for: record, at: now))
+        }
     }
 
     private func makeQuote(for record: MarketUniverseRecord, at now: Date) -> WealthBrokerQuote {

@@ -10,7 +10,7 @@ extension MarketsView {
     }
 
     var preferredRegionOrder: [String] {
-        ["AU", "US", "CA", "EU", "APAC", "ME", "LATAM", "AFRICA", "FX", "CRYPTO", "GLOBAL", "UNKNOWN"]
+        ["US", "CA", "EU", "APAC", "ME", "LATAM", "AFRICA", "AU", "FX", "CRYPTO", "GLOBAL", "UNKNOWN"]
     }
 
     var marketToggles: [(String, Binding<Bool>, Color)] {

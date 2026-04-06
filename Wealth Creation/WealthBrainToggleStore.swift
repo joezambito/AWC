@@ -41,21 +41,23 @@ final class WealthBrainToggleStore: ObservableObject {
     }
 
     var totalActivatableCount: Int {
-        activatableTitles.count
+        runtimeTrackedTitles.count
     }
 
     var activationCoverage: Double {
-        guard totalActivatableCount > 0 else { return 0 }
-        return Double(enabledTitles.count) / Double(totalActivatableCount)
+        guard totalRunnableCount > 0 else { return 0 }
+        return Double(activeRuntimeCount) / Double(totalRunnableCount)
     }
 
     func enableAllAvailable() {
         enabledTitles = activatableTitles
+        setProviderTrainingModulesEnabled(true)
         persist()
     }
 
     func enableAllForCurrentMode() {
         enabledTitles = runnableTitlesForCurrentMode()
+        setProviderTrainingModulesEnabled(true)
         persist()
     }
 
@@ -81,11 +83,11 @@ final class WealthBrainToggleStore: ObservableObject {
     }
 
     var activeRuntimeCount: Int {
-        enabledTitles.intersection(runnableTitlesForCurrentMode()).count
+        runtimeTrackedTitles.filter { WealthBrainModuleRegistry.isEnabled(title: $0) }.count
     }
 
     var totalRunnableCount: Int {
-        runnableTitlesForCurrentMode().count
+        runtimeTrackedTitles.count
     }
 
     var runtimeCoverageText: String {
@@ -99,6 +101,12 @@ final class WealthBrainToggleStore: ObservableObject {
     private var activatableTitles: Set<String> {
         Self.makeActivatableTitles()
     }
+
+    private var runtimeTrackedTitles: Set<String> {
+        activatableTitles.union(Self.providerTrainingTitles)
+    }
+
+    private static let providerTrainingTitles = Set(WealthBrainModuleRegistry.providerTrainingTitles)
 
     private static func makeActivatableTitles() -> Set<String> {
         Set(
@@ -116,6 +124,12 @@ final class WealthBrainToggleStore: ObservableObject {
             .intersection(runnable)
             .union(defaultEnabledTitles.subtracting(enabledTitles))
         persist()
+    }
+
+    private func setProviderTrainingModulesEnabled(_ enabled: Bool) {
+        for title in Self.providerTrainingTitles {
+            WealthBrainModuleRegistry.setEnabled(enabled, title: title)
+        }
     }
 
     private func persist() {

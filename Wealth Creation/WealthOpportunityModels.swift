@@ -40,6 +40,10 @@ struct Opportunity: Identifiable, Hashable {
     let orderState: OrderExecutionState
     let submittedPrice: Double
     let submittedShares: Int
+    let actualExitPrice: Double = 0
+    let actualRealizedProfit: Double = 0
+    let actualRealizedNetProfit: Double = 0
+    let completedAt: Date? = nil
     let decisionBias: WealthDecisionBias
     let aggressionMode: WealthAggressionMode
     let marketRegime: WealthMarketRegime

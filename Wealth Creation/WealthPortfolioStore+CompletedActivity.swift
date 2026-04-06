@@ -1,6 +1,42 @@
 import Foundation
 
 extension WealthPortfolioStore {
+    static func recalculatedProfitMetrics(
+        from completedActivity: [Opportunity],
+        fallbackEarnedProfit: Double,
+        fallbackDailyProfit: Double,
+        now: Date = .now
+    ) -> (earnedProfit: Double, dailyProfit: Double) {
+        guard !completedActivity.isEmpty else {
+            return (fallbackEarnedProfit, fallbackDailyProfit)
+        }
+
+        let calendar = Calendar.autoupdatingCurrent
+        let earnedProfit = completedActivity.reduce(0) { running, opportunity in
+            running + opportunity.actualRealizedNetProfit
+        }
+        let dailyProfit = completedActivity.reduce(0) { running, opportunity in
+            guard let completedAt = opportunity.completedAt,
+                  calendar.isDate(completedAt, inSameDayAs: now) else {
+                return running
+            }
+            return running + opportunity.actualRealizedNetProfit
+        }
+
+        return (earnedProfit, dailyProfit)
+    }
+
+    func refreshProfitMetricsFromCompletedActivity(now: Date = .now) {
+        let metrics = Self.recalculatedProfitMetrics(
+            from: completedActivity,
+            fallbackEarnedProfit: earnedProfit,
+            fallbackDailyProfit: dailyProfit,
+            now: now
+        )
+        earnedProfit = metrics.earnedProfit
+        dailyProfit = metrics.dailyProfit
+    }
+
     static func seedCompletedActivity(from holdings: [Holding], now: Date = .now) -> [Opportunity] {
         let cutoff = Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now
 
@@ -31,5 +67,6 @@ extension WealthPortfolioStore {
 
         completedActivity.insert(snapshot, at: 0)
         completedActivity = Self.prunedCompletedActivity(completedActivity, now: now)
+        refreshProfitMetricsFromCompletedActivity(now: now)
     }
 }

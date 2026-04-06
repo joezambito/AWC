@@ -39,7 +39,7 @@ extension WealthEngineStore {
 
         switch decision {
         case .buy: total += 35
-        case .hold: total += 12
+        case .hold: total += 35
         case .avoid: total -= 30
         }
 
@@ -82,20 +82,22 @@ extension WealthEngineStore {
             total -= 10
         }
 
+        var governanceSupport = 0
         if toggles.isEnabled(title: "Explainability Layer") {
-            if advanced.trendState == "TRENDING STRONG" { total += 8 }
-            if advanced.patternState == "PATTERN BULLISH" { total += 8 }
-            if advanced.smartMoneyState == "SMART MONEY STRONG" { total += 10 }
-            if advanced.eventState == "EVENT STRONG" { total += 8 }
-            if advanced.portfolioState == "PORTFOLIO CROWDING" { total -= 10 }
-            if advanced.anomalyState == "ANOMALY HIGH" { total -= 18 }
+            if advanced.trendState == "TRENDING STRONG" { governanceSupport += 2 }
+            if advanced.patternState == "PATTERN BULLISH" { governanceSupport += 2 }
+            if advanced.smartMoneyState == "SMART MONEY STRONG" { governanceSupport += 2 }
+            if advanced.eventState == "EVENT STRONG" { governanceSupport += 1 }
+            if advanced.portfolioState == "PORTFOLIO CROWDING" { governanceSupport -= 2 }
+            if advanced.anomalyState == "ANOMALY HIGH" { governanceSupport -= 4 }
         }
         if toggles.isEnabled(title: "Model Registry"), decision == .buy, permission == .go {
-            total += 6
+            governanceSupport += 2
         }
         if toggles.isEnabled(title: "Audit / Decision Trail"), trustState == .verified {
-            total += 4
+            governanceSupport += 1
         }
+        total += max(-6, min(6, governanceSupport))
 
         return total
     }
@@ -105,6 +107,7 @@ extension WealthEngineStore {
         score: Int,
         confidence: Int,
         expectedNetProfit: Double,
+        goals: WealthGoalVector,
         advanced: WealthAdvancedSignalProfile,
         regime: WealthMarketRegime
     ) -> WealthAggressionMode {
@@ -115,6 +118,14 @@ extension WealthEngineStore {
             advanced.anomalyState != "STABLE" ||
             blueprint.timeWindow == "WEEKS" {
             return .protect
+        }
+
+        if goals.tradingPressure >= 0.28 &&
+            score <= 25 &&
+            confidence >= 74 &&
+            expectedNetProfit >= 12 &&
+            advanced.executionState == "EXECUTION CLEAN" {
+            return .aggressive
         }
 
         if score <= 18 &&

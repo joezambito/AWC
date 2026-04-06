@@ -42,7 +42,7 @@ final class WealthNotificationStore: ObservableObject {
     ) {
         guard isAuthorized else { return }
 
-        if let top = opportunities.first(where: { $0.orderState == .ready && $0.aiScore <= 20 && $0.sessionState.canTradeNow }) {
+        if let top = opportunities.first(where: { $0.orderState == .ready && $0.cardHoldingBucket == .green && $0.sessionState.canTradeNow }) {
             if protection.capitalAlertEnabled && top.trueCost > buyingPower {
                 postMoment(
                     id: "capital-\(top.symbol)",
@@ -58,7 +58,7 @@ final class WealthNotificationStore: ObservableObject {
             }
         }
 
-        if let queued = opportunities.first(where: { $0.orderState == .ready && !$0.sessionState.canTradeNow && $0.aiScore <= 20 }) {
+        if let queued = opportunities.first(where: { $0.orderState == .ready && $0.cardHoldingBucket == .green && !$0.sessionState.canTradeNow }) {
             postMoment(
                 id: "queue-\(queued.symbol)",
                 title: "Queued For Open",

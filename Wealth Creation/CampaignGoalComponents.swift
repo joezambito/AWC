@@ -106,7 +106,7 @@ struct GoalCard: View {
 
     private func numberField(value: Binding<Double>) -> some View {
         TextField("", value: value, format: .number)
-            .keyboardType(.decimalPad)
+            .awcDecimalPadInputBehavior()
             .font(.system(size: 24, weight: .black, design: .rounded))
             .foregroundColor(.white)
             .padding(.horizontal, 16)
@@ -116,7 +116,7 @@ struct GoalCard: View {
 
     private func integerField(value: Binding<Int>) -> some View {
         TextField("", value: value, format: .number)
-            .keyboardType(.numberPad)
+            .awcNumberPadInputBehavior()
             .font(.system(size: 24, weight: .black, design: .rounded))
             .foregroundColor(.white)
             .padding(.horizontal, 16)

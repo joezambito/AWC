@@ -9,27 +9,26 @@ extension WealthIBKRBridge {
         switch state {
         case .setup, .preparing:
             break
+
         case .waiting(let error):
             logger.error("TWS waiting: \(error.localizedDescription, privacy: .public)")
-            WealthLiveMarketDataStore.shared.noteFailed(error.localizedDescription)
-            emit(.failed(error.localizedDescription))
+            WealthLiveMarketDataStore.shared.noteDisconnected(error.localizedDescription)
             scheduleReconnect(reason: error.localizedDescription)
+
         case .ready:
             reconnectAttempt = 0
-            WealthLiveMarketDataStore.shared.noteConnected(
-                host: self.desiredHost,
-                port: self.desiredPort,
-                clientID: self.clientID
-            )
             logger.log("TWS socket ready at \(self.desiredHost, privacy: .public):\(self.desiredPort, privacy: .public)")
+            emit(.connecting)
             sendGreeting()
             receiveData()
+
         case .failed(let error):
             connection = nil
             logger.error("TWS failed: \(error.localizedDescription, privacy: .public)")
             WealthLiveMarketDataStore.shared.noteFailed(error.localizedDescription)
             emit(.failed(error.localizedDescription))
             scheduleReconnect(reason: error.localizedDescription)
+
         case .cancelled:
             guard connection === sourceConnection || connection == nil else { return }
             connection = nil
@@ -53,6 +52,7 @@ extension WealthIBKRBridge {
                 emit(.disconnected(cancelReason))
                 scheduleReconnect(reason: cancelReason)
             }
+
         @unknown default:
             WealthLiveMarketDataStore.shared.noteFailed("Unknown TWS connection state.")
             emit(.failed("Unknown TWS connection state."))
@@ -60,7 +60,7 @@ extension WealthIBKRBridge {
     }
 
     func resubscribeAllContracts() {
-        let existingContracts = subscriptions.values.map(\.contract)
+        let existingContracts = Array(desiredSubscriptions.values)
         subscriptions.removeAll()
         requestIDToKey.removeAll()
         requestIDToContract.removeAll()

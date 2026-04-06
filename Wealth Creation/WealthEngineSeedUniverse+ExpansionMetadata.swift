@@ -12,11 +12,19 @@ extension WealthEngineStore {
         ExpandedSeedSpec(symbol: symbol, market: market, sector: sector, price: price, tone: tone, change: change)
     }
 
-    static func shouldStayCatalogFirst(_ spec: ExpandedSeedSpec) -> Bool {
+    nonisolated static func shouldStayCatalogFirst(symbol: String, market: String) -> Bool {
         let primaryExecutionMarkets = Set(["NASDAQ", "NYSE", "AMEX", "ETF", "REIT", "ADR", "TSX", "ASX", "LSE", "XETRA", "EURONEXT", "CME", "CBOT", "COMEX", "NYMEX", "ICE", "FX", "CRYPTO"])
-        if primaryExecutionMarkets.contains(spec.market) { return false }
-        if spec.symbol.allSatisfy(\.isNumber) { return true }
+        if primaryExecutionMarkets.contains(market.uppercased()) { return false }
+        if symbol.allSatisfy(\.isNumber) { return true }
         return true
+    }
+
+    nonisolated static func shouldStayCatalogFirst(_ spec: ExpandedSeedSpec) -> Bool {
+        shouldStayCatalogFirst(symbol: spec.symbol, market: spec.market)
+    }
+
+    nonisolated static func shouldStayCatalogFirst(_ blueprint: OpportunityBlueprint) -> Bool {
+        shouldStayCatalogFirst(symbol: blueprint.symbol, market: blueprint.market)
     }
 
     static func dataOrigin(for market: String) -> String {

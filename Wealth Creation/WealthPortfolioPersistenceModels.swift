@@ -38,6 +38,10 @@ extension WealthPortfolioStore {
         let orderStateRaw: String
         let submittedPrice: Double
         let submittedShares: Int
+        let actualExitPrice: Double?
+        let actualRealizedProfit: Double?
+        let actualRealizedNetProfit: Double?
+        let completedAt: Date?
         let decisionBiasRaw: String
         let aggressionModeRaw: String
         let marketRegimeRaw: String

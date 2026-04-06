@@ -10,35 +10,30 @@ extension WealthEngineStore {
     }
 
     func recoverLiveUpdatesIfNeeded(reason: String, now: Date = .now) {
-        handleDayRolloverIfNeeded(now: now)
+        let didRollOver = handleDayRolloverIfNeeded(now: now)
 
         if !hasBootstrapped || activationTask != nil || pendingRefreshPayload != nil || pendingPublishTask != nil {
             return
         }
 
-        let portfolio = WealthPortfolioStore.shared
-        let pendingLifecycleThreshold: TimeInterval = 20
-        let staleThreshold = max(softRefreshInterval + 10, 45)
-
-        if softTimer == nil || heavyTimer == nil {
+        if scheduledCheckpointTimer == nil {
             rescheduleTimers()
         }
 
-        guard let lastRefresh else {
-            refresh(mode: .deep)
+        if didRollOver {
+            lastDecisionSummary = "Starting new trading day after \(reason)"
+            rescheduleTimers()
             return
         }
 
-        if portfolio.hasPendingBrokerLifecycleWork,
-           now.timeIntervalSince(lastRefresh) >= pendingLifecycleThreshold {
-            lastDecisionSummary = "Reconciling pending broker activity after \(reason)"
-            refresh(mode: .quick)
+        if requiresDownstreamLiveRecovery(now: now) {
+            downstreamRecoveryPending = true
+            runActivationSequence()
             return
         }
 
-        guard now.timeIntervalSince(lastRefresh) >= staleThreshold else { return }
-
-        lastDecisionSummary = "Recovering live scan after \(reason)"
-        refresh(mode: .soft, countsTowardDailyCycles: true)
+        if downstreamRecoveryPending {
+            downstreamRecoveryPending = false
+        }
     }
 }
