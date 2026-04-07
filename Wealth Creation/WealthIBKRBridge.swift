@@ -63,7 +63,7 @@ final class WealthIBKRBridge {
     var partialQuotes: [Int: PartialQuote] = [:]
     var snapshotRequestIDs: Set<Int> = []
     var snapshotCleanupTasks: [Int: Task<Void, Never>] = [:]
-    var desiredHost = ""
+    var desiredHost = "192.168.1.21"
     var desiredPort = 7497
     var shouldMaintainConnection = false
     var reconnectTask: Task<Void, Never>?
