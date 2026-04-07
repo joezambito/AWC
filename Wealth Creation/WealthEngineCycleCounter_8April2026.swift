@@ -1,4 +1,55 @@
+// WealthEngineCycleCounter_8April2026.swift
+// Wealth Creation — Daily scan cycle counter + midnight-reset storage (8 April 2026)
+// Merged from: WealthEngineScanCycleTracker + WealthEngineStore+CycleStorage
+// Removed: dead applyCatchUpCounters, missedCycleCount, ScanCounterStorageKey duplicate writes
+
 import Foundation
+
+// MARK: - Cycle Kind + Counter
+
+extension WealthEngineStore {
+    enum RecurringCycleKind: String {
+        case soft = "SOFT"
+        case hard = "HARD"
+    }
+
+    var dailyHardCycleCountLabel: String {
+        "HARD \(dailyHeavyCycleCount)"
+    }
+
+    func recordRecurringCycle(_ kind: RecurringCycleKind, now: Date = .now) {
+        resetDailyCycleCountIfNeeded(now: now)
+
+        switch kind {
+        case .soft:
+            dailySoftCycleCount += 1
+            defaults.set(dailySoftCycleCount, forKey: StorageKey.dailySoftCycleCount)
+        case .hard:
+            dailyHeavyCycleCount += 1
+            defaults.set(dailyHeavyCycleCount, forKey: StorageKey.dailyHeavyCycleCount)
+        }
+
+        lastRecurringCycleLabel = kind.rawValue
+        defaults.set(kind.rawValue, forKey: StorageKey.lastRecurringCycleLabel)
+    }
+
+    func recurringCycleKind(for mode: RefreshMode) -> RecurringCycleKind? {
+        switch mode {
+        case .soft:
+            return .soft
+        case .heavy, .deep:
+            return .hard
+        case .startup, .quick:
+            return nil
+        }
+    }
+
+    func catchUpRecurringCyclesIfNeeded(now: Date = .now) {
+        resetDailyCycleCountIfNeeded(now: now)
+    }
+}
+
+// MARK: - Daily Storage + Midnight Reset
 
 extension WealthEngineStore {
     @discardableResult

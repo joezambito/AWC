@@ -1,9 +1,6 @@
-//
-//  WealthEngineScanScheduler+Timers.swift
-//  Wealth Creation
-//
-//  Created by Joe Zambito on 2/4/2026.
-//
+// WealthEngineScanTimers_8April2026.swift
+// Wealth Creation — Recurring checkpoint timer schedule (8 April 2026)
+// Schedule: min 9/19 = IBKR burst, min 10/20 = soft scan, min 29 = IBKR burst, min 30 = deep scan
 
 import Foundation
 

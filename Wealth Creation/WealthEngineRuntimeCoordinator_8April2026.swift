@@ -1,5 +1,11 @@
+// WealthEngineRuntimeCoordinator_8April2026.swift
+// Wealth Creation — App session coordinator + live-update recovery (8 April 2026)
+// Merged from: WealthEngineRuntimeCoordinator + WealthEngineRuntimeRecovery
+
 import SwiftUI
 import Foundation
+
+// MARK: - Runtime Coordinator
 
 @MainActor
 final class WealthEngineRuntimeCoordinator {
@@ -170,5 +176,45 @@ final class WealthEngineRuntimeCoordinator {
     private func stopHeartbeat() {
         heartbeatTask?.cancel()
         heartbeatTask = nil
+    }
+}
+
+// MARK: - Live Update Recovery
+
+extension WealthEngineStore {
+    var softRefreshInterval: TimeInterval {
+        configuredSoftRefreshMinutes * 60
+    }
+
+    var heavyRefreshInterval: TimeInterval {
+        configuredHeavyRefreshMinutes * 60
+    }
+
+    func recoverLiveUpdatesIfNeeded(reason: String, now: Date = .now) {
+        let didRollOver = handleDayRolloverIfNeeded(now: now)
+
+        if !hasBootstrapped || activationTask != nil || pendingRefreshPayload != nil || pendingPublishTask != nil {
+            return
+        }
+
+        if scheduledCheckpointTimer == nil {
+            rescheduleTimers()
+        }
+
+        if didRollOver {
+            lastDecisionSummary = "Starting new trading day after \(reason)"
+            rescheduleTimers()
+            return
+        }
+
+        if requiresDownstreamLiveRecovery(now: now) {
+            downstreamRecoveryPending = true
+            runActivationSequence()
+            return
+        }
+
+        if downstreamRecoveryPending {
+            downstreamRecoveryPending = false
+        }
     }
 }

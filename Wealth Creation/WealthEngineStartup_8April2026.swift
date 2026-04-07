@@ -1,3 +1,6 @@
+// WealthEngineStartup_8April2026.swift
+// Wealth Creation — Startup / bootstrap / activation lifecycle (8 April 2026)
+
 import Foundation
 
 extension WealthEngineStore {
