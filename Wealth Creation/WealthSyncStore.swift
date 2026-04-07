@@ -79,7 +79,7 @@ final class WealthSyncStore: ObservableObject {
     private init() {
         macBridgeEnabled = defaults.object(forKey: StorageKey.macBridgeEnabled) as? Bool ?? true
         cloudSyncEnabled = defaults.object(forKey: StorageKey.cloudSyncEnabled) as? Bool ?? true
-        brokerHost = defaults.string(forKey: StorageKey.brokerHost) ?? "127.0.0.1"
+        brokerHost = defaults.string(forKey: StorageKey.brokerHost) ?? ""
         brokerPort = defaults.object(forKey: StorageKey.brokerPort) as? Int ?? 7497
         liveMode = defaults.object(forKey: StorageKey.liveMode) as? Bool ?? false
         syncStatus = "TWS OFFLINE"
