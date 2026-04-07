@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'Wealth Creation' in project 'Wealth Creation' (no dependencies)
