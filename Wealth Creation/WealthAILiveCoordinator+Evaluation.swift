@@ -142,17 +142,20 @@ extension WealthAILiveCoordinator {
         }
 
         if opportunity.advancedSignal.anomalyState != "STABLE" {
-            reasons.append("Live anomaly signal is elevated")
+            reasons.append("Live anomaly signal is elevated (noted, not blocking)")
         }
 
         if opportunity.advancedSignal.executionState != "EXECUTION CLEAN" {
-            reasons.append("Execution quality is no longer clean")
+            reasons.append("Execution quality is no longer clean (noted, not blocking)")
         }
 
         if let readinessReason = opportunity.executionReadiness.reason {
             reasons.append(readinessReason)
         }
 
+        // Only market rank, data freshness, order state, and data quality gate AI Live.
+        // AI score and confidence do NOT restrict promotion — only ranking (assigned by Market) is authoritative.
+        // Exception: spiker and event-risk signals detected by data are respected.
         let decision: WealthAILiveDecision
         if opportunity.rank <= 0 ||
             !opportunity.hasFreshPromotionRefresh ||
@@ -160,9 +163,7 @@ extension WealthAILiveCoordinator {
             !opportunity.isExecutionEligible ||
             opportunity.dataQualityLabel.uppercased() == "STALE" ||
             opportunity.earningsEventRisk >= 70 ||
-            opportunity.macroEventRisk >= 75 ||
-            opportunity.advancedSignal.anomalyState != "STABLE" ||
-            opportunity.advancedSignal.executionState != "EXECUTION CLEAN" {
+            opportunity.macroEventRisk >= 75 {
             decision = .reject
         } else {
             decision = .promote
