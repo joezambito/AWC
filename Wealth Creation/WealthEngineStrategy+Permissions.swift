@@ -60,7 +60,7 @@ extension WealthEngineStore {
         if currentOpenPositions >= positionLimit { return .wait }
         if duplicateExposureCount >= maxSectorExposure { return .wait }
         if dataQuality == "STALE" || rotation == .block || trustState == .weak { return .wait }
-        if dataAge >= 86_400 { return .wait }
+        if dataAge >= 1_800 { return .wait }
         if rewardRiskRatio < 1.15 { return .wait }
         if rewardRiskRatio < 1.55 { return .wait }
 
@@ -80,7 +80,7 @@ extension WealthEngineStore {
         }
         if dataQuality != "FRESH" { return .wait }
         if confidence < 80 { return .wait }
-        if dataQuality == "AGING" || dataAge >= 21_600 { return .wait }
+        if dataQuality == "AGING" || dataAge >= 1_800 { return .wait }
         if priceChangePercent <= -8 && !allowsExceptionalRecovery(priceChangePercent: priceChangePercent, confidence: confidence, advanced: advanced) {
             return .wait
         }
