@@ -2,7 +2,12 @@
 //  WealthMarketUniverseStore+StartupCache.swift
 //  Wealth Creation
 //
-//  Created by Joe Zambito on 2/4/2026.
+//  Universe Update 8/4/2026
+//  Removed hardcoded 127,000–128,631 record count band.
+//  The cache is now considered valid as long as it contains a reasonable
+//  minimum number of records (25,000) and the region data is not entirely
+//  blank.  The universe can grow to any size the device can hold without
+//  the cache being thrown away.
 //
 
 import Foundation
@@ -20,10 +25,9 @@ enum WealthMarketUniverseStartupCache {
     static let snapshotVersion = 1
     static let snapshotFileName = "world_market_snapshot_v1.json"
     static let legacyDefaultsKey = "awc_world_market_snapshot_v1"
-    static let canonicalUniverseRecordCount = 128_623
-    static let minimumReusableUniverseRecordCount = 127_000
+
+    // Minimum floor only – no upper cap.  Any count above this is accepted.
     static let fallbackReusableUniverseRecordCount = 25_000
-    static let maximumReusableUniverseRecordCount = 128_623 + 8
 
     static func snapshotFileURL(fileManager: FileManager = .default) -> URL? {
         guard let applicationSupport = try? fileManager.url(
@@ -111,14 +115,11 @@ enum WealthMarketUniverseStartupCache {
         return isValidPersistedSnapshot(snapshot)
     }
 
+    // A snapshot is valid when it has enough records and the region data
+    // is not completely empty.  There is no upper cap – the universe is
+    // free to grow as large as the device can store.
     static func isValidPersistedSnapshot(_ snapshot: WealthStoredUniverseSnapshot) -> Bool {
-        guard !snapshot.records.isEmpty else { return false }
-
-        let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
-        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
-
-        if snapshot.records.count < minimumReusableCount { return false }
-        if snapshot.records.count > maximumReusableCount { return false }
+        guard snapshot.records.count >= fallbackReusableUniverseRecordCount else { return false }
 
         let invalidRegionCount = snapshot.records.filter { record in
             let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -134,14 +135,13 @@ enum WealthMarketUniverseStartupCache {
         return invalidRegionCount != snapshot.records.count
     }
 
+    // A reload is required only when the record set is below the minimum
+    // floor or the region data is entirely blank.  A larger-than-before
+    // record count is not a reason to force a reload – it is handled by
+    // the count-change detection in the store itself.
     static func requiresCanonicalReload(_ records: [MarketUniverseRecord]) -> Bool {
         guard !records.isEmpty else { return false }
-
-        let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
-        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
-
-        if records.count < minimumReusableCount { return true }
-        if records.count > maximumReusableCount { return true }
+        guard records.count >= fallbackReusableUniverseRecordCount else { return true }
 
         let invalidRegionCount = records.filter { record in
             let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)

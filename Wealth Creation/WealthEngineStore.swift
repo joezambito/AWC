@@ -280,7 +280,7 @@ final class WealthEngineStore: ObservableObject {
         startupPromotionProgress >= Self.activityPromotionMinimumProgress
     }
 
-    private var downstreamRecoveryStaleInterval: TimeInterval { 5 * 60 }
+    private var downstreamRecoveryStaleInterval: TimeInterval { 24 * 60 * 60 }
 
     private func hasFreshDownstreamRefresh(now: Date = .now) -> Bool {
         guard let lastRefresh else { return false }

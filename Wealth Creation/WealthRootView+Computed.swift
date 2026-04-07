@@ -167,7 +167,7 @@ enum WealthOpportunityLaneRules {
         guard opportunity.orderState != .filled else { return false }
         guard opportunity.rank > 0 else { return false }
         let refreshAge = max(0, Date().timeIntervalSince(opportunity.lastRefreshTimestamp))
-        guard refreshAge <= 5 * 60 else { return false }
+        guard refreshAge <= 24 * 60 * 60 else { return false }
         guard opportunity.permission != .blocked else { return false }
         return true
     }

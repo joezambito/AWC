@@ -1,3 +1,18 @@
+//
+//  WealthMarketUniverseStore.swift
+//  Wealth Creation
+//
+//  Universe Update 8/4/2026
+//  The universe cache no longer re-downloads every time the app opens.
+//  Once a valid cache is in memory or restored from disk the store
+//  considers itself done.  A background refresh is only triggered when
+//  there is genuinely no data yet (first install, reset, or the cache
+//  is empty).  After a background load completes, the new records are
+//  only applied and persisted when the incoming record count is different
+//  from what is already cached – so the phone never does unnecessary
+//  write work when the universe has not changed.
+//
+
 import Foundation
 import Combine
 
@@ -23,6 +38,9 @@ final class WealthMarketUniverseStore: ObservableObject {
     private let defaults = UserDefaults.standard
     private var resetObserver: AnyCancellable?
 
+    // Background refresh is only needed when there is no cached data at all.
+    // The 15-minute stale interval is no longer used to force re-downloads
+    // when a valid cache already exists.
     private var backgroundRefreshStaleInterval: TimeInterval { 15 * 60 }
 
     private init() {
@@ -62,7 +80,7 @@ final class WealthMarketUniverseStore: ObservableObject {
             errorMessage = nil
             warningMessage = nil
             debugLog("loadIfNeeded reusing in-memory snapshot; records=\(records.count) source=\(sourceLabel)")
-            queueBackgroundRefreshIfNeeded(force: false, reason: "in-memory snapshot")
+            // Cache is valid – no background refresh needed.
             return
         }
 
@@ -70,7 +88,7 @@ final class WealthMarketUniverseStore: ObservableObject {
             sourceLabel = normalizedCachedSourceLabel(current: sourceLabel)
             errorMessage = nil
             debugLog("loadIfNeeded restored persisted snapshot; records=\(records.count) source=\(sourceLabel)")
-            queueBackgroundRefreshIfNeeded(force: false, reason: "restored snapshot")
+            // Persisted cache was restored – no background refresh needed.
             return
         }
 
@@ -103,7 +121,7 @@ final class WealthMarketUniverseStore: ObservableObject {
             warningMessage = nil
             sourceLabel = normalizedCachedSourceLabel(current: sourceLabel)
             debugLog("startup cache prepare reused in-memory snapshot; records=\(records.count) source=\(sourceLabel)")
-            queueBackgroundRefreshIfNeeded(force: false, reason: "startup in-memory")
+            // Cache is valid – no background refresh needed.
             return true
         }
 
@@ -116,7 +134,7 @@ final class WealthMarketUniverseStore: ObservableObject {
         warningMessage = nil
         sourceLabel = normalizedCachedSourceLabel(current: sourceLabel)
         debugLog("startup cache prepare restored persisted snapshot; records=\(records.count) source=\(sourceLabel)")
-        queueBackgroundRefreshIfNeeded(force: false, reason: "startup persisted")
+        // Persisted cache was restored – no background refresh needed.
         return true
     }
 
@@ -129,7 +147,7 @@ final class WealthMarketUniverseStore: ObservableObject {
             warningMessage = nil
             sourceLabel = normalizedCachedSourceLabel(current: sourceLabel)
             debugLog("startup sequence reused in-memory snapshot; records=\(records.count) source=\(sourceLabel)")
-            queueBackgroundRefreshIfNeeded(force: false, reason: "startup sequence in-memory")
+            // Cache is valid – no background refresh needed.
             return
         }
 
@@ -139,7 +157,7 @@ final class WealthMarketUniverseStore: ObservableObject {
             warningMessage = nil
             sourceLabel = normalizedCachedSourceLabel(current: sourceLabel)
             debugLog("startup sequence restored persisted snapshot; records=\(records.count) source=\(sourceLabel)")
-            queueBackgroundRefreshIfNeeded(force: false, reason: "startup sequence persisted")
+            // Persisted cache was restored – no background refresh needed.
             return
         }
 
@@ -164,12 +182,15 @@ final class WealthMarketUniverseStore: ObservableObject {
         current == "WAITING" || current == "LOADING" ? "CACHED SNAPSHOT" : current
     }
 
+    // Only trigger a background refresh when there are genuinely no records
+    // (first install or hard reset).  If a valid cache is present, no
+    // background refresh is needed – the universe only re-downloads when
+    // the incoming record count differs from the cached count.
     private func shouldBackgroundRefresh(force: Bool) -> Bool {
         if force { return true }
         guard !isLoading else { return false }
-        guard !records.isEmpty else { return true }
-        guard let lastSuccessfulLoadAt else { return true }
-        return Date().timeIntervalSince(lastSuccessfulLoadAt) >= backgroundRefreshStaleInterval
+        guard records.isEmpty else { return false }
+        return true
     }
 
     private func queueBackgroundRefreshIfNeeded(force: Bool, reason: String) {
@@ -294,6 +315,10 @@ final class WealthMarketUniverseStore: ObservableObject {
         )
     }
 
+    // A background load only updates the cache when the incoming record
+    // count is different from what is already in memory.  If the count
+    // is the same the universe has not changed and the existing cache is
+    // kept without any disk write or repaint.
     private func persistBackgroundSnapshotIfPossible(_ result: MarketUniverseLoadResult) -> Bool {
         guard !records.isEmpty else { return false }
 
@@ -302,6 +327,14 @@ final class WealthMarketUniverseStore: ObservableObject {
         guard !publishedWorldRecords.isEmpty else {
             isLoading = false
             debugLog("background refresh kept visible snapshot after empty/error result; records=\(records.count) source=\(sourceLabel)")
+            return true
+        }
+
+        // If the loaded record count matches what we already have, nothing
+        // has changed in the universe – skip the persist and stay silent.
+        guard canonicalRecords.count != records.count else {
+            isLoading = false
+            debugLog("background refresh skipped; record count unchanged (cached=\(records.count) loaded=\(canonicalRecords.count))")
             return true
         }
 

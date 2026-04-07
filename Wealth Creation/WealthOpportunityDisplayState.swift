@@ -37,7 +37,7 @@ enum WealthExecutionReadiness: Equatable {
 
 extension Opportunity {
     private var marketRankingFreshnessLimit: TimeInterval { 24 * 60 * 60 }
-    private var downstreamPromotionRefreshLimit: TimeInterval { 5 * 60 }
+    private var downstreamPromotionRefreshLimit: TimeInterval { 24 * 60 * 60 }
 
     var effectiveEntryPrice: Double { submittedPrice > 0 ? submittedPrice : price }
     var entrySubtotalCost: Double { Double(recommendedShares) * effectiveEntryPrice }
