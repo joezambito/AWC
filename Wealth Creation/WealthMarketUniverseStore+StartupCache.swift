@@ -17,6 +17,7 @@ struct WealthStoredUniverseSnapshot: Codable {
 }
 
 enum WealthMarketUniverseStartupCache {
+
     static let snapshotVersion = 1
     static let snapshotFileName = "world_market_snapshot_v1.json"
     static let legacyDefaultsKey = "awc_world_market_snapshot_v1"
@@ -25,17 +26,17 @@ enum WealthMarketUniverseStartupCache {
     static let fallbackReusableUniverseRecordCount = 25_000
     static let maximumReusableUniverseRecordCount = 128_623 + 8
 
-    static func snapshotFileURL(fileManager: FileManager = .default) -> URL? {
-        guard let applicationSupport = try? fileManager.url(
+    static func snapshotFileURL(
+        fileManager: FileManager = .default
+    ) -> URL? {
+        guard let appSupport = try? fileManager.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
             appropriateFor: nil,
             create: true
-        ) else {
-            return nil
-        }
+        ) else { return nil }
 
-        return applicationSupport
+        return appSupport
             .appendingPathComponent("WealthCreation", isDirectory: true)
             .appendingPathComponent(snapshotFileName)
     }
@@ -58,15 +59,12 @@ enum WealthMarketUniverseStartupCache {
             errorMessage: errorMessage
         )
 
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        guard let encoded = try? JSONEncoder().encode(snapshot) else { return }
 
-        if let cacheURL = snapshotFileURL(fileManager: fileManager) {
-            try? fileManager.createDirectory(
-                at: cacheURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true,
-                attributes: nil
-            )
-            try? data.write(to: cacheURL, options: .atomic)
+        if let url = snapshotFileURL(fileManager: fileManager) {
+            let dir = url.deletingLastPathComponent()
+            try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+            try? encoded.write(to: url, options: .atomic)
         }
 
         defaults.removeObject(forKey: legacyDefaultsKey)
@@ -76,24 +74,21 @@ enum WealthMarketUniverseStartupCache {
         defaults: UserDefaults = .standard,
         fileManager: FileManager = .default
     ) -> WealthStoredUniverseSnapshot? {
-        if let cacheURL = snapshotFileURL(fileManager: fileManager),
-           let data = try? Data(contentsOf: cacheURL),
+        if let url = snapshotFileURL(fileManager: fileManager),
+           let data = try? Data(contentsOf: url),
            let snapshot = try? JSONDecoder().decode(WealthStoredUniverseSnapshot.self, from: data) {
             return snapshot
         }
 
-        guard let data = defaults.data(forKey: legacyDefaultsKey),
-              let snapshot = try? JSONDecoder().decode(WealthStoredUniverseSnapshot.self, from: data) else {
-            return nil
-        }
+        guard
+            let legacyData = defaults.data(forKey: legacyDefaultsKey),
+            let snapshot = try? JSONDecoder().decode(WealthStoredUniverseSnapshot.self, from: legacyData)
+        else { return nil }
 
-        if let cacheURL = snapshotFileURL(fileManager: fileManager) {
-            try? fileManager.createDirectory(
-                at: cacheURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true,
-                attributes: nil
-            )
-            try? data.write(to: cacheURL, options: .atomic)
+        if let url = snapshotFileURL(fileManager: fileManager) {
+            let dir = url.deletingLastPathComponent()
+            try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+            try? legacyData.write(to: url, options: .atomic)
         }
 
         defaults.removeObject(forKey: legacyDefaultsKey)
@@ -107,53 +102,44 @@ enum WealthMarketUniverseStartupCache {
         guard let snapshot = restore(defaults: defaults, fileManager: fileManager) else {
             return false
         }
-
         return isValidPersistedSnapshot(snapshot)
     }
 
     static func isValidPersistedSnapshot(_ snapshot: WealthStoredUniverseSnapshot) -> Bool {
         guard !snapshot.records.isEmpty else { return false }
 
-        let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
-        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
+        let low = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
+        let high = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
 
-        if snapshot.records.count < minimumReusableCount { return false }
-        if snapshot.records.count > maximumReusableCount { return false }
+        guard snapshot.records.count >= low else { return false }
+        guard snapshot.records.count <= high else { return false }
 
-        let invalidRegionCount = snapshot.records.filter { record in
-            let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)
-            let market = record.market.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-
-            if ["FX", "CRYPTO", "GLOBAL"].contains(market) {
-                return false
-            }
-
+        let badCount = snapshot.records.filter { rec in
+            let region = rec.region.trimmingCharacters(in: .whitespacesAndNewlines)
+            let market = rec.market.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            guard !["FX", "CRYPTO", "GLOBAL"].contains(market) else { return false }
             return region.isEmpty || region.caseInsensitiveCompare("unknown") == .orderedSame
         }.count
 
-        return invalidRegionCount != snapshot.records.count
+        return badCount != snapshot.records.count
     }
 
     static func requiresCanonicalReload(_ records: [MarketUniverseRecord]) -> Bool {
         guard !records.isEmpty else { return false }
 
-        let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
-        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
+        let low = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
+        let high = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
 
-        if records.count < minimumReusableCount { return true }
-        if records.count > maximumReusableCount { return true }
+        if records.count < low { return true }
+        if records.count > high { return true }
 
-        let invalidRegionCount = records.filter { record in
-            let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)
-            let market = record.market.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-
-            if ["FX", "CRYPTO", "GLOBAL"].contains(market) {
-                return false
-            }
-
+        let badCount = records.filter { rec in
+            let region = rec.region.trimmingCharacters(in: .whitespacesAndNewlines)
+            let market = rec.market.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            guard !["FX", "CRYPTO", "GLOBAL"].contains(market) else { return false }
             return region.isEmpty || region.caseInsensitiveCompare("unknown") == .orderedSame
         }.count
 
-        return invalidRegionCount == records.count
+        return badCount == records.count
     }
 }

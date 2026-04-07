@@ -3,6 +3,7 @@ import Combine
 
 @MainActor
 final class WealthMarketUniverseStore: ObservableObject {
+
     static let shared = WealthMarketUniverseStore()
 
     private enum StorageKey {
@@ -26,29 +27,30 @@ final class WealthMarketUniverseStore: ObservableObject {
     private var backgroundRefreshStaleInterval: TimeInterval { 15 * 60 }
 
     private init() {
-        resetObserver = NotificationCenter.default.publisher(
-            for: WealthAppSessionController.visibleAppStateDidResetNotification
-        )
-        .receive(on: RunLoop.main)
-        .sink { [weak self] _ in
-            self?.clearForVisibleAppReset()
-        }
+        let note = WealthAppSessionController.visibleAppStateDidResetNotification
+        resetObserver = NotificationCenter.default
+            .publisher(for: note)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.clearForVisibleAppReset() }
 
-        if let cacheURL = WealthMarketUniverseStartupCache.snapshotFileURL(),
-           FileManager.default.fileExists(atPath: cacheURL.path) {
-            defaults.removeObject(forKey: WealthMarketUniverseStartupCache.legacyDefaultsKey)
+        let legacyKey = WealthMarketUniverseStartupCache.legacyDefaultsKey
+        if let url = WealthMarketUniverseStartupCache.snapshotFileURL(),
+           FileManager.default.fileExists(atPath: url.path) {
+            defaults.removeObject(forKey: legacyKey)
         }
     }
 
     func loadIfNeeded() {
         guard WealthEngineStore.shared.startupAllowsUniverseRefresh else { return }
+
         guard !didRequestLoad else {
             queueBackgroundRefreshIfNeeded(force: false, reason: "loadIfNeeded already requested")
             return
         }
 
-        if defaults.bool(forKey: StorageKey.skipNextAutomaticLoadAfterReset) {
-            defaults.removeObject(forKey: StorageKey.skipNextAutomaticLoadAfterReset)
+        let resetKey = StorageKey.skipNextAutomaticLoadAfterReset
+        if defaults.bool(forKey: resetKey) {
+            defaults.removeObject(forKey: resetKey)
             didRequestLoad = true
             debugLog("skip automatic load after reset; preserved records=\(records.count)")
             queueBackgroundRefreshIfNeeded(force: false, reason: "post-reset preserve")
@@ -150,18 +152,18 @@ final class WealthMarketUniverseStore: ObservableObject {
         WealthMarketUniverseLoader.load()
     }
 
-    private static func quoteableWorldShareRecords(from records: [MarketUniverseRecord]) -> [MarketUniverseRecord] {
+    private static func quoteableWorldShareRecords(
+        from records: [MarketUniverseRecord]
+    ) -> [MarketUniverseRecord] {
         records
             .filter { $0.isWorldShareInstrument }
             .sorted(by: MarketUniverseRecord.browserOrder)
     }
 
-    private var hasUsableInMemorySnapshot: Bool {
-        !records.isEmpty
-    }
+    private var hasUsableInMemorySnapshot: Bool { !records.isEmpty }
 
     private func normalizedCachedSourceLabel(current: String) -> String {
-        current == "WAITING" || current == "LOADING" ? "CACHED SNAPSHOT" : current
+        (current == "WAITING" || current == "LOADING") ? "CACHED SNAPSHOT" : current
     }
 
     private func shouldBackgroundRefresh(force: Bool) -> Bool {
@@ -213,12 +215,12 @@ final class WealthMarketUniverseStore: ObservableObject {
     }
 
     private func applySnapshot(_ snapshot: WealthStoredUniverseSnapshot) {
-        let fullSortedRecords = snapshot.records.sorted(by: MarketUniverseRecord.browserOrder)
-        let publishedWorldRecords = publishedWorldShareRecords(from: fullSortedRecords)
+        let sorted = snapshot.records.sorted(by: MarketUniverseRecord.browserOrder)
+        let worldRecords = publishedWorldShareRecords(from: sorted)
 
-        records = fullSortedRecords
-        worldShareRecords = publishedWorldRecords
-        worldShareRecordsByRegion = Dictionary(grouping: publishedWorldRecords, by: \.regionCode)
+        records = sorted
+        worldShareRecords = worldRecords
+        worldShareRecordsByRegion = Dictionary(grouping: worldRecords, by: \.regionCode)
         sourceLabel = snapshot.sourceLabel
         lastSuccessfulLoadAt = snapshot.lastSuccessfulLoadAt
         warningMessage = snapshot.warningMessage
@@ -227,10 +229,10 @@ final class WealthMarketUniverseStore: ObservableObject {
     }
 
     private func applyStagedRefresh(_ result: MarketUniverseLoadResult) async {
-        let canonicalRecords = result.records.sorted(by: MarketUniverseRecord.browserOrder)
-        let publishedWorldRecords = publishedWorldShareRecords(from: canonicalRecords)
+        let canonical = result.records.sorted(by: MarketUniverseRecord.browserOrder)
+        let worldRecords = publishedWorldShareRecords(from: canonical)
 
-        if publishedWorldRecords.isEmpty, !records.isEmpty {
+        if worldRecords.isEmpty, !records.isEmpty {
             sourceLabel = normalizedCachedSourceLabel(current: sourceLabel)
             warningMessage = result.warningMessage
             errorMessage = result.errorMessage
@@ -239,44 +241,38 @@ final class WealthMarketUniverseStore: ObservableObject {
             return
         }
 
-        let nextRegions = Dictionary(grouping: publishedWorldRecords, by: \.regionCode)
-        let orderedRegions = Self.stagedRegionOrder(for: nextRegions.keys)
+        let nextByRegion = Dictionary(grouping: worldRecords, by: \.regionCode)
+        let regionOrder = Self.stagedRegionOrder(for: nextByRegion.keys)
 
-        var stagedRegions = worldShareRecordsByRegion
-        let hadExistingData = !stagedRegions.isEmpty
+        var staged = worldShareRecordsByRegion
+        let hadExistingData = !staged.isEmpty
 
-        if !hadExistingData {
-            records = canonicalRecords
-        }
+        if !hadExistingData { records = canonical }
 
-        for batchStart in stride(from: 0, to: orderedRegions.count, by: 2) {
-            let batchEnd = min(batchStart + 2, orderedRegions.count)
-            let batchRegions = orderedRegions[batchStart..<batchEnd]
-
-            for region in batchRegions {
-                stagedRegions[region] = nextRegions[region] ?? []
+        for batchStart in stride(from: 0, to: regionOrder.count, by: 2) {
+            let batchEnd = min(batchStart + 2, regionOrder.count)
+            for region in regionOrder[batchStart..<batchEnd] {
+                staged[region] = nextByRegion[region] ?? []
             }
-
-            worldShareRecordsByRegion = stagedRegions
-            worldShareRecords = stagedRegions.values
+            worldShareRecordsByRegion = staged
+            worldShareRecords = staged.values
                 .flatMap { $0 }
                 .sorted(by: MarketUniverseRecord.browserOrder)
-
             if hadExistingData {
                 try? await Task.sleep(nanoseconds: 120_000_000)
             }
         }
 
-        for region in Set(stagedRegions.keys).subtracting(Set(nextRegions.keys)) {
-            stagedRegions.removeValue(forKey: region)
+        for region in Set(staged.keys).subtracting(Set(nextByRegion.keys)) {
+            staged.removeValue(forKey: region)
         }
 
-        worldShareRecordsByRegion = stagedRegions
-        worldShareRecords = stagedRegions.values
+        worldShareRecordsByRegion = staged
+        worldShareRecords = staged.values
             .flatMap { $0 }
             .sorted(by: MarketUniverseRecord.browserOrder)
 
-        records = canonicalRecords
+        records = canonical
         sourceLabel = result.sourceLabel
         lastSuccessfulLoadAt = Date()
         warningMessage = result.warningMessage
@@ -285,7 +281,7 @@ final class WealthMarketUniverseStore: ObservableObject {
         debugLog("refresh finished; merged records=\(records.count) world=\(worldShareRecords.count) source=\(sourceLabel)")
 
         WealthMarketUniverseStartupCache.persist(
-            records: canonicalRecords,
+            records: canonical,
             sourceLabel: result.sourceLabel,
             lastSuccessfulLoadAt: lastSuccessfulLoadAt,
             warningMessage: result.warningMessage,
@@ -297,16 +293,17 @@ final class WealthMarketUniverseStore: ObservableObject {
     private func persistBackgroundSnapshotIfPossible(_ result: MarketUniverseLoadResult) -> Bool {
         guard !records.isEmpty else { return false }
 
-        let canonicalRecords = result.records.sorted(by: MarketUniverseRecord.browserOrder)
-        let publishedWorldRecords = publishedWorldShareRecords(from: canonicalRecords)
-        guard !publishedWorldRecords.isEmpty else {
+        let canonical = result.records.sorted(by: MarketUniverseRecord.browserOrder)
+        let worldRecords = publishedWorldShareRecords(from: canonical)
+
+        guard !worldRecords.isEmpty else {
             isLoading = false
             debugLog("background refresh kept visible snapshot after empty/error result; records=\(records.count) source=\(sourceLabel)")
             return true
         }
 
         WealthMarketUniverseStartupCache.persist(
-            records: canonicalRecords,
+            records: canonical,
             sourceLabel: result.sourceLabel,
             lastSuccessfulLoadAt: Date(),
             warningMessage: result.warningMessage,
@@ -314,28 +311,28 @@ final class WealthMarketUniverseStore: ObservableObject {
             defaults: defaults
         )
         isLoading = false
-        debugLog("background refresh persisted snapshot without repaint; visible records=\(records.count) refreshed=\(canonicalRecords.count)")
+        debugLog("background refresh persisted snapshot without repaint; visible records=\(records.count) refreshed=\(canonical.count)")
         return true
     }
 
-    nonisolated private static func stagedRegionOrder<S: Sequence>(for regions: S) -> [String] where S.Element == String {
+    nonisolated private static func stagedRegionOrder<S: Sequence>(
+        for regions: S
+    ) -> [String] where S.Element == String {
         let preferred = ["US", "CA", "EU", "APAC", "ME", "LATAM", "AFRICA", "AU", "FX", "CRYPTO", "GLOBAL", "UNKNOWN"]
         let available = Set(regions)
-        let orderedPreferred = preferred.filter { available.contains($0) }
-        let remainder = available.subtracting(preferred).sorted()
-        return orderedPreferred + remainder
+        let head = preferred.filter { available.contains($0) }
+        let tail = available.subtracting(preferred).sorted()
+        return head + tail
     }
 
     private func clearForVisibleAppReset() {
         didRequestLoad = false
         isLoading = false
-
         if records.isEmpty {
             sourceLabel = "WAITING"
             warningMessage = nil
             errorMessage = nil
         }
-
         debugLog("visible reset handled; records=\(records.count) source=\(sourceLabel)")
     }
 
@@ -344,18 +341,18 @@ final class WealthMarketUniverseStore: ObservableObject {
         guard let snapshot = WealthMarketUniverseStartupCache.restore(defaults: defaults) else {
             return false
         }
-
         guard WealthMarketUniverseStartupCache.isValidPersistedSnapshot(snapshot) else {
             debugLog("discarded invalid persisted snapshot during \(reason); records=\(snapshot.records.count)")
             return false
         }
-
         debugLog("restoring persisted snapshot during \(reason)")
         applySnapshot(snapshot)
         return !records.isEmpty
     }
 
-    private func publishedWorldShareRecords(from records: [MarketUniverseRecord]) -> [MarketUniverseRecord] {
+    private func publishedWorldShareRecords(
+        from records: [MarketUniverseRecord]
+    ) -> [MarketUniverseRecord] {
         WealthIBKRContractValidationStore.shared.cleanWorldMarketRecords(
             Self.quoteableWorldShareRecords(from: records)
         )
