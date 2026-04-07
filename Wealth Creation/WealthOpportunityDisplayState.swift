@@ -113,6 +113,21 @@ extension Opportunity {
         cardHoldingBucket == .green && executionReadiness.isReady
     }
 
+    // MARK: — Spiker detection (data-engine exception)
+    // A card is a data spiker when the anomaly engine detects ANOMALY HIGH.
+    // Spikers may bypass the Market rank requirement to enter AI Live.
+    // All other safety gates (data freshness, event risk, stale data) still apply.
+    var isDataSpiker: Bool {
+        advancedSignal.anomalyState == "ANOMALY HIGH"
+    }
+
+    // All three alternative data channels (options flow, dark pool, insider) must
+    // independently confirm before a data-spiker holding can be auto-sold.
+    // This prevents false-positive exits triggered by noisy or incomplete data.
+    var hasAllThreeDeepScanConfirmation: Bool {
+        optionsFlowStrength > 0 && darkPoolStrength > 0 && insiderStrength > 0
+    }
+
     var cardSignalTint: Color {
         cardHoldingBucket.color
     }

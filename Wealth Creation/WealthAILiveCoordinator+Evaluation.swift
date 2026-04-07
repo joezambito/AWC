@@ -153,11 +153,27 @@ extension WealthAILiveCoordinator {
             reasons.append(readinessReason)
         }
 
-        // Only market rank, data freshness, order state, and data quality gate AI Live.
-        // AI score and confidence do NOT restrict promotion — only ranking (assigned by Market) is authoritative.
-        // Exception: spiker and event-risk signals detected by data are respected.
+        // Card movement rules for AI Live:
+        // 1. All cards must pass through Market before reaching AI Live.
+        // 2. Only cards with a Market-assigned rank (rank > 0) may be promoted to AI Live.
+        //    AI score and confidence do NOT gate this promotion — only Market rank is authoritative.
+        // 3. Exception — data spiker: if the data engine flags a card as ANOMALY HIGH, that card
+        //    may bypass the rank requirement and still be promoted to AI Live, provided it passes
+        //    all remaining safety gates (data freshness, order state, data quality, event risk).
+        //    When a spiker is sold, ALL THREE deep-scan data channels (options flow, dark pool,
+        //    insider) must independently confirm before auto-sell is triggered.
+        let isSpikerException = opportunity.isDataSpiker &&
+            opportunity.hasFreshPromotionRefresh &&
+            opportunity.orderState != .filled &&
+            opportunity.isExecutionEligible &&
+            opportunity.dataQualityLabel.uppercased() != "STALE" &&
+            opportunity.earningsEventRisk < 70 &&
+            opportunity.macroEventRisk < 75
+
         let decision: WealthAILiveDecision
-        if opportunity.rank <= 0 ||
+        if isSpikerException {
+            decision = .promote
+        } else if opportunity.rank <= 0 ||
             !opportunity.hasFreshPromotionRefresh ||
             opportunity.orderState == .filled ||
             !opportunity.isExecutionEligible ||
@@ -171,9 +187,17 @@ extension WealthAILiveCoordinator {
 
         let reason: String
         if reasons.isEmpty {
-            reason = "AI Live accepted the card using Market rank as authority."
+            if isSpikerException {
+                reason = "AI Live accepted the card via data-spiker exception (ANOMALY HIGH detected by data engine)."
+            } else {
+                reason = "AI Live accepted the card using Market rank as authority."
+            }
         } else if decision == .promote {
-            reason = "Market rank remained valid. \(reasons.joined(separator: " "))"
+            if isSpikerException {
+                reason = "Data-spiker exception applied. \(reasons.joined(separator: " "))"
+            } else {
+                reason = "Market rank remained valid. \(reasons.joined(separator: " "))"
+            }
         } else {
             reason = reasons.joined(separator: " ")
         }

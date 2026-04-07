@@ -181,7 +181,13 @@ extension WealthPortfolioStore {
                 WealthAISafeguards.shouldForceProtectiveSell(live: $0, holding: next)
             } ?? false
 
-            if shouldTriggerSell(next, protection: protection) || protectiveExitTriggered {
+            // Spiker sell gate: if the live card is a data-detected spiker, all three
+            // deep-scan data channels must independently confirm before auto-sell fires.
+            let spikerSellBlocked = liveOpportunity.map { live in
+                live.isDataSpiker && !live.hasAllThreeDeepScanConfirmation
+            } ?? false
+
+            if (shouldTriggerSell(next, protection: protection) || protectiveExitTriggered) && !spikerSellBlocked {
                 next.orderIntent = .sellPending
                 next.orderState = .submitted
                 next.pendingShares = next.shares
@@ -343,6 +349,11 @@ extension WealthPortfolioStore {
             )
 
             if shouldTriggerSell(holding, protection: protection) || protectiveExitTriggered {
+                // Spiker sell gate: a data-spiker holding cannot be auto-sold until all three
+                // deep-scan data channels (options flow, dark pool, insider) confirm the exit.
+                if live.isDataSpiker && !live.hasAllThreeDeepScanConfirmation {
+                    return "data-spiker card is waiting for all three deep-scan channels to confirm"
+                }
                 return nil
             }
 
