@@ -23,7 +23,6 @@ enum WealthMarketUniverseStartupCache {
     static let canonicalUniverseRecordCount = 128_623
     static let minimumReusableUniverseRecordCount = 127_000
     static let fallbackReusableUniverseRecordCount = 25_000
-    static let maximumReusableUniverseRecordCount = 128_623 + 8
 
     static func snapshotFileURL(fileManager: FileManager = .default) -> URL? {
         guard let applicationSupport = try? fileManager.url(
@@ -115,10 +114,8 @@ enum WealthMarketUniverseStartupCache {
         guard !snapshot.records.isEmpty else { return false }
 
         let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
-        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
 
         if snapshot.records.count < minimumReusableCount { return false }
-        if snapshot.records.count > maximumReusableCount { return false }
 
         let invalidRegionCount = snapshot.records.filter { record in
             let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -138,10 +135,8 @@ enum WealthMarketUniverseStartupCache {
         guard !records.isEmpty else { return false }
 
         let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
-        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
 
         if records.count < minimumReusableCount { return true }
-        if records.count > maximumReusableCount { return true }
 
         let invalidRegionCount = records.filter { record in
             let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)
