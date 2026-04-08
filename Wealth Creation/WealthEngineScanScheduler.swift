@@ -70,6 +70,7 @@ extension WealthEngineStore {
             await refreshDownstreamPromotionStateAfterStartupGate()
             guard !Task.isCancelled else { return }
             startupSequencePhase = .idle
+            WealthMarketUniverseStore.shared.scheduleBackgroundRefreshIfNeeded()
             rescheduleTimers()
         }
     }

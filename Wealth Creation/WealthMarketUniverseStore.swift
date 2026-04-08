@@ -186,8 +186,17 @@ final class WealthMarketUniverseStore: ObservableObject {
         }
     }
 
+    func scheduleBackgroundRefreshIfNeeded() {
+        queueBackgroundRefreshIfNeeded(force: false, reason: "post-startup")
+    }
+
     private func performRefresh(forceForegroundLoading: Bool) async {
         defer { isBackgroundRefreshQueued = false }
+
+        if !forceForegroundLoading, !WealthEngineStore.shared.startupAllowsUniverseRefresh {
+            debugLog("background refresh suppressed; startup scan phase active")
+            return
+        }
 
         if forceForegroundLoading || records.isEmpty {
             isLoading = true
@@ -201,7 +210,8 @@ final class WealthMarketUniverseStore: ObservableObject {
         warningMessage = nil
         debugLog("refresh started; records=\(records.count) source=\(sourceLabel)")
 
-        let result = await Task.detached(priority: .userInitiated) {
+        let taskPriority: TaskPriority = forceForegroundLoading ? .userInitiated : .utility
+        let result = await Task.detached(priority: taskPriority) {
             Self.loadFreshUniverseSnapshot()
         }.value
 
