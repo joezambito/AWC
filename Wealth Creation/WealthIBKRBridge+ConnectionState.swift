@@ -12,18 +12,30 @@ extension WealthIBKRBridge {
 
         case .waiting(let error):
             logger.error("TWS waiting: \(error.localizedDescription, privacy: .public)")
+
+            if connection === sourceConnection {
+                connection = nil
+            }
+
             WealthLiveMarketDataStore.shared.noteDisconnected(error.localizedDescription)
+            emit(.disconnected(error.localizedDescription))
             scheduleReconnect(reason: error.localizedDescription)
 
         case .ready:
+            guard connection === sourceConnection else { return }
+
             reconnectAttempt = 0
             logger.log("TWS socket ready at \(self.desiredHost, privacy: .public):\(self.desiredPort, privacy: .public)")
+
             emit(.connecting)
             sendGreeting()
             receiveData()
 
         case .failed(let error):
-            connection = nil
+            if connection === sourceConnection {
+                connection = nil
+            }
+
             logger.error("TWS failed: \(error.localizedDescription, privacy: .public)")
             WealthLiveMarketDataStore.shared.noteFailed(error.localizedDescription)
             emit(.failed(error.localizedDescription))
@@ -31,21 +43,29 @@ extension WealthIBKRBridge {
 
         case .cancelled:
             guard connection === sourceConnection || connection == nil else { return }
-            connection = nil
+
+            if connection === sourceConnection {
+                connection = nil
+            }
+
             contractValidationRequests.values.forEach {
                 $0.timeoutTask?.cancel()
                 $0.continuation?.resume(returning: nil)
             }
             contractValidationRequests.removeAll()
             validatingKeys.removeAll()
+
             subscriptions.removeAll()
             requestIDToKey.removeAll()
             requestIDToContract.removeAll()
             partialQuotes.removeAll()
+
             snapshotRequestIDs.removeAll()
             snapshotCleanupTasks.values.forEach { $0.cancel() }
             snapshotCleanupTasks.removeAll()
+
             WealthLiveMarketDataStore.shared.noteDisconnected(cancelReason)
+
             if silentCancel {
                 silentCancel = false
             } else {
@@ -54,20 +74,24 @@ extension WealthIBKRBridge {
             }
 
         @unknown default:
-            WealthLiveMarketDataStore.shared.noteFailed("Unknown TWS connection state.")
-            emit(.failed("Unknown TWS connection state."))
+            let message = "Unknown TWS connection state."
+            WealthLiveMarketDataStore.shared.noteFailed(message)
+            emit(.failed(message))
         }
     }
 
     func resubscribeAllContracts() {
         let existingContracts = Array(desiredSubscriptions.values)
+
         subscriptions.removeAll()
         requestIDToKey.removeAll()
         requestIDToContract.removeAll()
         partialQuotes.removeAll()
+
         snapshotRequestIDs.removeAll()
         snapshotCleanupTasks.values.forEach { $0.cancel() }
         snapshotCleanupTasks.removeAll()
+
         subscribe(to: existingContracts, delayedQuotes: delayedQuotesEnabled)
     }
 }
