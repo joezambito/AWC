@@ -15,7 +15,7 @@ final class WealthAuthStore: ObservableObject {
     func unlockWithBiometrics() async -> Bool {
         let context = LAContext()
         var error: NSError?
-        let reason = "Unlock Wealth Creation to access your trading dashboard."
+        let reason = "Unlock Autonomous Wealth Creation to access your trading dashboard."
 
         do {
             if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
@@ -57,7 +57,7 @@ final class WealthAuthStore: ObservableObject {
         do {
             return try await context.evaluatePolicy(
                 .deviceOwnerAuthentication,
-                localizedReason: "Verify your identity to reset your Wealth Creation passcode."
+                localizedReason: "Verify your identity to reset your Autonomous Wealth Creation passcode."
             )
         } catch {
             return false

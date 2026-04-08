@@ -87,7 +87,7 @@ final class WealthEngineStore: ObservableObject {
         static let scanCommodities = "awc_scan_market_commodities"
     }
 
-    private enum CacheConstants {
+    enum CacheConstants {
         static let persistedMarketCacheVersion = 2
         static let rankedAssetsFileName = "engine_ranked_assets_v1.json"
         static let scanUniverseFileName = "engine_scan_universe_v1.json"
@@ -167,7 +167,7 @@ final class WealthEngineStore: ObservableObject {
     var frozenPendingHoldings: [Holding] = []
     var frozenPendingOpportunities: [Opportunity] = []
     var frozenCompletedOpportunities: [Opportunity] = []
-    private var didRestorePersistedMarketCache = false
+    var didRestorePersistedMarketCache = false
     var warmStartRefreshTask: Task<Void, Never>?
 
     private init() {
