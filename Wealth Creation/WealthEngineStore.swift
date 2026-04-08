@@ -280,7 +280,11 @@ final class WealthEngineStore: ObservableObject {
         startupPromotionProgress >= Self.activityPromotionMinimumProgress
     }
 
-    private var downstreamRecoveryStaleInterval: TimeInterval { 5 * 60 }
+    // Universe Update 8/4/2026: Extended from 5 minutes to 24 hours so the
+    // engine treats a downstream refresh as fresh for the full session.
+    // AI Live cards are no longer cleared by a stale-interval trigger;
+    // they persist until bought or rejected and are monitored by background refresh.
+    private var downstreamRecoveryStaleInterval: TimeInterval { 24 * 60 * 60 }
 
     private func hasFreshDownstreamRefresh(now: Date = .now) -> Bool {
         guard let lastRefresh else { return false }

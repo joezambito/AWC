@@ -162,12 +162,14 @@ enum WealthOpportunityLaneRules {
         return true
     }
 
+    // Universe Update 8/4/2026: The 5-minute refresh-age gate has been removed.
+    // A ranked card stays eligible for AI Live indefinitely until it is bought
+    // (orderState == .filled) or explicitly rejected (permission == .blocked).
+    // Background refresh monitors the state; no time-based eviction occurs.
     nonisolated private static func isEligibleForAILiveReview(_ opportunity: Opportunity) -> Bool {
         guard isStructurallyValidForMarket(opportunity) else { return false }
         guard opportunity.orderState != .filled else { return false }
         guard opportunity.rank > 0 else { return false }
-        let refreshAge = max(0, Date().timeIntervalSince(opportunity.lastRefreshTimestamp))
-        guard refreshAge <= 5 * 60 else { return false }
         guard opportunity.permission != .blocked else { return false }
         return true
     }
