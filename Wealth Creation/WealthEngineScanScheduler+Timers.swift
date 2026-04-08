@@ -1,6 +1,6 @@
 //
 //  WealthEngineScanScheduler+Timers.swift
-//  Wealth Creation
+//  Autonomous Wealth Creation
 //
 //  Created by Joe Zambito on 2/4/2026.
 //
