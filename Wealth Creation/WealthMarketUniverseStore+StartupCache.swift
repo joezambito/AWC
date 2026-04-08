@@ -16,22 +16,14 @@ struct WealthStoredUniverseSnapshot: Codable {
     let errorMessage: String?
 }
 
-// Universe Update 8/4/2026: Removed fixed record-count bounds so the universe
-// can grow freely beyond the original 128 623 ceiling. The cache is now accepted
-// as valid whenever it is non-empty and structurally sound (valid region data).
-// The phone will never re-download on launch if a valid cache already exists.
 enum WealthMarketUniverseStartupCache {
     static let snapshotVersion = 1
     static let snapshotFileName = "world_market_snapshot_v1.json"
     static let legacyDefaultsKey = "awc_world_market_snapshot_v1"
-    /// Kept for reference only — no longer used as a hard validation gate.
     static let canonicalUniverseRecordCount = 128_623
-    /// Kept for reference only — no longer used as a hard validation gate.
-    static let minimumReusableUniverseRecordCount = 1
-    /// Kept for reference only — no longer used as a hard validation gate.
+    static let minimumReusableUniverseRecordCount = 127_000
     static let fallbackReusableUniverseRecordCount = 25_000
-    /// Kept for reference only — no longer used as a hard validation gate.
-    static let maximumReusableUniverseRecordCount = Int.max
+    static let maximumReusableUniverseRecordCount = 128_623 + 8
 
     static func snapshotFileURL(fileManager: FileManager = .default) -> URL? {
         guard let applicationSupport = try? fileManager.url(
@@ -119,11 +111,14 @@ enum WealthMarketUniverseStartupCache {
         return isValidPersistedSnapshot(snapshot)
     }
 
-    // Universe Update 8/4/2026: Count-bound gates removed. Any non-empty snapshot
-    // with structurally valid region data is accepted. The universe is free to grow
-    // beyond the old 128 623 ceiling without ever being wrongly rejected on launch.
     static func isValidPersistedSnapshot(_ snapshot: WealthStoredUniverseSnapshot) -> Bool {
         guard !snapshot.records.isEmpty else { return false }
+
+        let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
+        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
+
+        if snapshot.records.count < minimumReusableCount { return false }
+        if snapshot.records.count > maximumReusableCount { return false }
 
         let invalidRegionCount = snapshot.records.filter { record in
             let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -139,11 +134,14 @@ enum WealthMarketUniverseStartupCache {
         return invalidRegionCount != snapshot.records.count
     }
 
-    // Universe Update 8/4/2026: Count-bound gates removed. A reload is only
-    // required when the snapshot is structurally invalid (all regions unknown),
-    // not because record count drifted outside the old fixed range.
     static func requiresCanonicalReload(_ records: [MarketUniverseRecord]) -> Bool {
         guard !records.isEmpty else { return false }
+
+        let minimumReusableCount = min(canonicalUniverseRecordCount, minimumReusableUniverseRecordCount)
+        let maximumReusableCount = max(canonicalUniverseRecordCount, maximumReusableUniverseRecordCount)
+
+        if records.count < minimumReusableCount { return true }
+        if records.count > maximumReusableCount { return true }
 
         let invalidRegionCount = records.filter { record in
             let region = record.region.trimmingCharacters(in: .whitespacesAndNewlines)

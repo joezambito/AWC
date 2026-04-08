@@ -37,10 +37,7 @@ enum WealthExecutionReadiness: Equatable {
 
 extension Opportunity {
     private var marketRankingFreshnessLimit: TimeInterval { 24 * 60 * 60 }
-    // Universe Update 8/4/2026: Extended from 5 minutes to 24 hours so that
-    // ranked cards sitting in AI Live are not evicted by a promotion-refresh
-    // staleness check. Cards persist until bought or rejected.
-    private var downstreamPromotionRefreshLimit: TimeInterval { 24 * 60 * 60 }
+    private var downstreamPromotionRefreshLimit: TimeInterval { 5 * 60 }
 
     var effectiveEntryPrice: Double { submittedPrice > 0 ? submittedPrice : price }
     var entrySubtotalCost: Double { Double(recommendedShares) * effectiveEntryPrice }
