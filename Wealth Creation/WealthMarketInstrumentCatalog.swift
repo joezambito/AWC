@@ -91,6 +91,22 @@ enum WealthMarketInstrumentCatalog {
             providerFallbackOrder: [.nativeASX, .tradingView, .yahoo]
         ),
         WealthMarketInstrumentDefinition(
+            symbol: "XJO",
+            market: "ASX",
+            name: "S&P/ASX 200",
+            instrumentType: "index",
+            exchange: "ASX",
+            country: "Australia",
+            region: "Oceania",
+            currency: "AUD",
+            providerSymbols: WealthProviderSymbolSet(
+                nativeASX: "XJO",
+                yahoo: "^AXJO",
+                tradingView: "ASX:XJO"
+            ),
+            providerFallbackOrder: [.nativeASX, .tradingView, .yahoo]
+        ),
+        WealthMarketInstrumentDefinition(
             symbol: "XSO",
             market: "ASX",
             name: "S&P/ASX Small Ordinaries",
