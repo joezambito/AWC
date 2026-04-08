@@ -2,9 +2,6 @@ import Foundation
 
 extension WealthEngineStore {
     private enum ScanCounterStorageKey {
-        static let lastRecurringCycleLabel = "awc_last_recurring_cycle_label"
-        static let dailySoftCycleCount = "awc_daily_soft_cycle_count"
-        static let dailyHeavyCycleCount = "awc_daily_heavy_cycle_count"
         static let lastSoftCycleAt = "awc_last_soft_cycle_at"
         static let lastHardCycleAt = "awc_last_hard_cycle_at"
     }
@@ -24,16 +21,13 @@ extension WealthEngineStore {
         switch kind {
         case .soft:
             dailySoftCycleCount += 1
-            defaults.set(dailySoftCycleCount, forKey: ScanCounterStorageKey.dailySoftCycleCount)
             defaults.set(dailySoftCycleCount, forKey: StorageKey.dailySoftCycleCount)
         case .hard:
             dailyHeavyCycleCount += 1
-            defaults.set(dailyHeavyCycleCount, forKey: ScanCounterStorageKey.dailyHeavyCycleCount)
             defaults.set(dailyHeavyCycleCount, forKey: StorageKey.dailyHeavyCycleCount)
         }
 
         lastRecurringCycleLabel = kind.rawValue
-        defaults.set(kind.rawValue, forKey: ScanCounterStorageKey.lastRecurringCycleLabel)
         defaults.set(kind.rawValue, forKey: StorageKey.lastRecurringCycleLabel)
         defaults.set(now.timeIntervalSince1970, forKey: timestampKey(for: kind))
     }
@@ -58,14 +52,12 @@ extension WealthEngineStore {
 
         if hard > 0 {
             dailyHeavyCycleCount += hard
-            defaults.set(dailyHeavyCycleCount, forKey: ScanCounterStorageKey.dailyHeavyCycleCount)
             defaults.set(dailyHeavyCycleCount, forKey: StorageKey.dailyHeavyCycleCount)
             defaults.set(now.timeIntervalSince1970, forKey: timestampKey(for: .hard))
         }
 
         if soft > 0 {
             dailySoftCycleCount += soft
-            defaults.set(dailySoftCycleCount, forKey: ScanCounterStorageKey.dailySoftCycleCount)
             defaults.set(dailySoftCycleCount, forKey: StorageKey.dailySoftCycleCount)
             defaults.set(now.timeIntervalSince1970, forKey: timestampKey(for: .soft))
         }
@@ -75,7 +67,6 @@ extension WealthEngineStore {
         } else if soft > 0 {
             lastRecurringCycleLabel = RecurringCycleKind.soft.rawValue
         }
-        defaults.set(lastRecurringCycleLabel, forKey: ScanCounterStorageKey.lastRecurringCycleLabel)
         defaults.set(lastRecurringCycleLabel, forKey: StorageKey.lastRecurringCycleLabel)
     }
 

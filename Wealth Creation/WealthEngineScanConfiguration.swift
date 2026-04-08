@@ -10,40 +10,40 @@ extension WealthEngineStore {
     func activeExecutionRegionLabels() -> Set<String> {
         var enabled: Set<String> = []
 
-        if defaults.object(forKey: "awc_scan_market_nasdaq") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanUS) as? Bool ?? true {
             enabled.insert("US")
         }
-        if defaults.object(forKey: "awc_scan_market_asx") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanASX) as? Bool ?? true {
             enabled.insert("AU")
         }
-        if defaults.object(forKey: "awc_scan_market_canada") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanCanada) as? Bool ?? true {
             enabled.insert("CA")
         }
-        if defaults.object(forKey: "awc_scan_market_europe") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanEurope) as? Bool ?? true {
             enabled.insert("EU")
         }
-        if defaults.object(forKey: "awc_scan_market_asia") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanAsia) as? Bool ?? true {
             enabled.insert("APAC")
         }
-        if defaults.object(forKey: "awc_scan_market_middleeast") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanMiddleEast) as? Bool ?? true {
             enabled.insert("ME")
         }
-        if defaults.object(forKey: "awc_scan_market_russia") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanRussia) as? Bool ?? true {
             enabled.insert("EU")
         }
-        if defaults.object(forKey: "awc_scan_market_latam") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanLatam) as? Bool ?? true {
             enabled.insert("LATAM")
         }
-        if defaults.object(forKey: "awc_scan_market_africa") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanAfrica) as? Bool ?? true {
             enabled.insert("AFRICA")
         }
-        if defaults.object(forKey: "awc_scan_market_forex") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanFX) as? Bool ?? true {
             enabled.insert("FX")
         }
-        if defaults.object(forKey: "awc_scan_market_crypto") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanCrypto) as? Bool ?? true {
             enabled.insert("CRYPTO")
         }
-        if defaults.object(forKey: "awc_scan_market_commodities") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanCommodities) as? Bool ?? true {
             enabled.insert("GLOBAL")
         }
 
@@ -61,40 +61,40 @@ extension WealthEngineStore {
     func activeExecutionMarkets() -> Set<String> {
         var enabled: Set<String> = []
 
-        if defaults.object(forKey: "awc_scan_market_nasdaq") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanUS) as? Bool ?? true {
             enabled.formUnion(["NASDAQ", "NYSE", "AMEX", "ETF", "REIT", "ADR", "OTC", "CBOE"])
         }
-        if defaults.object(forKey: "awc_scan_market_asx") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanASX) as? Bool ?? true {
             enabled.insert("ASX")
         }
-        if defaults.object(forKey: "awc_scan_market_canada") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanCanada) as? Bool ?? true {
             enabled.formUnion(["TSX", "TSXV", "CSE"])
         }
-        if defaults.object(forKey: "awc_scan_market_europe") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanEurope) as? Bool ?? true {
             enabled.formUnion(["EU/UK", "LSE", "XETRA", "EURONEXT", "SIX", "OMX", "BIST", "WSE", "BME", "BIT", "VSE", "OSE"])
         }
-        if defaults.object(forKey: "awc_scan_market_asia") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanAsia) as? Bool ?? true {
             enabled.formUnion(["TSE", "HKEX", "SSE", "SZSE", "SGX", "NSE", "KRX", "TWSE", "TPEX", "IDX", "BURSA", "SET", "PSE", "HOSE", "HNX", "NZX"])
         }
-        if defaults.object(forKey: "awc_scan_market_middleeast") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanMiddleEast) as? Bool ?? true {
             enabled.formUnion(["TADAWUL", "DFM", "ADX", "QSE", "TASE", "KSE", "MSX", "BHB"])
         }
-        if defaults.object(forKey: "awc_scan_market_russia") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanRussia) as? Bool ?? true {
             enabled.insert("MOEX")
         }
-        if defaults.object(forKey: "awc_scan_market_latam") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanLatam) as? Bool ?? true {
             enabled.formUnion(["B3", "BMV", "BCBA"])
         }
-        if defaults.object(forKey: "awc_scan_market_africa") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanAfrica) as? Bool ?? true {
             enabled.formUnion(["JSE", "EGX"])
         }
-        if defaults.object(forKey: "awc_scan_market_forex") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanFX) as? Bool ?? true {
             enabled.insert("FX")
         }
-        if defaults.object(forKey: "awc_scan_market_crypto") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanCrypto) as? Bool ?? true {
             enabled.insert("CRYPTO")
         }
-        if defaults.object(forKey: "awc_scan_market_commodities") as? Bool ?? true {
+        if defaults.object(forKey: StorageKey.scanCommodities) as? Bool ?? true {
             enabled.formUnion(["COMMODITY", "CME", "CBOT", "NYMEX", "COMEX", "ICE", "BOND"])
         }
 

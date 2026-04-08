@@ -163,7 +163,7 @@ extension WealthPreparedSnapshotStore {
         }
         let whyText = brokerQuote == nil
         ? resolution.reason
-        : (record.companyName?.isEmpty == false ? record.companyName! : "\(record.assetTypeDisplay) instrument")
+        : (record.companyName ?? "\(record.assetTypeDisplay) instrument")
         let marketDisplay = resolution.resolvedExchange ?? record.marketDisplayLabel
 
         return MarketUniverseEntry(

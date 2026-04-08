@@ -10,7 +10,6 @@ extension WealthEngineStore {
 
         lastRecurringCycleLabel = "WAITING"
         defaults.set("WAITING", forKey: StorageKey.lastRecurringCycleLabel)
-        defaults.set("WAITING", forKey: LegacyStorageKey.lastRecurringCycleLabel)
         return true
     }
 
@@ -26,9 +25,6 @@ extension WealthEngineStore {
         defaults.set(0, forKey: StorageKey.dailySoftCycleCount)
         defaults.set(0, forKey: StorageKey.dailyHeavyCycleCount)
         defaults.set(dayKey, forKey: StorageKey.dailyScanCycleDay)
-        defaults.set(0, forKey: LegacyStorageKey.dailySoftCycleCount)
-        defaults.set(0, forKey: LegacyStorageKey.dailyHeavyCycleCount)
-        defaults.set(dayKey, forKey: LegacyStorageKey.dailyScanCycleDay)
         return true
     }
 
