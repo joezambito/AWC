@@ -19,6 +19,12 @@ extension WealthAILiveCoordinator {
             selectedKeys.insert(key)
         }
 
+        let promotedCandidates = rankedCandidates.filter { selectedKeys.contains($0.result.key) }
+        let validRanks = promotedCandidates.map { $0.opportunity.rank }.filter { $0 > 0 }
+        if let bestRank = validRanks.min() {
+            return Set(promotedCandidates.filter { $0.opportunity.rank == bestRank }.map { $0.result.key })
+        }
+
         return selectedKeys
     }
 

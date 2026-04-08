@@ -102,6 +102,10 @@ extension WealthAILiveCoordinator {
             selected.append(opportunity)
         }
 
+        if let bestRank = selected.map({ $0.rank }).filter({ $0 > 0 }).min() {
+            return selected.filter { $0.rank == bestRank }
+        }
+
         return selected
     }
 
