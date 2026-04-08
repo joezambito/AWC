@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 final class WealthCloudSyncCoordinator {
     static let shared = WealthCloudSyncCoordinator()
-    private let featureEnabled = false
+    private let featureEnabled = true
 
     private struct SharedStateSnapshot: Codable {
         let updatedAt: Date

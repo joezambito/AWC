@@ -164,29 +164,18 @@ extension WealthIBKRBridge {
             hasManagedAccounts = true
             logger.log("IB handshake managedAccounts received")
         }
-        
-        func ingestHandshakeMessage(messageID: Int, fields: [String]) {
-            if messageID == 9, let validID = Int(fields[safe: 2] ?? "") {
-                nextRequestID = max(nextRequestID, validID)
-                hasValidRequestID = true
-                logger.log("IB handshake nextValidId=\(validID, privacy: .public)")
-            } else if messageID == 15 {
-                hasManagedAccounts = true
-                logger.log("IB handshake managedAccounts received")
-            }
-            
-            if hasValidRequestID && !apiReady {
-                apiReady = true
-                logger.log("IB handshake apiReady=true delayedQuotes=\(self.delayedQuotesEnabled, privacy: .public) fallbackDelayed=\(self.fallbackToDelayedSent, privacy: .public)")
-                WealthLiveMarketDataStore.shared.noteConnected(
-                    host: self.desiredHost,
-                    port: self.desiredPort,
-                    clientID: self.clientID
-                )
-                emit(.connected)
-                sendMarketDataType((delayedQuotesEnabled || fallbackToDelayedSent) ? 3 : 1)
-                resubscribeAllContracts()
-            }
+
+        if hasValidRequestID && !apiReady {
+            apiReady = true
+            logger.log("IB handshake apiReady=true delayedQuotes=\(self.delayedQuotesEnabled, privacy: .public) fallbackDelayed=\(self.fallbackToDelayedSent, privacy: .public)")
+            WealthLiveMarketDataStore.shared.noteConnected(
+                host: self.desiredHost,
+                port: self.desiredPort,
+                clientID: self.clientID
+            )
+            emit(.connected)
+            sendMarketDataType((delayedQuotesEnabled || fallbackToDelayedSent) ? 3 : 1)
+            resubscribeAllContracts()
         }
     }
 

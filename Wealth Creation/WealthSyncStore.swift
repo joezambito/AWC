@@ -171,6 +171,17 @@ final class WealthSyncStore: ObservableObject {
             )
             return
         }
+#if !targetEnvironment(macCatalyst)
+        if WealthNetworkPathStore.shared.isFallbackCellular {
+            syncStatus = "WIFI REQUIRED"
+            appendLog(
+                title: "WiFi Required",
+                detail: "Broker connections require WiFi. Switch off cellular-only data to continue."
+            )
+            WealthEventLogStore.shared.record(title: "WiFi Required", detail: "Broker connection blocked: phone is on cellular data only.", category: "broker", tintName: "orange")
+            return
+        }
+#endif
         guard let endpoint = resolvedBrokerEndpoint else {
             syncStatus = "TWS FAILED"
             WealthBrokerStore.shared.recordBrokerFailure("Broker host is empty.")
@@ -205,6 +216,14 @@ final class WealthSyncStore: ObservableObject {
         guard allowsDirectBrokerAccess else { return false }
         scanBurstShutdownTask?.cancel()
         scanBurstShutdownTask = nil
+
+#if !targetEnvironment(macCatalyst)
+        if WealthNetworkPathStore.shared.isFallbackCellular {
+            appendLog(title: "WiFi Required", detail: "Scan burst blocked: phone is on cellular data only.")
+            WealthEventLogStore.shared.record(title: "WiFi Required", detail: "Scan broker burst blocked: phone is on cellular data only.", category: "broker", tintName: "orange")
+            return false
+        }
+#endif
 
         guard let endpoint = resolvedBrokerEndpoint else { return false }
         guard WealthBrokerStore.shared.selectedBroker.name == "IBKR" else { return false }
